@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LK Studio bill logo">
+  <rect width="512" height="512" rx="112" fill="#1b3022"/>
+  <g transform="translate(106 148) scale(3)" fill="none" stroke="#f1d35e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="74" cy="17" r="11.5"/>
+    <path d="M36 24h34v18H36V24Z"/>
+    <path d="M36 30H16V21H7"/>
+    <path d="M7 21v15"/>
+    <path d="M3.5 36h7"/>
+    <path d="M3 44h88"/>
+    <path d="M52 24V17"/>
+  </g>
+</svg>

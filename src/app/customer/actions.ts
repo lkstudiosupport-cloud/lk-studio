@@ -1,0 +1,442 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { requireSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import type { ServiceCategory, WorkType } from "@prisma/client";
+import { fieldKeysForType, idToPrismaType, MEASUREMENT_TYPES, type MeasurementTypeId } from "@/lib/measurements";
+import type { ActionState } from "@/lib/action-state";
+import { appendOrderImagesFromForm } from "@/lib/save-order-images";
+import { saveUpload } from "@/lib/upload";
+import { isShopActive } from "@/lib/subscription";
+import { assertCustomerSubscription } from "@/app/customer/subscription-actions";
+
+function revalidateMeasurementPaths() {
+  revalidatePath("/customer/persons");
+  revalidatePath("/customer/orders");
+  revalidatePath("/shop/orders");
+}
+
+async function customerId() {
+  const session = await requireSession(["CUSTOMER"]);
+  if (!session) throw new Error("Unauthorized");
+  return session.id;
+}
+
+async function assertShopAcceptsOrders(shopId: string) {
+  const shop = await prisma.shopProfile.findUnique({ where: { id: shopId } });
+  if (!shop || !isShopActive(shop.subscriptionStatus, shop.subscriptionEndsAt)) {
+    throw new Error("This shop is not accepting orders right now");
+  }
+  return shop;
+}
+
+export async function addPerson(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) return { ok: false, error: "Name required" };
+
+    await prisma.person.create({
+      data: {
+        customerId: cid,
+        name,
+        relation: String(formData.get("relation") ?? "").trim() || null,
+        notes: String(formData.get("notes") ?? "").trim() || null,
+      },
+    });
+    revalidateMeasurementPaths();
+    return { ok: true, message: "personAdded" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function updatePerson(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    const personId = String(formData.get("personId"));
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) return { ok: false, error: "Name required" };
+
+    const person = await prisma.person.findFirst({
+      where: { id: personId, customerId: cid },
+    });
+    if (!person) return { ok: false, error: "Person not found" };
+
+    await prisma.person.update({
+      where: { id: personId },
+      data: {
+        name,
+        relation: String(formData.get("relation") ?? "").trim() || null,
+      },
+    });
+    revalidateMeasurementPaths();
+    return { ok: true, message: "personUpdated" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function saveMeasurements(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    const personId = String(formData.get("personId"));
+    const person = await prisma.person.findFirst({
+      where: { id: personId, customerId: cid },
+    });
+    if (!person) return { ok: false, error: "Person not found" };
+
+    const typeRaw = String(formData.get("measurementType") ?? "blouse");
+    if (!MEASUREMENT_TYPES.includes(typeRaw as MeasurementTypeId)) {
+      return { ok: false, error: "Invalid measurement type" };
+    }
+    const measureType = typeRaw as MeasurementTypeId;
+    const prismaType = idToPrismaType(measureType);
+
+    const data: Record<string, string | null> = {};
+    for (const f of fieldKeysForType(measureType)) {
+      const v = String(formData.get(f) ?? "").trim();
+      data[f] = v || null;
+    }
+
+    await prisma.measurement.upsert({
+      where: { personId_type: { personId, type: prismaType } },
+      create: { personId, type: prismaType, ...data },
+      update: { ...data },
+    });
+
+    revalidateMeasurementPaths();
+    return { ok: true, message: "measurementsSaved" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function placeOrder(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    await assertCustomerSubscription(cid);
+    const personId = String(formData.get("personId"));
+    const designIdRaw = String(formData.get("designId") ?? "").trim();
+    const shopIdRaw = String(formData.get("shopId") ?? "").trim();
+    const workType = (String(formData.get("workType") ?? "STITCHING") as WorkType);
+    const category = (formData.get("category") as ServiceCategory) || "BLOUSE_DESIGN";
+    const notes = String(formData.get("notes") ?? "").trim() || null;
+
+    const person = await prisma.person.findFirst({
+      where: { id: personId, customerId: cid },
+    });
+    if (!person) return { ok: false, error: "Select a person" };
+
+    let shopId = shopIdRaw;
+    let designId: string | null = designIdRaw || null;
+
+    if (designIdRaw) {
+      const design = await prisma.design.findUnique({ where: { id: designIdRaw } });
+      if (!design) return { ok: false, error: "Design not found" };
+      shopId = design.shopId;
+    }
+
+    if (!shopId) return { ok: false, error: "Select a shop" };
+
+    await assertShopAcceptsOrders(shopId);
+
+    const orderNumber = `ORD-${Date.now()}`;
+    const order = await prisma.order.create({
+      data: {
+        orderNumber,
+        customerId: cid,
+        shopId,
+        personId,
+        designId,
+        workType,
+        category,
+        notes,
+        status: "PENDING",
+        ...(designId
+          ? {
+              orderFavorites: {
+                create: {
+                  designId,
+                  category,
+                },
+              },
+            }
+          : {}),
+      },
+    });
+
+    const uploaded = await appendOrderImagesFromForm(order.id, formData, "CUSTOMER", "orderImg");
+
+    if (!designIdRaw && uploaded.length === 0) {
+      await prisma.order.delete({ where: { id: order.id } });
+      return { ok: false, error: "Select a design or upload at least one photo" };
+    }
+
+    revalidatePath("/customer/orders");
+    revalidatePath("/shop/orders");
+    return { ok: true, message: "orderPlaced" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function toggleFavorite(designId: string, shopId: string): Promise<boolean> {
+  const cid = await customerId();
+  await assertCustomerSubscription(cid);
+
+  const design = await prisma.design.findFirst({
+    where: { id: designId, shopId, active: true },
+  });
+  if (!design) throw new Error("Design not found");
+
+  await assertShopAcceptsOrders(shopId);
+
+  const existing = await prisma.customerFavorite.findUnique({
+    where: { customerId_designId: { customerId: cid, designId } },
+  });
+
+  if (existing) {
+    await prisma.customerFavorite.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.customerFavorite.create({
+      data: {
+        customerId: cid,
+        designId,
+        shopId,
+        category: design.category,
+      },
+    });
+  }
+
+  revalidatePath("/customer/favorites");
+  revalidatePath("/customer/designs");
+  revalidatePath("/shop/customer-favorites");
+
+  return !existing;
+}
+
+export async function askPrice(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    await assertCustomerSubscription(cid);
+
+    const shopId = String(formData.get("shopId") ?? "").trim();
+    const designIdRaw = String(formData.get("designId") ?? "").trim();
+    const categoryRaw = String(formData.get("category") ?? "").trim();
+    const notes = String(formData.get("notes") ?? "").trim() || null;
+
+    if (!shopId) return { ok: false, error: "Select a shop" };
+    await assertShopAcceptsOrders(shopId);
+
+    let designId: string | null = designIdRaw || null;
+    let category: ServiceCategory;
+
+    if (designId) {
+      const design = await prisma.design.findFirst({
+        where: { id: designId, shopId, active: true },
+      });
+      if (!design) return { ok: false, error: "Design not found" };
+      category = design.category;
+    } else {
+      if (!categoryRaw) return { ok: false, error: "Select a category" };
+      category = categoryRaw as ServiceCategory;
+    }
+
+    const imageFile = formData.get("customerImage");
+    let customerImagePath: string | null = null;
+    if (imageFile instanceof File && imageFile.size > 0) {
+      customerImagePath = await saveUpload(imageFile, "price-requests");
+    }
+
+    if (!designId && !customerImagePath) {
+      return { ok: false, error: "Upload your design photo to ask price" };
+    }
+
+    await prisma.priceRequest.create({
+      data: {
+        customerId: cid,
+        shopId,
+        designId,
+        category,
+        customerImagePath,
+        notes,
+      },
+    });
+
+    revalidatePath("/customer/price-requests");
+    revalidatePath("/shop/price-requests");
+    revalidatePath("/customer/designs");
+    revalidatePath("/customer/favorites");
+    return { ok: true, message: "priceRequestSent" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function placeOrderFromFavorites(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    await assertCustomerSubscription(cid);
+
+    const shopId = String(formData.get("shopId") ?? "").trim();
+    const personId = String(formData.get("personId"));
+    const workType = String(formData.get("workType") ?? "STITCHING") as WorkType;
+    const notes = String(formData.get("notes") ?? "").trim() || null;
+    const designIds = formData.getAll("designId").map(String).filter(Boolean);
+
+    if (!shopId) return { ok: false, error: "Select a shop" };
+    if (designIds.length === 0) return { ok: false, error: "Select at least one favorite design" };
+
+    await assertShopAcceptsOrders(shopId);
+
+    const person = await prisma.person.findFirst({
+      where: { id: personId, customerId: cid },
+    });
+    if (!person) return { ok: false, error: "Select a person" };
+
+    const favorites = await prisma.customerFavorite.findMany({
+      where: {
+        customerId: cid,
+        shopId,
+        designId: { in: designIds },
+      },
+      include: { design: true },
+    });
+
+    if (favorites.length !== designIds.length) {
+      return { ok: false, error: "Some selected designs are not in your favorites" };
+    }
+
+    const primary = favorites[0]!;
+    const orderNumber = `ORD-${Date.now()}`;
+
+    await prisma.order.create({
+      data: {
+        orderNumber,
+        customerId: cid,
+        shopId,
+        personId,
+        designId: primary.designId,
+        workType,
+        category: primary.category,
+        notes,
+        status: "PENDING",
+        orderFavorites: {
+          create: favorites.map((f) => ({
+            designId: f.designId,
+            category: f.category,
+          })),
+        },
+      },
+    });
+
+    revalidatePath("/customer/orders");
+    revalidatePath("/customer/favorites");
+    revalidatePath("/shop/orders");
+    return { ok: true, message: "orderPlaced" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function uploadCustomerOrderImages(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    await assertCustomerSubscription(cid);
+    const orderId = String(formData.get("orderId"));
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, customerId: cid },
+    });
+    if (!order) return { ok: false, error: "Order not found" };
+
+    await appendOrderImagesFromForm(order.id, formData, "CUSTOMER", "orderImg");
+    revalidatePath("/customer/orders");
+    revalidatePath("/shop/orders");
+    return { ok: true, message: "photosUploaded" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function updateCustomerProfile(formData: FormData) {
+  const session = await requireSession(["CUSTOMER"]);
+  if (!session) throw new Error("Unauthorized");
+
+  const latRaw = String(formData.get("latitude") ?? "").trim();
+  const lngRaw = String(formData.get("longitude") ?? "").trim();
+  const photoFile = formData.get("profilePhotoFile");
+  let profilePhoto: string | undefined;
+  if (photoFile instanceof File && photoFile.size > 0) {
+    profilePhoto = await saveUpload(photoFile, `profile/user-${session.id}`);
+  }
+
+  await prisma.user.update({
+    where: { id: session.id },
+    data: {
+      name: String(formData.get("name") ?? "").trim(),
+      phone: String(formData.get("phone") ?? "").trim() || null,
+      whatsapp: String(formData.get("whatsapp") ?? "").trim() || null,
+      address: String(formData.get("address") ?? "").trim() || null,
+      locationLink: String(formData.get("locationLink") ?? "").trim() || null,
+      latitude: latRaw ? parseFloat(latRaw) : null,
+      longitude: lngRaw ? parseFloat(lngRaw) : null,
+      ...(profilePhoto ? { profilePhoto } : {}),
+    },
+  });
+  revalidatePath("/customer/profile");
+  revalidatePath("/customer", "layout");
+}
+
+export async function rateShopOrder(input: {
+  orderId: string;
+  shopId: string;
+  rating: number;
+}) {
+  const cid = await customerId();
+  const rating = Math.min(5, Math.max(1, Math.round(input.rating)));
+
+  const order = await prisma.order.findFirst({
+    where: {
+      id: input.orderId,
+      customerId: cid,
+      shopId: input.shopId,
+      status: "DELIVERED",
+    },
+  });
+  if (!order) throw new Error("Order not found");
+
+  await prisma.shopRating.upsert({
+    where: { orderId: order.id },
+    create: {
+      orderId: order.id,
+      shopId: input.shopId,
+      customerId: cid,
+      rating,
+    },
+    update: { rating },
+  });
+
+  revalidatePath("/customer/shops");
+  revalidatePath("/customer/orders");
+  revalidatePath("/customer/designs");
+}

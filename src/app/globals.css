@@ -1,0 +1,427 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-green: #1b3022;
+  --color-brand-green-light: #2a4535;
+  --color-brand-green-soft: #3d5a4a;
+  --color-brand-gold: #f1d35e;
+  --color-brand-gold-dark: #c9ab4a;
+  --color-brand-cream: #faf6ee;
+  --color-brand-pattern: #4a5d52;
+  --font-brand: "Poppins", "Segoe UI", system-ui, sans-serif;
+}
+
+:root {
+  --background: #faf6ee;
+  --foreground: #1b3022;
+  --primary: #1b3022;
+  --accent: #f1d35e;
+}
+
+body {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 0% 0%, rgb(74 93 82 / 0.12), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 100% 100%, rgb(74 93 82 / 0.1), transparent 50%),
+    linear-gradient(165deg, #faf6ee 0%, #f3efe3 50%, #ebe6d8 100%);
+  color: var(--foreground);
+  font-family: var(--font-brand);
+  min-height: 100dvh;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  body {
+    background-attachment: fixed;
+  }
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+.brand-title {
+  @apply font-bold uppercase tracking-[0.18em] text-brand-green;
+}
+
+.brand-subtitle {
+  @apply text-xs uppercase tracking-[0.35em] text-brand-green-soft;
+}
+
+.card-premium {
+  @apply rounded-2xl border border-brand-green/10 bg-white/95 shadow-lg shadow-brand-green/10 backdrop-blur-sm;
+}
+
+.input-premium {
+  @apply min-h-11 rounded-xl border border-brand-green/15 bg-white px-3 py-2.5 text-base text-brand-green shadow-sm transition focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30 sm:text-sm;
+}
+
+.btn-primary {
+  @apply min-h-11 rounded-xl bg-brand-gold px-5 py-2.5 font-semibold text-brand-green shadow-md shadow-brand-green/20 transition hover:bg-brand-gold-dark active:scale-[0.98];
+}
+
+.btn-secondary {
+  @apply min-h-11 rounded-xl border-2 border-brand-gold bg-transparent px-5 py-2.5 font-semibold text-brand-green transition hover:bg-brand-gold/20 active:scale-[0.98];
+}
+
+.page-title {
+  @apply text-xl font-bold uppercase tracking-[0.1em] text-brand-green sm:text-2xl md:text-3xl;
+}
+
+.brand-header {
+  @apply bg-brand-green text-white shadow-lg shadow-brand-green/30;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.brand-nav-pill {
+  @apply shrink-0 whitespace-nowrap rounded-full bg-white/15 px-3 py-2 text-xs font-medium text-white backdrop-blur transition hover:bg-brand-gold/25 hover:text-brand-green sm:px-4 sm:py-2.5 sm:text-sm md:text-base;
+}
+
+.scroll-nav {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-padding-inline: 0.75rem;
+}
+
+.scroll-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.app-page-shell {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.app-main-content {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.app-main-content-with-bottom-nav {
+  padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0px) + 4rem));
+}
+
+.brand-bottom-nav {
+  @apply border-t border-white/10 bg-brand-green shadow-[0_-4px_24px_rgba(45,74,62,0.35)];
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.brand-bottom-nav-item {
+  @apply flex min-h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center rounded-lg px-1 py-2 text-[10px] font-semibold leading-tight text-white/75 transition active:scale-[0.97] sm:text-xs;
+}
+
+.brand-bottom-nav-item-active {
+  @apply bg-white/15 font-bold text-brand-gold;
+}
+
+.brand-nav-pill-active {
+  @apply bg-brand-gold font-bold text-brand-green shadow-md ring-2 ring-brand-gold/80 ring-offset-1 ring-offset-brand-green;
+}
+
+.brand-gradient-bar {
+  @apply bg-gradient-to-r from-brand-green via-brand-green-light to-brand-green-soft;
+}
+
+.brand-card-header {
+  @apply bg-gradient-to-r from-brand-green via-brand-green-light to-brand-green-soft text-white;
+}
+
+.brand-page-bg {
+  position: relative;
+  isolation: isolate;
+}
+
+.brand-page-bg::before,
+.brand-page-bg::after {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  z-index: 0;
+  width: min(55vw, 280px);
+  height: min(55vw, 280px);
+  opacity: 0.1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #4a5d52 0%, transparent 70%);
+}
+
+.brand-page-bg::before {
+  top: -60px;
+  left: -60px;
+}
+
+.brand-page-bg::after {
+  right: -60px;
+  bottom: -60px;
+}
+
+.brand-page-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Bill detail — full page scroll on phone (no nested scroll trap) */
+.bill-detail-page {
+  margin: -1.5rem -1rem 0;
+  padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 0px));
+  min-height: 0;
+}
+
+.bill-detail-body {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0.25rem 1.5rem;
+}
+
+.order-card-perf {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+
+@media print {
+  .bill-receipt-corner-mark::before,
+  .bill-receipt-corner-mark::after {
+    background: rgb(27 48 34 / 0.32);
+  }
+
+  .bill-receipt-corner-logo {
+    box-shadow: 0 0 0 1.5px white;
+  }
+
+  .bill-receipt-corner-name {
+    color: rgb(27 48 34 / 0.65);
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .brand-header,
+  .bill-detail-actions,
+  nav {
+    display: none !important;
+  }
+
+  .bill-detail-page {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .bill-receipt {
+    max-width: 100% !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Showroom mannequin measurement diagram */
+@keyframes figure-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.008);
+  }
+}
+
+@keyframes showroom-spotlight {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes figure-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes measure-dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes measure-line-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes measure-badge-pop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes measure-label-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes slit-blink {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.measurement-figure-wrap {
+  transform-origin: 120px 240px;
+  animation: figure-breathe 4s ease-in-out infinite;
+}
+
+.measurement-showroom-panel {
+  background: radial-gradient(ellipse 80% 60% at 50% 12%, #ffffff 0%, #f5f0eb 45%, #ebe4dc 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 8px 24px rgba(120, 113, 108, 0.12);
+}
+
+.measurement-showroom-spotlight {
+  background: radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255, 255, 255, 0.75) 0%, transparent 70%);
+  animation: showroom-spotlight 5s ease-in-out infinite;
+}
+
+.measurement-showroom-grid {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.measurement-figure-glow {
+  animation: figure-glow-pulse 3.5s ease-in-out infinite;
+}
+
+.mannequin-slit-guide {
+  animation: slit-blink 2s ease-in-out infinite;
+}
+
+.measure-line-idle line {
+  stroke-dasharray: 6 4;
+  animation: measure-dash-flow 1.4s linear infinite;
+}
+
+.measure-line-filled line {
+  stroke-dasharray: none;
+}
+
+.measure-line-active line {
+  stroke-dasharray: 8 4;
+  animation:
+    measure-dash-flow 0.7s linear infinite,
+    measure-line-pulse 1s ease-in-out infinite;
+}
+
+.measure-label-active {
+  animation: measure-label-blink 1s ease-in-out infinite;
+}
+
+.measure-value-badge {
+  animation: measure-badge-pop 0.45s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .measurement-figure-wrap,
+  .measurement-showroom-spotlight,
+  .measurement-figure-glow,
+  .mannequin-slit-guide,
+  .mannequin-3d-cube,
+  .measure-line-idle line,
+  .measure-line-active line,
+  .measure-label-active,
+  .measure-value-badge {
+    animation: none !important;
+  }
+
+  .mannequin-3d-cube {
+    transition: none !important;
+  }
+}
+
+/* 3D rotatable blouse mannequin — lady dress-form prism */
+.mannequin-3d-stage {
+  --mannequin-depth: 58px;
+  perspective: 920px;
+  perspective-origin: 50% 38%;
+  overflow: visible;
+}
+
+.mannequin-3d-cube {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.72s cubic-bezier(0.34, 1.15, 0.64, 1);
+}
+
+.mannequin-3d-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fafaf9 0%, #f5f5f4 48%, #ececea 100%);
+  box-shadow:
+    0 22px 44px rgba(87, 83, 78, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.mannequin-3d-face-front {
+  transform: rotateY(0deg) translateZ(calc(var(--mannequin-depth) / 2));
+}
+
+.mannequin-3d-face-back {
+  transform: rotateY(180deg) translateZ(calc(var(--mannequin-depth) / 2));
+}
+
+.mannequin-3d-face-left {
+  transform: rotateY(-90deg) translateZ(calc(var(--mannequin-depth) / 2));
+}
+
+.mannequin-3d-face-right {
+  transform: rotateY(90deg) translateZ(calc(var(--mannequin-depth) / 2));
+}
+
+.mannequin-3d-floor-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: 72%;
+  height: 14%;
+  transform: translateX(-50%) rotateX(88deg);
+  background: radial-gradient(ellipse, rgba(87, 83, 78, 0.28) 0%, transparent 72%);
+  pointer-events: none;
+  filter: blur(2px);
+}

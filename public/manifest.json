@@ -1,0 +1,18 @@
+{
+  "name": "LK Studio",
+  "short_name": "LK Studio",
+  "description": "We stitch your designs",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1b3022",
+  "theme_color": "#1b3022",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

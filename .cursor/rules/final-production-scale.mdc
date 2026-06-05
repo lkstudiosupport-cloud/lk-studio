@@ -1,0 +1,21 @@
+---
+description: When LK Studio moves to final production / go-live with many users — apply PostgreSQL and scaling steps (not needed for current testing build).
+alwaysApply: false
+---
+
+# LK Studio — final stage production scaling
+
+**Current phase (OK as-is):** SQLite + local/PC testing + `npm run mobile:dev` + APK on hotspot. No PostgreSQL change needed yet.
+
+**When the user says they are ready for final stage, go-live, real launch, or 1000+ users**, remind them and help apply:
+
+1. Switch database to **PostgreSQL** (Neon, Supabase, Railway, etc.)
+2. Set `DATABASE_URL` from `.env.production.example` (connection_limit ~20)
+3. Change `prisma/schema.prisma` provider to `postgresql`, run `npx prisma db push`
+4. `npm run build` then `npm run start:cluster` (or cloud hosting with load balancer)
+5. Move uploads off local disk if multi-server (S3/cloud storage — optional follow-up)
+6. Rebuild APK pointing to production HTTPS URL (not PC hotspot)
+
+Scaling code already in repo: DB indexes, list limits, rate limiting, aggregate dashboard queries, `scripts/cluster.mjs`.
+
+Do **not** push PostgreSQL migration during normal feature work or testing unless the user explicitly asks for final/production setup.

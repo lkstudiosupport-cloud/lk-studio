@@ -1,0 +1,365 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SHOP
+  CUSTOMER
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  EXPIRED
+}
+
+enum WorkType {
+  STITCHING
+  REPAIR
+}
+
+enum MeasurementType {
+  BLOUSE
+  DRESS
+  CHILD
+}
+
+enum ServiceCategory {
+  MAGGAM
+  COMPUTER_EMBROIDERY
+  BLOUSE_DESIGN
+  DRESS_MODEL
+  CHILDREN_WEAR
+}
+
+enum OrderStatus {
+  PENDING
+  MEASURING
+  STITCHING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum ImageUploader {
+  SHOP
+  CUSTOMER
+}
+
+enum PriceRequestStatus {
+  PENDING
+  QUOTED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  phoneNormalized String?
+  whatsapp     String?
+  address      String?
+  locationLink String?
+  latitude     Float?
+  longitude    Float?
+  role         UserRole
+  sessionVersion Int @default(0)
+  profilePhoto String?
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  subscriptionEndsAt DateTime?
+  autopayEnabled     Boolean            @default(false)
+  razorpayCustomerId String?
+  razorpaySubscriptionId String?
+  createdAt    DateTime @default(now())
+
+  shopProfile ShopProfile?
+  persons     Person[]
+  orders      Order[]      @relation("CustomerOrders")
+  bills       Bill[]       @relation("CustomerBills")
+  shopRatings ShopRating[]
+  favorites   CustomerFavorite[]
+  priceRequests PriceRequest[]
+  trustedDevices TrustedDevice[]
+
+  @@index([subscriptionStatus])
+  @@index([phoneNormalized, role])
+}
+
+model TrustedDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceHash String
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  @@unique([userId, deviceHash])
+  @@index([userId])
+}
+
+model LoginOtp {
+  id        String   @id @default(cuid())
+  phone     String
+  role      UserRole
+  codeHash  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone, role])
+}
+
+model ShopProfile {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopName           String
+  shopCode           String             @unique
+  address            String?
+  locationLink       String?
+  latitude           Float?
+  longitude          Float?
+  shopTimings        String?
+  phone              String?
+  whatsapp           String?
+  instagram          String?
+  upiId              String?
+  upiQrImage         String?
+  profilePhoto       String?
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  subscriptionEndsAt DateTime?
+  autopayEnabled     Boolean            @default(false)
+  razorpayCustomerId String?
+  razorpaySubscriptionId String?
+  monthlyPlan        String             @default("standard")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  designs Design[]
+  orders  Order[]  @relation("ShopOrders")
+  bills   Bill[]
+  ratings ShopRating[]
+  favorites CustomerFavorite[]
+  priceRequests PriceRequest[]
+
+  @@index([subscriptionStatus])
+}
+
+model ShopRating {
+  id         String      @id @default(cuid())
+  shopId     String
+  shop       ShopProfile @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orderId    String      @unique
+  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  rating     Int
+  createdAt  DateTime    @default(now())
+
+  @@index([shopId])
+  @@index([customerId])
+}
+
+model CustomerFavorite {
+  id         String          @id @default(cuid())
+  customerId String
+  customer   User            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  designId   String
+  design     Design          @relation(fields: [designId], references: [id], onDelete: Cascade)
+  shopId     String
+  shop       ShopProfile     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  category   ServiceCategory
+  createdAt  DateTime        @default(now())
+
+  @@unique([customerId, designId])
+  @@index([shopId, category])
+  @@index([customerId, shopId])
+}
+
+model PriceRequest {
+  id                String              @id @default(cuid())
+  customerId        String
+  customer          User                @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shopId            String
+  shop              ShopProfile         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  designId          String?
+  design            Design?             @relation(fields: [designId], references: [id], onDelete: SetNull)
+  category          ServiceCategory
+  customerImagePath String?
+  notes             String?
+  quotedPrice       Float?
+  shopReply         String?
+  status            PriceRequestStatus  @default(PENDING)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([shopId, status, createdAt])
+  @@index([customerId, createdAt])
+}
+
+model OrderFavorite {
+  id       String          @id @default(cuid())
+  orderId  String
+  order    Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  designId String
+  design   Design          @relation(fields: [designId], references: [id], onDelete: Cascade)
+  category ServiceCategory
+  createdAt DateTime       @default(now())
+
+  @@unique([orderId, designId])
+  @@index([orderId])
+}
+
+model Person {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name       String
+  relation   String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  measurements Measurement[]
+  orders      Order[]
+
+  @@index([customerId])
+}
+
+model Measurement {
+  id        String   @id @default(cuid())
+  personId  String
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  type      MeasurementType @default(BLOUSE)
+  shoulder  String?
+  armHole   String?
+  bust      String?
+  overBust  String?
+  underBust String?
+  chest     String?
+  waist     String?
+  hip       String?
+  highHip   String?
+  backWaist String?
+  frontWaist String?
+  inseam    String?
+  trouserThreeQuarter String?
+  blouseLen String?
+  length    String?
+  neckToAboveKnee String?
+  aboveKneeToAnkle String?
+  armLength String?
+  bicep     String?
+  foreArm   String?
+  wrist     String?
+  sleeve    String?
+  neck      String?
+  frontNeck String?
+  backNeck  String?
+  slit      String?
+  custom    String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([personId, type])
+  @@index([personId])
+}
+
+model Design {
+  id          String          @id @default(cuid())
+  shopId      String
+  shop        ShopProfile     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  category    ServiceCategory
+  workType    WorkType          @default(STITCHING)
+  imagePath   String
+  imagesJson  String?
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+
+  orders Order[]
+  favorites CustomerFavorite[]
+  orderFavorites OrderFavorite[]
+  priceRequests PriceRequest[]
+
+  @@index([shopId, active, category])
+  @@index([shopId, createdAt])
+}
+
+model Order {
+  id                  String          @id @default(cuid())
+  orderNumber         String          @unique
+  customerId          String
+  customer            User            @relation("CustomerOrders", fields: [customerId], references: [id])
+  shopId              String
+  shop                ShopProfile     @relation("ShopOrders", fields: [shopId], references: [id])
+  personId            String
+  person              Person          @relation(fields: [personId], references: [id])
+  designId            String?
+  design              Design?         @relation(fields: [designId], references: [id])
+  workType            WorkType        @default(STITCHING)
+  category            ServiceCategory
+  status              OrderStatus     @default(PENDING)
+  stitchType          String?
+  clothDescription    String?
+  clothImagePath      String?
+  workDesignImagePath String?
+  customerRefImages   String?
+  notes               String?
+  voiceNotePath       String?
+  dueDate             DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  images OrderImage[]
+  bills  Bill[]
+  rating ShopRating?
+  orderFavorites OrderFavorite[]
+
+  @@index([shopId, status, createdAt])
+  @@index([customerId, createdAt])
+  @@index([orderNumber])
+}
+
+model OrderImage {
+  id         String        @id @default(cuid())
+  orderId    String
+  order      Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  imagePath  String
+  uploadedBy ImageUploader
+  caption    String?
+  createdAt  DateTime      @default(now())
+
+  @@index([orderId])
+}
+
+model Bill {
+  id            String      @id @default(cuid())
+  billNumber    String      @unique
+  shopId        String
+  shop          ShopProfile @relation(fields: [shopId], references: [id])
+  customerId    String?
+  customer      User?       @relation("CustomerBills", fields: [customerId], references: [id])
+  customerName  String?
+  customerPhone String?
+  orderId       String?
+  order         Order?      @relation(fields: [orderId], references: [id])
+  amount        Float
+  advancePaid   Float       @default(0)
+  paidAmount    Float       @default(0)
+  paid          Boolean     @default(false)
+  itemsJson     String
+  notes         String?
+  voiceNotePath String?
+  voiceText     String?
+  createdAt     DateTime    @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([customerId, createdAt])
+}

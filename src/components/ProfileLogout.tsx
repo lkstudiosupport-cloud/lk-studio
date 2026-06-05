@@ -1,0 +1,52 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
+import type { Locale } from "@/lib/i18n/locales";
+import { t } from "@/lib/i18n";
+import { parseApiResponse } from "@/lib/parse-api-response";
+
+export function ProfileLogout({ locale }: { locale: Locale }) {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function logout() {
+    setPending(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        credentials: "same-origin",
+      });
+      const data = await parseApiResponse(res);
+      if (data.error) {
+        setError(data.error);
+        setPending(false);
+        return;
+      }
+      router.replace(data.redirect ?? "/");
+      router.refresh();
+    } catch {
+      setError(t(locale, "logoutFailed"));
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 border-t border-brand-green/10 pt-4 pb-4">
+      {error && <p className="mb-2 text-center text-sm text-red-600">{error}</p>}
+      <button
+        type="button"
+        disabled={pending}
+        onClick={logout}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-white py-3.5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-50 active:scale-[0.99] disabled:opacity-60"
+      >
+        <LogOut className="h-4 w-4" />
+        {pending ? "..." : t(locale, "logout")}
+      </button>
+    </div>
+  );
+}

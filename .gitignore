@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.capacitor
+.env.tunnel
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+
+# Agent / tooling
+.agents/
+
+# Android / Capacitor
+android/
+public/dev-access-url.txt
+tunnel-out.txt
+tunnel-err.txt
+LK-Studio-debug.apk
+LK-Studio-release.apk

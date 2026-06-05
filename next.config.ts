@@ -1,0 +1,51 @@
+import type { NextConfig } from "next";
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
+
+function readDevHostsFromEnvFiles(): string[] {
+  const hosts = new Set<string>(["10.0.2.2"]);
+  const files = [".env.tunnel", ".env.local", ".env"];
+  for (const file of files) {
+    const full = join(process.cwd(), file);
+    if (!existsSync(full)) continue;
+    const text = readFileSync(full, "utf8");
+    for (const line of text.split("\n")) {
+      const m = line.match(/^(?:ALLOWED_DEV_ORIGIN|TUNNEL_HOST|CAPACITOR_SERVER_URL|TUNNEL_URL)=(.+)$/);
+      if (!m) continue;
+      const val = m[1].trim();
+      if (val.includes("://")) {
+        try {
+          hosts.add(new URL(val).hostname);
+        } catch {
+          /* skip */
+        }
+      } else {
+        val.split(",").forEach((h) => h.trim() && hosts.add(h.trim()));
+      }
+    }
+  }
+  if (process.env.ALLOWED_DEV_ORIGIN) {
+    process.env.ALLOWED_DEV_ORIGIN.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((h) => hosts.add(h));
+  }
+  if (process.env.TUNNEL_HOST) hosts.add(process.env.TUNNEL_HOST);
+  return [...hosts];
+}
+
+const lanDevOrigins = readDevHostsFromEnvFiles();
+
+const nextConfig: NextConfig = {
+  poweredByHeader: false,
+  compress: true,
+  /** Phone / other device on Wi‑Fi loading dev server by PC IP (mobile testing). */
+  allowedDevOrigins: lanDevOrigins,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "25mb",
+    },
+  },
+};
+
+export default nextConfig;

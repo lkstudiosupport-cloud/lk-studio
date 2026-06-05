@@ -1,0 +1,370 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/><link rel="stylesheet" href="/_next/static/css/app/layout.css?v=1780292366548" data-precedence="next_static/css/app/layout.css"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/webpack.js?v=1780292366548"/><script src="/_next/static/chunks/main-app.js?v=1780292366548" async=""></script><script src="/_next/static/chunks/app-pages-internals.js" async=""></script><script src="/_next/static/chunks/app/register/page.js" async=""></script><meta name="theme-color" content="#1b3022"/><title>LK Studio</title><meta name="description" content="We stitch your designs"/><link rel="manifest" href="/manifest.json"/><meta name="mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-title" content="LK Studio"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><link rel="icon" href="/icon.svg"/><link rel="apple-touch-icon" href="/icon.svg"/><script src="/_next/static/chunks/polyfills.js" noModule=""></script></head><body class="__variable_6bee3b min-h-dvh antialiased font-[family-name:var(--font-brand)]"><div hidden=""><!--$--><!--/$--></div><style>
+.bill-receipt {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 28rem;
+}
+
+.bill-receipt-paper {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: 2px dashed #a1a1aa;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 10px 15px -3px rgba(27, 48, 34, 0.1);
+}
+
+.bill-receipt-content {
+  position: relative;
+  z-index: 1;
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+.bill-receipt-corners {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.bill-receipt-corner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 5.5rem;
+  max-width: 22%;
+}
+
+.bill-receipt-corner--tl { top: 0.65rem; left: 0.65rem; align-items: flex-start; }
+.bill-receipt-corner--tr { top: 0.65rem; right: 0.65rem; align-items: flex-end; }
+.bill-receipt-corner--bl { bottom: 0.65rem; left: 0.65rem; align-items: flex-start; }
+.bill-receipt-corner--br { bottom: 0.65rem; right: 0.65rem; align-items: flex-end; }
+
+.bill-receipt-corner-mark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+}
+
+.bill-receipt-corner-mark::before,
+.bill-receipt-corner-mark::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 145%;
+  height: 3px;
+  background: rgba(27, 48, 34, 0.48);
+  border-radius: 2px;
+  transform-origin: center;
+  z-index: 0;
+}
+
+.bill-receipt-corner-mark::before { transform: translate(-50%, -50%) rotate(45deg); }
+.bill-receipt-corner-mark::after { transform: translate(-50%, -50%) rotate(-45deg); }
+
+.bill-receipt-corner-logo {
+  position: relative;
+  z-index: 1;
+  width: 1rem !important;
+  height: 1rem !important;
+  border-radius: 0.2rem;
+  object-fit: contain;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9);
+}
+
+.bill-receipt-corner-name {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(27, 48, 34, 0.72);
+  text-align: center;
+}
+
+.bill-receipt-corner--tr .bill-receipt-corner-name,
+.bill-receipt-corner--br .bill-receipt-corner-name { text-align: right; }
+
+.bill-receipt-corner--tl .bill-receipt-corner-name,
+.bill-receipt-corner--bl .bill-receipt-corner-name { text-align: left; }
+
+.bill-receipt-header {
+  border-bottom: 2px dashed #d4d4d8;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+
+.bill-receipt-icon-wrap {
+  margin: 0 auto 0.75rem;
+  display: flex;
+  height: 3.5rem;
+  width: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: #1b3022;
+  box-shadow: 0 4px 6px -1px rgba(27, 48, 34, 0.2);
+}
+
+.bill-receipt-icon-wrap svg {
+  height: 2rem;
+  width: 3rem;
+  color: #f1d35e;
+}
+
+.bill-receipt-shop-name {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #1b3022;
+  word-break: break-word;
+}
+
+.bill-receipt-subtitle {
+  margin: 0.5rem 0 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c9ab4a;
+}
+
+.bill-receipt-brand-row {
+  margin: 0.75rem auto 0;
+  display: flex;
+  max-width: 14rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bill-receipt-brand-line {
+  height: 1px;
+  flex: 1;
+  background: rgba(27, 48, 34, 0.25);
+}
+
+.bill-receipt-brand-label {
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1b3022;
+}
+
+.bill-receipt-address,
+.bill-receipt-header-phone {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #3f3f46;
+}
+
+.bill-receipt-header-phone { margin-top: 0.25rem; color: #52525b; }
+
+.bill-receipt-meta {
+  border-bottom: 1px dashed #d4d4d8;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+.bill-receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.bill-receipt-row:first-child { margin-top: 0; }
+
+.bill-receipt-row-label {
+  flex-shrink: 0;
+  color: #71717a;
+}
+
+.bill-receipt-row-value {
+  text-align: right;
+  font-weight: 600;
+  color: #1b3022;
+  word-break: break-word;
+  max-width: 62%;
+}
+
+.bill-receipt-row-value--strong { font-weight: 700; color: #1b3022; }
+
+.bill-receipt-items {
+  overflow: visible;
+  padding: 1rem 1.25rem;
+}
+
+.bill-receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.8125rem;
+}
+
+.bill-receipt-table thead tr {
+  border-bottom: 2px solid #27272a;
+}
+
+.bill-receipt-table th {
+  padding: 0 0.35rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  vertical-align: bottom;
+  color: #27272a;
+}
+
+.bill-receipt-table th.bill-receipt-th-qty { width: 2.25rem; text-align: center; }
+.bill-receipt-table th.bill-receipt-th-price { width: 4.25rem; text-align: right; }
+.bill-receipt-table th.bill-receipt-th-total { width: 4.5rem; text-align: right; }
+.bill-receipt-table th.bill-receipt-th-sno { width: 1.75rem; }
+
+.bill-receipt-table td {
+  padding: 0.6rem 0.35rem 0.6rem 0;
+  vertical-align: top;
+  border-bottom: 1px dotted #e4e4e7;
+  line-height: 1.35;
+}
+
+.bill-receipt-table td.bill-receipt-td-sno { color: #71717a; padding-right: 0.25rem; }
+.bill-receipt-table td.bill-receipt-td-item {
+  font-weight: 500;
+  color: #18181b;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  padding-right: 0.35rem;
+}
+.bill-receipt-table td.bill-receipt-td-qty { text-align: center; color: #18181b; }
+.bill-receipt-table td.bill-receipt-td-price,
+.bill-receipt-table td.bill-receipt-td-total {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.bill-receipt-table td.bill-receipt-td-total { font-weight: 700; color: #1b3022; }
+
+.bill-receipt-totals {
+  border-top: 2px dashed #d4d4d8;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+}
+
+.bill-receipt-grand-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(250, 246, 238, 0.95);
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1b3022;
+}
+
+.bill-receipt-payments {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dotted #e4e4e7;
+}
+
+.bill-receipt-pay-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.bill-receipt-pay-row span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
+.bill-receipt-pay-row--advance { color: #92400e; }
+.bill-receipt-pay-row--paid { color: #065f46; }
+.bill-receipt-pay-row--pending {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #be123c;
+}
+
+.bill-receipt-paid-banner {
+  background: #059669;
+  padding: 0.5rem 1.25rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.bill-receipt-notes {
+  border-top: 1px dashed #d4d4d8;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #52525b;
+}
+
+.bill-receipt-notes strong { color: #3f3f46; }
+
+.bill-receipt-upi {
+  border-top: 1px dashed #d4d4d8;
+  padding: 1rem 1.25rem;
+  text-align: center;
+}
+
+.bill-receipt-upi-label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1b3022;
+}
+
+.bill-receipt-upi-value {
+  margin: 0.25rem 0 0;
+  font-family: ui-monospace, monospace;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1b3022;
+  word-break: break-all;
+}
+
+.bill-receipt-footer {
+  border-top: 2px dashed #d4d4d8;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.bill-receipt-footer-thanks {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1b3022;
+}
+
+.bill-receipt-footer-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #71717a;
+}
+</style><main class="brand-page-bg mx-auto flex min-h-dvh max-w-lg flex-col px-4 py-8"><div class="mb-4 flex justify-end"><div class="flex shrink-0 items-center gap-1.5"><button type="button" title="Use my live location" aria-label="Use my live location" class="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg border shadow-sm transition disabled:opacity-60 border-brand-gold/30 bg-brand-green/80 text-brand-gold hover:bg-brand-green"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin h-4 w-4" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg></button><select class="rounded-lg border border-brand-gold/30 bg-brand-green/80 px-2 py-1 text-sm font-medium text-brand-gold shadow-sm" aria-label="Language"><option value="en" selected="">English</option><option value="te">తెలుగు</option><option value="hi">हिन्दी</option></select></div></div><div class="flex flex-1 flex-col justify-center text-center"><div class="flex flex-col items-center mb-6"><div class="flex items-center justify-center rounded-2xl bg-brand-green shadow-xl shadow-brand-green/30 h-32 w-32"><svg viewBox="0 0 100 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-[4.5rem] w-[6.75rem] text-brand-gold" aria-hidden="true"><circle cx="74" cy="17" r="11.5" stroke="currentColor" stroke-width="2.4"></circle><path d="M36 24h34v18H36V24Z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"></path><path d="M36 30H16V21H7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 21v15" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path><path d="M3.5 36h7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path><path d="M3 44h88" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path><path d="M52 24V17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path></svg></div><p class="brand-title mt-4 text-brand-green text-3xl">LK Studio</p></div><p class="text-sm text-brand-green-soft">We stitch your designs</p><h1 class="mt-4 text-xl font-bold text-brand-green">Register</h1><div class="mt-6 w-full text-left"><form class="card-premium space-y-4 p-6"><div class="flex gap-2"><button type="button" class="flex-1 rounded-lg py-2 font-semibold bg-brand-gold text-brand-green">Customer — ₹<!-- -->100<!-- -->/mo</button><button type="button" class="flex-1 rounded-lg py-2 font-semibold bg-brand-green/10 text-brand-green">Shop — ₹<!-- -->1000<!-- -->/mo</button></div><input required="" placeholder="Name" class="input-premium w-full" name="name"/><input type="email" required="" placeholder="Email" class="input-premium w-full" name="email"/><input placeholder="Phone" class="input-premium w-full" name="phone"/><input type="password" required="" minLength="6" placeholder="Password" class="input-premium w-full" name="password"/><button type="submit" class="btn-primary w-full py-3">Continue — set up autopay next</button><div class="space-y-2 pt-2 text-center text-sm"><a class="block text-brand-green-soft" href="/login/customer">Customer login</a><a class="btn-secondary block py-3" href="/login/shop">Shop owner login</a><a class="block text-brand-green-soft" href="/">Back to home</a></div></form></div></div></main><!--$--><!--/$--><script src="/_next/static/chunks/webpack.js?v=1780292366548" id="_R_" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"5:I[\"(app-pages-browser)/./node_modules/next/dist/next-devtools/userspace/app/segment-explorer-node.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"SegmentViewNode\"]\n7:\"$Sreact.fragment\"\n1a:I[\"(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"\"]\n1c:I[\"(app-pages-browser)/./node_modules/next/dist/client/components/render-from-template-context.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"\"]\n24:I[\"(app-pages-browser)/./node_modules/next/dist/lib/framework/boundary-components.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"OutletBoundary\"]\n2b:I[\"(app-pages-browser)/./node_modules/next/dist/client/components/metadata/async-metadata.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"AsyncMetadataOutlet\"]\n33:I[\"(app-pages-browser)/./node_modules/next/dist/lib/framework/boundary-components.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"ViewportBoundary\"]\n39:I[\"(app-pages-browser)/./node_modules/next/dist/lib/framework/boundary-components.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"MetadataBoundary\"]\n3e:\"$Sreact.suspense\"\n42:I[\"(app-pages-browser)/./node_modules/next/dist/client/components/builtin/global-error.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"\"]\n5f:I[\"(app-pages-browser)/./node_modules/next/dist/lib/metadata/generate/icon-mark.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"IconMark\"]\n:HL[\"/_next/static/css/app/layout.css?v=1780292366548\",\"style\"]\n:N1780292366561.691\n3:\"$EObject.defineProperty(()=\u003e{ctx.componentMod.preloadStyle(fullHref,ctx.renderOpts.crossOrigin,ctx.nonce)},\\\"name\\\",{value:\\\"\\\"})\"\n2:{\"name\":\"Preloads\",\"key\":null,\"env\":\"Server\",\"stack\":[],\"props\":{\"preloadCallbacks\":[\"$3\"]}}\n4:[]\n6:[]\n8:[[\"Array.map\",\"\",0,0,0,0,false]]\nb:I[\"(app-pages-browser)/./node_modules/next/dist/client/components/layout-router.js\",[\"app-pages-internals\",\"static/c"])</script><script>self.__next_f.push([1,"hunks/app-pages-internals.js\"],\"\"]\ne:I[\"(app-pages-browser)/./node_modules/next/dist/client/components/render-from-template-context.js\",[\"app-pages-internals\",\"static/chunks/app-pages-internals.js\"],\"\"]\nf:{}\n10:[[\"Function.all\",\"\",0,0,0,0,true]]\nd:{\"children\":[\"$\",\"$Le\",null,\"$f\",null,\"$10\",1]}\n11:[[\"Function.all\",\"\",0,0,0,0,true]]\nc:{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$7\",null,\"$d\",null,\"$11\",0],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$Y\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\",\"segmentViewBoundaries\":\"$Y\"}\n12:[[\"Function.all\",\"\",0,0,0,0,true]]\na:{\"name\":\"RootLayout\",\"key\":null,\"env\":\"Server\",\"stack\":[],\"props\":{\"children\":[\"$\",\"$Lb\",null,\"$c\",null,\"$12\",1],\"params\":\"$Y\"}}\n13:[[\"RootLayout\",\"webpack-internal:///(rsc)/./src/app/layout.tsx\",38,87,37,1,false]]\n14:[[\"RootLayout\",\"webpack-internal:///(rsc)/./src/app/layout.tsx\",40,94,37,1,false]]\n15:[[\"RootLayout\",\"webpack-internal:///(rsc)/./src/app/layout.tsx\",43,92,37,1,false]]\n18:[[\"Function.all\",\"\",0,0,0,0,true]]\n19:[[\"Function.all\",\"\",0,0,0,0,true],[\"Function.all\",\"\",0,0,0,0,true]]\n1b:[[\"Function.all\",\"\",0,0,0,0,true],[\"Function.all\",\"\",0,0,0,0,true]]\n1d:[[\"Function.all\",\"\",0,0,0,0,true],[\"Function.all\",\"\",0,0,0,0,true]]\n1e:[[\"Function.all\",\"\",0,0,0,0,true],[\"Function.all\",\"\",0,0,0,0,true]]\n20:{\"name\":\"RegisterPage\",\"key\":null,\"env\":\"Server\",\"stack\":[[\"Function.all\",\"\",0,0,0,0,true],[\"Function.all\",\"\",0,0,0,0,true]],\"props\":{\"params\":\"$@21\",\"searchParams\":\"$@22\"}}\n23:[[\"Function.all\",\"\",0,0,0,0,true],[\"Function.all\",\"\",0,0,0,0,true]]\n27:\"$EObject.defineProperty(async function getViewportReady() {\\n        await viewport();\\n        return undefined;\\n    },\\\"name\\\",{value:\\\"getViewportReady\\\"})\"\n26:{\"name\":\"__next_outlet_boundary__\",\"key\":null,\"env\":\"Server\",\"stack\":[[\"Function.all\",\"\",0,0,0,0,true],[\"Function.all\",\"\",0,0,0,0,true]],\"props\":{\"ready\":\"$27\"}}\n29:{\"name\":\"StreamingMetadataOutletImpl\",\"key\":null,\"env\":\"Server\",\"stac"])</script><script>self.__next_f.push([1,"k\":[[\"Function.all\",\"\",0,0,0,0,true],[\"Function.all\",\"\",0,0,0,0,true]],\"props\":{}}\n2a:[]\n2d:[]\n2f:{\"name\":\"NonIndex\",\"key\":null,\"env\":\"Server\",\"stack\":[],\"props\":{\"pagePath\":\"/register\",\"statusCode\":200,\"isPossibleServerAction\":false}}\n31:{\"name\":\"ViewportTree\",\"key\":null,\"env\":\"Server\",\"stack\":[],\"props\":{}}\n32:[]\n35:{\"name\":\"__next_viewport_boundary__\",\"key\":null,\"env\":\"Server\",\"owner\":\"$31\",\"stack\":[],\"props\":{}}\n37:{\"name\":\"MetadataTree\",\"key\":null,\"env\":\"Server\",\"stack\":[],\"props\":{}}\n38:[]\n3b:{\"name\":\"__next_metadata_boundary__\",\"key\":null,\"env\":\"Server\",\"owner\":\"$37\",\"stack\":[],\"props\":{}}\n3c:[]\n3d:[]\n40:{\"name\":\"MetadataResolver\",\"key\":null,\"env\":\"Server\",\"owner\":\"$3b\",\"stack\":[],\"props\":{}}\n43:[]\n44:[[\"Function.all\",\"\",0,0,0,0,true]]\n45:[[\"Function.all\",\"\",0,0,0,0,true]]\n46:[]\n48:{\"name\":\"NotFound\",\"key\":null,\"env\":\"Server\",\"stack\":[],\"props\":{}}\n49:{\"name\":\"HTTPAccessErrorFallback\",\"key\":null,\"env\":\"Server\",\"owner\":\"$48\",\"stack\":[],\"props\":{\"status\":404,\"message\":\"This page could not be found.\"}}\n4a:[]\n4b:[]\n4c:[]\n4d:[]\n4e:[]\n4f:[]\n50:[]\n51:[[\"Function.all\",\"\",0,0,0,0,true]]\n52:[[\"Function.all\",\"\",0,0,0,0,true]]\n21:{}\n22:\n53:[]\n54:[]\n55:[[\"Array.map\",\"\",0,0,0,0,false]]\n56:[]\n57:[]\n58:[]\n59:[]\n5a:[]\n5b:[]\n5c:[[\"Array.map\",\"\",0,0,0,0,false]]\n5d:[[\"Array.map\",\"\",0,0,0,0,false]]\n5e:[]\n1:D\"$2\"\n1:null\n9:D\"$a\"\n16:T1ed2,"])</script><script>self.__next_f.push([1,"\n.bill-receipt {\n  margin-left: auto;\n  margin-right: auto;\n  width: 100%;\n  max-width: 28rem;\n}\n\n.bill-receipt-paper {\n  position: relative;\n  overflow: hidden;\n  isolation: isolate;\n  border: 2px dashed #a1a1aa;\n  border-radius: 2px;\n  background: #ffffff;\n  box-shadow: 0 10px 15px -3px rgba(27, 48, 34, 0.1);\n}\n\n.bill-receipt-content {\n  position: relative;\n  z-index: 1;\n  padding-top: 5rem;\n  padding-bottom: 5rem;\n}\n\n.bill-receipt-corners {\n  position: absolute;\n  inset: 0;\n  z-index: 0;\n  pointer-events: none;\n  user-select: none;\n}\n\n.bill-receipt-corner {\n  position: absolute;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 0.25rem;\n  width: 5.5rem;\n  max-width: 22%;\n}\n\n.bill-receipt-corner--tl { top: 0.65rem; left: 0.65rem; align-items: flex-start; }\n.bill-receipt-corner--tr { top: 0.65rem; right: 0.65rem; align-items: flex-end; }\n.bill-receipt-corner--bl { bottom: 0.65rem; left: 0.65rem; align-items: flex-start; }\n.bill-receipt-corner--br { bottom: 0.65rem; right: 0.65rem; align-items: flex-end; }\n\n.bill-receipt-corner-mark {\n  position: relative;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 3rem;\n  height: 3rem;\n}\n\n.bill-receipt-corner-mark::before,\n.bill-receipt-corner-mark::after {\n  content: \"\";\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  width: 145%;\n  height: 3px;\n  background: rgba(27, 48, 34, 0.48);\n  border-radius: 2px;\n  transform-origin: center;\n  z-index: 0;\n}\n\n.bill-receipt-corner-mark::before { transform: translate(-50%, -50%) rotate(45deg); }\n.bill-receipt-corner-mark::after { transform: translate(-50%, -50%) rotate(-45deg); }\n\n.bill-receipt-corner-logo {\n  position: relative;\n  z-index: 1;\n  width: 1rem !important;\n  height: 1rem !important;\n  border-radius: 0.2rem;\n  object-fit: contain;\n  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9);\n}\n\n.bill-receipt-corner-name {\n  margin: 0;\n  font-size: 0.7rem;\n  font-weight: 900;\n  line-height: 1.1;\n  letter-spacing: 0.05em;\n  text-transform: uppercase;\n  color: rgba(27, 48, 34, 0.72);\n  text-align: center;\n}\n\n.bill-receipt-corner--tr .bill-receipt-corner-name,\n.bill-receipt-corner--br .bill-receipt-corner-name { text-align: right; }\n\n.bill-receipt-corner--tl .bill-receipt-corner-name,\n.bill-receipt-corner--bl .bill-receipt-corner-name { text-align: left; }\n\n.bill-receipt-header {\n  border-bottom: 2px dashed #d4d4d8;\n  padding: 1.5rem 1.25rem;\n  text-align: center;\n}\n\n.bill-receipt-icon-wrap {\n  margin: 0 auto 0.75rem;\n  display: flex;\n  height: 3.5rem;\n  width: 3.5rem;\n  align-items: center;\n  justify-content: center;\n  border-radius: 0.75rem;\n  background: #1b3022;\n  box-shadow: 0 4px 6px -1px rgba(27, 48, 34, 0.2);\n}\n\n.bill-receipt-icon-wrap svg {\n  height: 2rem;\n  width: 3rem;\n  color: #f1d35e;\n}\n\n.bill-receipt-shop-name {\n  margin: 0;\n  font-size: 1.35rem;\n  font-weight: 900;\n  line-height: 1.25;\n  letter-spacing: 0.02em;\n  text-transform: uppercase;\n  color: #1b3022;\n  word-break: break-word;\n}\n\n.bill-receipt-subtitle {\n  margin: 0.5rem 0 0;\n  font-size: 0.7rem;\n  font-weight: 600;\n  letter-spacing: 0.18em;\n  text-transform: uppercase;\n  color: #c9ab4a;\n}\n\n.bill-receipt-brand-row {\n  margin: 0.75rem auto 0;\n  display: flex;\n  max-width: 14rem;\n  align-items: center;\n  gap: 0.5rem;\n}\n\n.bill-receipt-brand-line {\n  height: 1px;\n  flex: 1;\n  background: rgba(27, 48, 34, 0.25);\n}\n\n.bill-receipt-brand-label {\n  font-size: 0.875rem;\n  font-weight: 900;\n  letter-spacing: 0.04em;\n  text-transform: uppercase;\n  color: #1b3022;\n}\n\n.bill-receipt-address,\n.bill-receipt-header-phone {\n  margin: 0.75rem 0 0;\n  font-size: 0.875rem;\n  line-height: 1.4;\n  color: #3f3f46;\n}\n\n.bill-receipt-header-phone { margin-top: 0.25rem; color: #52525b; }\n\n.bill-receipt-meta {\n  border-bottom: 1px dashed #d4d4d8;\n  padding: 1rem 1.25rem;\n  font-size: 0.875rem;\n}\n\n.bill-receipt-row {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  gap: 0.75rem;\n  margin-top: 0.25rem;\n}\n\n.bill-receipt-row:first-child { margin-top: 0; }\n\n.bill-receipt-row-label {\n  flex-shrink: 0;\n  color: #71717a;\n}\n\n.bill-receipt-row-value {\n  text-align: right;\n  font-weight: 600;\n  color: #1b3022;\n  word-break: break-word;\n  max-width: 62%;\n}\n\n.bill-receipt-row-value--strong { font-weight: 700; color: #1b3022; }\n\n.bill-receipt-items {\n  overflow: visible;\n  padding: 1rem 1.25rem;\n}\n\n.bill-receipt-table {\n  width: 100%;\n  border-collapse: collapse;\n  table-layout: fixed;\n  font-size: 0.8125rem;\n}\n\n.bill-receipt-table thead tr {\n  border-bottom: 2px solid #27272a;\n}\n\n.bill-receipt-table th {\n  padding: 0 0.35rem 0.5rem;\n  font-size: 0.65rem;\n  font-weight: 700;\n  letter-spacing: 0.04em;\n  text-transform: uppercase;\n  text-align: left;\n  vertical-align: bottom;\n  color: #27272a;\n}\n\n.bill-receipt-table th.bill-receipt-th-qty { width: 2.25rem; text-align: center; }\n.bill-receipt-table th.bill-receipt-th-price { width: 4.25rem; text-align: right; }\n.bill-receipt-table th.bill-receipt-th-total { width: 4.5rem; text-align: right; }\n.bill-receipt-table th.bill-receipt-th-sno { width: 1.75rem; }\n\n.bill-receipt-table td {\n  padding: 0.6rem 0.35rem 0.6rem 0;\n  vertical-align: top;\n  border-bottom: 1px dotted #e4e4e7;\n  line-height: 1.35;\n}\n\n.bill-receipt-table td.bill-receipt-td-sno { color: #71717a; padding-right: 0.25rem; }\n.bill-receipt-table td.bill-receipt-td-item {\n  font-weight: 500;\n  color: #18181b;\n  word-break: break-word;\n  overflow-wrap: anywhere;\n  padding-right: 0.35rem;\n}\n.bill-receipt-table td.bill-receipt-td-qty { text-align: center; color: #18181b; }\n.bill-receipt-table td.bill-receipt-td-price,\n.bill-receipt-table td.bill-receipt-td-total {\n  text-align: right;\n  white-space: nowrap;\n  font-variant-numeric: tabular-nums;\n}\n.bill-receipt-table td.bill-receipt-td-total { font-weight: 700; color: #1b3022; }\n\n.bill-receipt-totals {\n  border-top: 2px dashed #d4d4d8;\n  padding: 1rem 1.25rem;\n  font-size: 0.875rem;\n}\n\n.bill-receipt-grand-total {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  gap: 0.75rem;\n  border-radius: 0.5rem;\n  background: rgba(250, 246, 238, 0.95);\n  padding: 0.65rem 0.75rem;\n  font-size: 1rem;\n  font-weight: 700;\n  color: #1b3022;\n}\n\n.bill-receipt-payments {\n  margin-top: 0.5rem;\n  padding-top: 0.5rem;\n  border-top: 1px dotted #e4e4e7;\n}\n\n.bill-receipt-pay-row {\n  display: flex;\n  justify-content: space-between;\n  gap: 0.75rem;\n  margin-top: 0.35rem;\n}\n\n.bill-receipt-pay-row span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }\n.bill-receipt-pay-row--advance { color: #92400e; }\n.bill-receipt-pay-row--paid { color: #065f46; }\n.bill-receipt-pay-row--pending {\n  margin-top: 0.5rem;\n  font-size: 1rem;\n  font-weight: 700;\n  color: #be123c;\n}\n\n.bill-receipt-paid-banner {\n  background: #059669;\n  padding: 0.5rem 1.25rem;\n  text-align: center;\n  font-size: 0.875rem;\n  font-weight: 700;\n  letter-spacing: 0.04em;\n  text-transform: uppercase;\n  color: #ffffff;\n}\n\n.bill-receipt-notes {\n  border-top: 1px dashed #d4d4d8;\n  padding: 0.75rem 1.25rem;\n  font-size: 0.75rem;\n  line-height: 1.45;\n  color: #52525b;\n}\n\n.bill-receipt-notes strong { color: #3f3f46; }\n\n.bill-receipt-upi {\n  border-top: 1px dashed #d4d4d8;\n  padding: 1rem 1.25rem;\n  text-align: center;\n}\n\n.bill-receipt-upi-label {\n  margin: 0;\n  font-size: 0.75rem;\n  font-weight: 600;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n  color: #1b3022;\n}\n\n.bill-receipt-upi-value {\n  margin: 0.25rem 0 0;\n  font-family: ui-monospace, monospace;\n  font-size: 1.125rem;\n  font-weight: 700;\n  color: #1b3022;\n  word-break: break-all;\n}\n\n.bill-receipt-footer {\n  border-top: 2px dashed #d4d4d8;\n  padding: 1.25rem;\n  text-align: center;\n}\n\n.bill-receipt-footer-thanks {\n  margin: 0;\n  font-size: 0.875rem;\n  font-weight: 600;\n  color: #1b3022;\n}\n\n.bill-receipt-footer-sub {\n  margin: 0.25rem 0 0;\n  font-size: 0.75rem;\n  color: #71717a;\n}\n"])</script><script>self.__next_f.push([1,"9:[\"$\",\"html\",null,{\"lang\":\"en\",\"children\":[\"$\",\"body\",null,{\"className\":\"__variable_6bee3b min-h-dvh antialiased font-[family-name:var(--font-brand)]\",\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"$16\"}},\"$a\",\"$15\",1],\"$L17\"]},\"$a\",\"$14\",1]},\"$a\",\"$13\",1]\n1f:D\"$20\"\n25:D\"$26\"\n28:D\"$29\"\n28:[\"$\",\"$L2b\",null,{\"promise\":\"$@2c\"},\"$29\",\"$2a\",1]\n2e:D\"$2f\"\n2e:null\n30:D\"$31\"\n34:D\"$35\"\n30:[[\"$\",\"$L33\",null,{\"children\":\"$L34\"},\"$31\",\"$32\",1],null]\n36:D\"$37\"\n3a:D\"$3b\"\n3f:D\"$40\"\n3a:[\"$\",\"div\",null,{\"hidden\":true,\"children\":[\"$\",\"$3e\",null,{\"fallback\":null,\"children\":\"$L3f\"},\"$3b\",\"$3d\",1]},\"$3b\",\"$3c\",1]\n36:[\"$\",\"$L39\",null,{\"children\":\"$3a\"},\"$37\",\"$38\",1]\n41:[]\n"])</script><script>self.__next_f.push([1,"0:{\"P\":\"$1\",\"b\":\"development\",\"p\":\"\",\"c\":[\"\",\"register\"],\"i\":false,\"f\":[[[\"\",{\"children\":[\"register\",{\"children\":[\"__PAGE__\",{}]}]},\"$undefined\",\"$undefined\",true],[\"\",[\"$\",\"$L5\",\"layout\",{\"type\":\"layout\",\"pagePath\":\"layout.tsx\",\"children\":[\"$\",\"$7\",\"c\",{\"children\":[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/css/app/layout.css?v=1780292366548\",\"precedence\":\"next_static/css/app/layout.css\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"},null,\"$8\",0]],\"$9\"]},null,\"$6\",1]},null,\"$4\",0],{\"children\":[\"register\",[\"$\",\"$7\",\"c\",{\"children\":[null,[\"$\",\"$L1a\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L1c\",null,{},null,\"$1b\",1],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\",\"segmentViewBoundaries\":[\"$undefined\",\"$undefined\",\"$undefined\",\"$undefined\"]},null,\"$19\",1]]},null,\"$18\",0],{\"children\":[\"__PAGE__\",[\"$\",\"$7\",\"c\",{\"children\":[[\"$\",\"$L5\",\"c-page\",{\"type\":\"page\",\"pagePath\":\"register/page.tsx\",\"children\":\"$L1f\"},null,\"$1e\",1],null,[\"$\",\"$L24\",null,{\"children\":[\"$L25\",\"$28\"]},null,\"$23\",1]]},null,\"$1d\",0],{},null,false]},null,false]},null,false],[\"$\",\"$7\",\"h\",{\"children\":[\"$2e\",\"$30\",\"$36\"]},null,\"$2d\",0],false]],\"m\":\"$W41\",\"G\":[\"$42\",[\"$\",\"$L5\",\"ge-svn\",{\"type\":\"global-error\",\"pagePath\":\"__next_builtin__global-error.js\",\"children\":[]},null,\"$43\",0]],\"s\":false,\"S\":false}\n"])</script><script>self.__next_f.push([1,"47:D\"$48\"\n47:D\"$49\"\n"])</script><script>self.__next_f.push([1,"47:[[\"$\",\"title\",null,{\"children\":\"404: This page could not be found.\"},\"$49\",\"$4a\",1],[\"$\",\"div\",null,{\"style\":{\"fontFamily\":\"system-ui,\\\"Segoe UI\\\",Roboto,Helvetica,Arial,sans-serif,\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\"\",\"height\":\"100vh\",\"textAlign\":\"center\",\"display\":\"flex\",\"flexDirection\":\"column\",\"alignItems\":\"center\",\"justifyContent\":\"center\"},\"children\":[\"$\",\"div\",null,{\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\"}},\"$49\",\"$4d\",1],[\"$\",\"h1\",null,{\"className\":\"next-error-h1\",\"style\":{\"display\":\"inline-block\",\"margin\":\"0 20px 0 0\",\"padding\":\"0 23px 0 0\",\"fontSize\":24,\"fontWeight\":500,\"verticalAlign\":\"top\",\"lineHeight\":\"49px\"},\"children\":404},\"$49\",\"$4e\",1],[\"$\",\"div\",null,{\"style\":{\"display\":\"inline-block\"},\"children\":[\"$\",\"h2\",null,{\"style\":{\"fontSize\":14,\"fontWeight\":400,\"lineHeight\":\"49px\",\"margin\":0},\"children\":\"This page could not be found.\"},\"$49\",\"$50\",1]},\"$49\",\"$4f\",1]]},\"$49\",\"$4c\",1]},\"$49\",\"$4b\",1]]\n"])</script><script>self.__next_f.push([1,"17:[\"$\",\"$L1a\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L1c\",null,{},null,\"$45\",1],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[\"$\",\"$L5\",\"c-not-found\",{\"type\":\"not-found\",\"pagePath\":\"__next_builtin__not-found.js\",\"children\":[\"$47\",[]]},null,\"$46\",0],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\",\"segmentViewBoundaries\":[[\"$\",\"$L5\",null,{\"type\":\"boundary:not-found\",\"pagePath\":\"__next_builtin__not-found.js@boundary\"},null,\"$51\",1],\"$undefined\",\"$undefined\",[\"$\",\"$L5\",null,{\"type\":\"boundary:global-error\",\"pagePath\":\"__next_builtin__global-error.js\"},null,\"$52\",1]]},null,\"$44\",1]\n"])</script><script>self.__next_f.push([1,"34:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"},\"$26\",\"$53\",0],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1, maximum-scale=1\"},\"$26\",\"$54\",0],[\"$\",\"meta\",\"2\",{\"name\":\"theme-color\",\"content\":\"#1b3022\"},\"$26\",\"$55\",0]]\n25:null\n"])</script><script>self.__next_f.push([1,"2c:{\"metadata\":[[\"$\",\"title\",\"0\",{\"children\":\"LK Studio\"},\"$29\",\"$56\",0],[\"$\",\"meta\",\"1\",{\"name\":\"description\",\"content\":\"We stitch your designs\"},\"$29\",\"$57\",0],[\"$\",\"link\",\"2\",{\"rel\":\"manifest\",\"href\":\"/manifest.json\",\"crossOrigin\":\"$undefined\"},\"$29\",\"$58\",0],[\"$\",\"meta\",\"3\",{\"name\":\"mobile-web-app-capable\",\"content\":\"yes\"},\"$29\",\"$59\",0],[\"$\",\"meta\",\"4\",{\"name\":\"apple-mobile-web-app-title\",\"content\":\"LK Studio\"},\"$29\",\"$5a\",0],[\"$\",\"meta\",\"5\",{\"name\":\"apple-mobile-web-app-status-bar-style\",\"content\":\"black-translucent\"},\"$29\",\"$5b\",0],[\"$\",\"link\",\"6\",{\"rel\":\"icon\",\"href\":\"/icon.svg\"},\"$29\",\"$5c\",0],[\"$\",\"link\",\"7\",{\"rel\":\"apple-touch-icon\",\"href\":\"/icon.svg\"},\"$29\",\"$5d\",0],[\"$\",\"$L5f\",\"8\",{},\"$29\",\"$5e\",0]],\"error\":null,\"digest\":\"$undefined\"}\n"])</script><script>self.__next_f.push([1,"3f:\"$2c:metadata\"\n"])</script><script>self.__next_f.push([1,"65:I[\"(app-pages-browser)/./src/app/register/RegisterClient.tsx\",[\"app/register/page\",\"static/chunks/app/register/page.js\"],\"default\"]\n61:[[\"getLocale\",\"webpack-internal:///(rsc)/./src/lib/locale-server.ts\",10,76,9,1,false],[\"RegisterPage\",\"webpack-internal:///(rsc)/./src/app/register/page.tsx\",13,87,12,1,false]]\n60:J{\"name\":\"cookies\",\"start\":10.264400000000023,\"end\":149.76900000000023,\"env\":\"Server\",\"stack\":\"$61\",\"owner\":\"$20\",\"value\":\"$@62\"}\n63:[[\"getLocale\",\"webpack-internal:///(rsc)/./src/lib/locale-server.ts\",10,76,9,1,false],[\"RegisterPage\",\"webpack-internal:///(rsc)/./src/app/register/page.tsx\",13,87,12,1,false]]\n62:[]\n64:[[\"RegisterPage\",\"webpack-internal:///(rsc)/./src/app/register/page.tsx\",14,87,12,1,false]]\n1f:D{\"awaited\":\"$60\",\"env\":\"Server\",\"owner\":\"$20\",\"stack\":\"$63\"}\n1f:[\"$\",\"$L65\",null,{\"locale\":\"en\"},\"$20\",\"$64\",1]\n"])</script></body></html>

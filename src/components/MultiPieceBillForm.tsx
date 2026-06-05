@@ -1,0 +1,373 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { VoiceNotes } from "./VoiceNotes";
+import type { Locale } from "@/lib/i18n/locales";
+import { t } from "@/lib/i18n";
+import type { BillLineItem } from "@/lib/bill-items";
+import { lineItemTotal } from "@/lib/bill-items";
+import { Plus, Trash2, Receipt, ArrowLeft, UserRound, Pencil } from "lucide-react";
+import { createBill } from "@/app/shop/actions";
+import { billPending } from "@/lib/bill-payment";
+import { newId } from "@/lib/new-id";
+
+type Customer = { id: string; name: string; phone: string | null; whatsapp: string | null };
+
+function newLine(): BillLineItem {
+  return { id: newId(), name: "", quantity: 1, price: 0, amount: 0 };
+}
+
+export function MultiPieceBillForm({
+  locale,
+  customers,
+  initialCustomerName = "",
+  initialCustomerPhone = "",
+  hideCustomerSection = false,
+  onChangeCustomer,
+}: {
+  locale: Locale;
+  customers: Customer[];
+  initialCustomerName?: string;
+  initialCustomerPhone?: string;
+  hideCustomerSection?: boolean;
+  onChangeCustomer?: () => void;
+}) {
+  const [customerName, setCustomerName] = useState(initialCustomerName);
+  const [customerPhone, setCustomerPhone] = useState(initialCustomerPhone);
+  const [lines, setLines] = useState<BillLineItem[]>([newLine()]);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [advancePaid, setAdvancePaid] = useState(0);
+  const [paidAmount, setPaidAmount] = useState(0);
+  const router = useRouter();
+
+  const total = useMemo(
+    () => lines.reduce((s, l) => s + lineItemTotal(l.quantity, l.price), 0),
+    [lines]
+  );
+
+  const updateLine = (id: string, patch: Partial<BillLineItem>) => {
+    setLines((prev) =>
+      prev.map((l) => {
+        if (l.id !== id) return l;
+        const next = { ...l, ...patch };
+        next.amount = lineItemTotal(next.quantity, next.price);
+        return next;
+      })
+    );
+  };
+
+  const removeLine = (id: string) => {
+    setLines((prev) => (prev.length <= 1 ? [newLine()] : prev.filter((l) => l.id !== id)));
+  };
+
+  const pickCustomer = (id: string) => {
+    const c = customers.find((x) => x.id === id);
+    if (!c) return;
+    setCustomerName(c.name);
+    setCustomerPhone(c.whatsapp || c.phone || "");
+  };
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+    const name = customerName.trim();
+    if (!name) {
+      setError(t(locale, "enterCustomerName"));
+      return;
+    }
+    const valid = lines
+      .map((l) => ({
+        ...l,
+        amount: lineItemTotal(l.quantity, l.price),
+      }))
+      .filter((l) => l.name.trim() && l.amount > 0);
+    if (valid.length === 0) {
+      setError(t(locale, "addBillLines"));
+      return;
+    }
+
+    setPending(true);
+    const fd = new FormData(e.currentTarget);
+    fd.set("customerName", name);
+    fd.set("customerPhone", customerPhone.trim());
+    fd.set("itemsJson", JSON.stringify(valid));
+    fd.set("amount", String(valid.reduce((s, l) => s + l.amount, 0)));
+    fd.set("advancePaid", String(advancePaid));
+    fd.set("paidAmount", String(paidAmount));
+
+    try {
+      const result = await createBill(fd);
+      setLines([newLine()]);
+      setCustomerName("");
+      setCustomerPhone("");
+      setAdvancePaid(0);
+      setPaidAmount(0);
+      if (result?.id) {
+        router.push(`/shop/bills/${result.id}?whatsapp=1`);
+      } else {
+        router.refresh();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed");
+    }
+    setPending(false);
+  };
+
+  return (
+    <form onSubmit={onSubmit} className="card-premium space-y-5 p-5">
+      {hideCustomerSection && (
+        <Link
+          href="/shop/bills"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-brand-green"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t(locale, "backToBills")}
+        </Link>
+      )}
+
+      <h2 className="flex items-center gap-2 text-lg font-bold text-brand-green">
+        <Receipt className="h-6 w-6" />
+        {hideCustomerSection ? t(locale, "billBook") : t(locale, "createBill")}
+      </h2>
+
+      {hideCustomerSection ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-green/15 bg-brand-cream/60 px-4 py-3">
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase text-brand-green-soft">
+              <UserRound className="h-3.5 w-3.5" />
+              {t(locale, "customer")}
+            </p>
+            <p className="font-bold text-brand-green">{customerName}</p>
+            {customerPhone && <p className="text-sm text-zinc-600">{customerPhone}</p>}
+          </div>
+          {onChangeCustomer && (
+            <button
+              type="button"
+              onClick={onChangeCustomer}
+              className="inline-flex items-center gap-1 rounded-lg border border-brand-green/20 px-3 py-1.5 text-xs font-semibold text-brand-green"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {t(locale, "changeCustomer")}
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3 rounded-xl border border-brand-green/10 bg-brand-cream/50 p-3">
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold text-brand-green">
+              {t(locale, "customerName")}
+            </span>
+            <input
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              list="bill-customer-names"
+              required
+              placeholder={t(locale, "customerNamePlaceholder")}
+              className="input-premium w-full"
+            />
+            <datalist id="bill-customer-names">
+              {customers.map((c) => (
+                <option key={c.id} value={c.name} />
+              ))}
+            </datalist>
+          </label>
+
+          {customers.length > 0 && (
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-zinc-600">
+                {t(locale, "pickCustomerForWhatsApp")}
+              </span>
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) pickCustomer(e.target.value);
+                  e.target.value = "";
+                }}
+                className="input-premium w-full text-sm"
+              >
+                <option value="">{t(locale, "selectCustomerOptional")}</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {(c.whatsapp || c.phone) ? ` · ${c.whatsapp || c.phone}` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold text-brand-green">
+              {t(locale, "whatsappNumber")}
+            </span>
+            <input
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              type="tel"
+              placeholder={t(locale, "whatsappNumberPlaceholder")}
+              className="input-premium w-full"
+            />
+            <p className="mt-1 text-xs text-zinc-500">{t(locale, "whatsappNumberHint")}</p>
+          </label>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <p className="text-sm font-bold text-brand-green">{t(locale, "billLineItems")}</p>
+
+        <div className="-mx-1 overflow-x-auto">
+          <div className="min-w-[min(100%,22rem)]">
+            <div className="grid grid-cols-[minmax(0,1.5fr)_3.25rem_4.25rem_4.25rem_2rem] items-end gap-x-1.5 border-b border-brand-green/15 px-1 pb-2 text-[10px] font-bold uppercase tracking-wide text-brand-green-soft">
+              <span>{t(locale, "piece")}</span>
+              <span className="text-center">{t(locale, "quantity")}</span>
+              <span className="text-center">{t(locale, "unitPrice")}</span>
+              <span className="text-right">{t(locale, "lineTotal")}</span>
+              <span aria-hidden />
+            </div>
+
+            {lines.map((line, idx) => {
+              const lineTotal = lineItemTotal(line.quantity, line.price);
+              return (
+                <div
+                  key={line.id}
+                  className="grid grid-cols-[minmax(0,1.5fr)_3.25rem_4.25rem_4.25rem_2rem] items-center gap-x-1.5 border-b border-zinc-100 px-1 py-2 last:border-b-0"
+                >
+                  <div className="min-w-0">
+                    <span className="mb-0.5 block text-[10px] font-semibold text-zinc-500">
+                      {t(locale, "piece")} {idx + 1}
+                    </span>
+                    <input
+                      value={line.name}
+                      onChange={(e) => updateLine(line.id, { name: e.target.value })}
+                      placeholder={t(locale, "pieceNamePlaceholder")}
+                      className="input-premium w-full py-1.5 text-sm"
+                      aria-label={`${t(locale, "piece")} ${idx + 1}`}
+                    />
+                  </div>
+
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={line.quantity || ""}
+                    onChange={(e) =>
+                      updateLine(line.id, { quantity: parseInt(e.target.value, 10) || 1 })
+                    }
+                    className="input-premium w-full px-1 py-1.5 text-center text-sm"
+                    aria-label={`${t(locale, "quantity")} ${idx + 1}`}
+                  />
+
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={line.price || ""}
+                    onChange={(e) =>
+                      updateLine(line.id, { price: parseFloat(e.target.value) || 0 })
+                    }
+                    placeholder="₹"
+                    className="input-premium w-full px-1 py-1.5 text-center text-sm"
+                    aria-label={`${t(locale, "unitPrice")} ${idx + 1}`}
+                  />
+
+                  <p className="text-right text-sm font-bold tabular-nums text-brand-green">
+                    ₹{lineTotal.toFixed(2)}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => removeLine(line.id)}
+                    className="rounded-lg p-1 text-red-600 hover:bg-red-50"
+                    aria-label={t(locale, "removeLine")}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setLines((p) => [...p, newLine()])}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-green/20 py-3 text-sm font-semibold text-brand-green"
+        >
+          <Plus className="h-4 w-4" />
+          {t(locale, "addCustomLine")}
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-brand-green via-brand-green-light to-brand-green-soft px-4 py-3 text-white">
+        <span className="font-semibold">{t(locale, "billTotal")}</span>
+        <span className="text-2xl font-bold">₹{total.toFixed(2)}</span>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-amber-800">
+            {t(locale, "advancePaid")}
+          </span>
+          <input
+            type="number"
+            min={0}
+            step={0.01}
+            value={advancePaid || ""}
+            onChange={(e) => setAdvancePaid(parseFloat(e.target.value) || 0)}
+            className="input-premium w-full"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-emerald-800">
+            {t(locale, "amountPaid")}
+          </span>
+          <input
+            type="number"
+            min={0}
+            step={0.01}
+            value={paidAmount || ""}
+            onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
+            className="input-premium w-full"
+          />
+        </label>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border-2 border-brand-green/25 bg-brand-cream px-4 py-3 text-center">
+          <p className="text-xs font-semibold uppercase text-brand-green">{t(locale, "billTotal")}</p>
+          <p className="text-2xl font-bold text-brand-green">₹{total.toFixed(2)}</p>
+        </div>
+        <div className="rounded-xl bg-rose-50 px-4 py-3 text-center">
+          <p className="text-xs font-medium text-rose-800">{t(locale, "pendingAmount")}</p>
+          <p className="text-2xl font-bold text-rose-700">
+            ₹{billPending(total, advancePaid, paidAmount).toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      <VoiceNotes
+        locale={locale}
+        textLabel={t(locale, "notes")}
+        hintLabel={t(locale, "voiceDictationHint")}
+        startLabel={t(locale, "startListening")}
+        stopLabel={t(locale, "stopListening")}
+        micErrorLabel={t(locale, "micPermissionError")}
+        fieldName="notes"
+      />
+
+      <label className="flex items-center gap-2">
+        <input name="paid" type="checkbox" className="h-4 w-4" />
+        <span className="text-sm font-medium">{t(locale, "paid")}</span>
+      </label>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <button type="submit" disabled={pending} className="btn-primary w-full py-3 text-lg">
+        {pending ? "..." : t(locale, "saveBill")}
+      </button>
+    </form>
+  );
+}
