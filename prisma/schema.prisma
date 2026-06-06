@@ -85,6 +85,7 @@ model User {
   bills       Bill[]       @relation("CustomerBills")
   shopRatings ShopRating[]
   favorites   CustomerFavorite[]
+  savedShops  CustomerSavedShop[]
   priceRequests PriceRequest[]
   trustedDevices TrustedDevice[]
 
@@ -147,6 +148,7 @@ model ShopProfile {
   bills   Bill[]
   ratings ShopRating[]
   favorites CustomerFavorite[]
+  savedByCustomers CustomerSavedShop[]
   priceRequests PriceRequest[]
 
   @@index([subscriptionStatus])
@@ -181,6 +183,18 @@ model CustomerFavorite {
   @@unique([customerId, designId])
   @@index([shopId, category])
   @@index([customerId, shopId])
+}
+
+model CustomerSavedShop {
+  id         String      @id @default(cuid())
+  customerId String
+  customer   User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shopId     String
+  shop       ShopProfile @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+
+  @@unique([customerId, shopId])
+  @@index([customerId])
 }
 
 model PriceRequest {
