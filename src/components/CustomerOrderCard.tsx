@@ -12,14 +12,16 @@ import { OrderImageGallery } from "./OrderImageGallery";
 import { measurementTypeForCategory, pickMeasurementForType } from "@/lib/measurements";
 import type { Design, Measurement, Order, OrderImage, OrderFavorite, Person, ShopProfile, ShopRating, ServiceCategory } from "@prisma/client";
 
+type DesignPreview = Pick<Design, "id" | "title" | "imagePath" | "category">;
+
 type OrderView = Order & {
   person: Person & { measurements: Measurement[] };
-  design: Design | null;
+  design: DesignPreview | null;
   images: OrderImage[];
   shop: Pick<ShopProfile, "id" | "shopName" | "phone" | "whatsapp">;
   rating: Pick<ShopRating, "rating"> | null;
   orderFavorites: (OrderFavorite & {
-    design: Pick<Design, "id" | "title" | "imagePath" | "category">;
+    design: DesignPreview;
   })[];
 };
 

@@ -44,7 +44,7 @@ export async function createRazorpayCustomer(input: {
     name: input.name,
     email: input.email,
     contact: input.contact ?? undefined,
-    fail_existing: "0",
+    fail_existing: 0,
   });
   return customer.id;
 }
@@ -55,7 +55,7 @@ export async function createRazorpaySubscription(input: {
   customerId: string;
   notes: Record<string, string>;
   startAt?: Date | null;
-}) {
+}): Promise<{ id: string }> {
   const rz = client();
   const startAtUnix =
     input.startAt && input.startAt.getTime() > Date.now()
@@ -69,8 +69,8 @@ export async function createRazorpaySubscription(input: {
     customer_notify: 1,
     notes: input.notes,
     ...(startAtUnix ? { start_at: startAtUnix } : {}),
-  });
-  return subscription;
+  } as Parameters<typeof rz.subscriptions.create>[0]);
+  return subscription as { id: string };
 }
 
 export async function cancelRazorpaySubscription(subscriptionId: string) {

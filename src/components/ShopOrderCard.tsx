@@ -13,13 +13,15 @@ import { UserRound, Shirt, Ruler, ChevronDown } from "lucide-react";
 import { measurementTypeForCategory, pickMeasurementForType } from "@/lib/measurements";
 import type { Design, Measurement, Order, Person, User, OrderImage, OrderFavorite, ServiceCategory } from "@prisma/client";
 
+type DesignPreview = Pick<Design, "id" | "title" | "imagePath" | "category">;
+
 export type ShopOrderData = Order & {
-  customer: User;
+  customer: Pick<User, "id" | "name" | "phone">;
   person: Person & { measurements: Measurement[] };
-  design: Design | null;
+  design: DesignPreview | null;
   images: OrderImage[];
   orderFavorites: (OrderFavorite & {
-    design: Pick<Design, "id" | "title" | "imagePath" | "category">;
+    design: DesignPreview;
   })[];
 };
 

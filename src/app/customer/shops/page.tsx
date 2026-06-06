@@ -1,13 +1,13 @@
 import Link from "next/link";
-import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { t } from "@/lib/i18n";
 import { isShopActive } from "@/lib/subscription";
-import { sortByDistance, formatDistanceKm } from "@/lib/geo";
+import { sortByDistance, NEARBY_SHOP_RADIUS_KM } from "@/lib/geo";
+import { normalizeShopCode } from "@/lib/shop-code";
 import { shopRatingSummaries } from "@/lib/shop-rating";
 import { cachedLocale, cachedCustomerSession } from "@/lib/cached-server";
-import { ShopRatingBadge } from "@/components/ShopRatingBadge";
-import { Store, MapPin, Images, Navigation, ChevronRight } from "lucide-react";
+import { ShopCodeSearch } from "@/components/ShopCodeSearch";
+import { ShopBrowseCard } from "@/components/ShopBrowseCard";
 
 function firstPreviewByShop(
   designs: { shopId: string; imagePath: string }[],
@@ -21,11 +21,33 @@ function firstPreviewByShop(
   return map;
 }
 
-export default async function CustomerShopsPage() {
+type ShopRow = {
+  id: string;
+  shopName: string;
+  shopCode: string;
+  address: string | null;
+  locationLink: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  phone: string | null;
+  profilePhoto: string | null;
+  subscriptionStatus: import("@prisma/client").SubscriptionStatus;
+  subscriptionEndsAt: Date | null;
+};
+
+type ShopWithDistance = ShopRow & { distanceKm: number | null };
+
+export default async function CustomerShopsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>;
+}) {
   const session = await cachedCustomerSession();
   const locale = await cachedLocale();
+  const params = await searchParams;
+  const codeQuery = params.code?.trim() ? normalizeShopCode(params.code) : null;
 
-  const [customer, shops] = await Promise.all([
+  const [customer, shops, savedRows] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session!.id },
       select: { latitude: true, longitude: true },
@@ -46,39 +68,134 @@ export default async function CustomerShopsPage() {
       },
       orderBy: { shopName: "asc" },
     }),
+    prisma.customerSavedShop.findMany({
+      where: { customerId: session!.id },
+      select: { shopId: true },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
+  const savedIds = new Set(savedRows.map((r) => r.shopId));
   const active = shops.filter((s) => isShopActive(s.subscriptionStatus, s.subscriptionEndsAt));
 
-  const sorted =
+  const sorted: ShopWithDistance[] =
     customer?.latitude != null && customer?.longitude != null
       ? sortByDistance(active, customer.latitude, customer.longitude)
       : active.map((shop) => ({ ...shop, distanceKm: null as number | null }));
 
-  const shopIds = sorted.map((s) => s.id);
+  const codeMatch =
+    codeQuery != null
+      ? await prisma.shopProfile.findUnique({
+          where: { shopCode: codeQuery },
+          select: {
+            id: true,
+            shopName: true,
+            shopCode: true,
+            address: true,
+            locationLink: true,
+            latitude: true,
+            longitude: true,
+            phone: true,
+            profilePhoto: true,
+            subscriptionStatus: true,
+            subscriptionEndsAt: true,
+          },
+        })
+      : null;
+
+  const codeMatchActive =
+    codeMatch && isShopActive(codeMatch.subscriptionStatus, codeMatch.subscriptionEndsAt)
+      ? codeMatch
+      : null;
+
+  const codeNotFound = codeQuery != null && !codeMatch;
+  const codeInactive = codeQuery != null && codeMatch && !codeMatchActive;
+
+  const hasCustomerLocation = customer?.latitude != null && customer?.longitude != null;
+
+  const enrichedMap = new Map(sorted.map((s) => [s.id, s]));
+
+  const codeResultId = codeMatchActive?.id;
+
+  const myShops = savedRows
+    .map((r) => enrichedMap.get(r.shopId))
+    .filter((s): s is ShopWithDistance => s != null && s.id !== codeResultId);
+
+  const nearbyShops = hasCustomerLocation
+    ? sorted.filter(
+        (s) =>
+          s.id !== codeResultId &&
+          s.distanceKm != null &&
+          s.distanceKm <= NEARBY_SHOP_RADIUS_KM &&
+          !savedIds.has(s.id)
+      )
+    : [];
+
+  const allOtherShops = sorted.filter(
+    (s) =>
+      s.id !== codeResultId &&
+      !savedIds.has(s.id) &&
+      !nearbyShops.some((n) => n.id === s.id)
+  );
+
+  const shopIdsForMeta = sorted.map((s) => s.id);
+  if (codeMatchActive && !shopIdsForMeta.includes(codeMatchActive.id)) {
+    shopIdsForMeta.push(codeMatchActive.id);
+  }
 
   const [countRows, previewDesigns, ratingMap] =
-    shopIds.length === 0
+    shopIdsForMeta.length === 0
       ? [[], [], new Map()]
       : await Promise.all([
           prisma.design.groupBy({
             by: ["shopId"],
-            where: { shopId: { in: shopIds }, active: true },
+            where: { shopId: { in: shopIdsForMeta }, active: true },
             _count: { _all: true },
           }),
           prisma.design.findMany({
-            where: { shopId: { in: shopIds }, active: true },
+            where: { shopId: { in: shopIdsForMeta }, active: true },
             orderBy: { createdAt: "desc" },
             select: { shopId: true, imagePath: true },
-            take: Math.min(shopIds.length * 3, 150),
+            take: Math.min(shopIdsForMeta.length * 3, 150),
           }),
-          shopRatingSummaries(shopIds),
+          shopRatingSummaries(shopIdsForMeta),
         ]);
 
   const countMap = new Map(countRows.map((r) => [r.shopId, r._count._all]));
-  const thumbMap = firstPreviewByShop(previewDesigns, shopIds);
+  const thumbMap = firstPreviewByShop(previewDesigns, shopIdsForMeta);
 
-  const hasCustomerLocation = customer?.latitude != null && customer?.longitude != null;
+  function renderShop(shop: ShopWithDistance, showNearestBadge = false) {
+    const designCount = countMap.get(shop.id) ?? 0;
+    const thumb = shop.profilePhoto || thumbMap.get(shop.id) || null;
+    const rating = ratingMap.get(shop.id);
+
+    return (
+      <ShopBrowseCard
+        key={shop.id}
+        shop={shop}
+        locale={locale}
+        thumb={thumb}
+        designCount={designCount}
+        rating={rating}
+        distanceKm={shop.distanceKm}
+        isSaved={savedIds.has(shop.id)}
+        showNearestBadge={showNearestBadge}
+      />
+    );
+  }
+
+  function enrichCodeMatch(): ShopWithDistance | null {
+    if (!codeMatchActive) return null;
+    const existing = enrichedMap.get(codeMatchActive.id);
+    if (existing) return existing;
+    if (hasCustomerLocation && customer!.latitude != null && customer!.longitude != null) {
+      const [withDist] = sortByDistance([codeMatchActive], customer!.latitude, customer!.longitude);
+      return withDist;
+    }
+    return { ...codeMatchActive, distanceKm: null };
+  }
+
+  const codeResult = enrichCodeMatch();
 
   return (
     <div className="space-y-5">
@@ -89,89 +206,76 @@ export default async function CustomerShopsPage() {
         </p>
       </div>
 
-      <p className="text-sm font-semibold text-brand-green">
-        {t(locale, "activeShopsCount", { count: active.length })}
-      </p>
+      <ShopCodeSearch locale={locale} initialCode={params.code} />
 
-      <div className="space-y-2">
-        {sorted.map((shop, index) => {
-          const designCount = countMap.get(shop.id) ?? 0;
-          const thumb = shop.profilePhoto || thumbMap.get(shop.id) || null;
-          const distanceKm = shop.distanceKm;
-          const rating = ratingMap.get(shop.id);
+      {codeNotFound && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {t(locale, "shopCodeNotFound", { code: codeQuery! })}
+        </p>
+      )}
 
-          return (
-            <Link
-              key={shop.id}
-              href={`/customer/designs?shopId=${shop.id}`}
-              prefetch
-              className="card-premium flex items-center gap-3 p-3 transition active:scale-[0.99] hover:shadow-md"
-            >
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-brand-green/15 bg-brand-cream">
-                {thumb ? (
-                  <Image
-                    src={thumb}
-                    alt={shop.shopName}
-                    fill
-                    className="object-cover"
-                    sizes="56px"
-                    unoptimized={thumb.endsWith(".svg")}
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-brand-green">
-                    <Store className="h-6 w-6" />
-                  </span>
-                )}
-              </div>
+      {codeInactive && (
+        <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+          {t(locale, "shopUnavailable")}
+        </p>
+      )}
 
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="truncate font-bold text-brand-green">{shop.shopName}</p>
-                  {hasCustomerLocation && index === 0 && distanceKm != null && (
-                    <span className="rounded-full bg-brand-gold/30 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-green">
-                      {t(locale, "nearestShop")}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] font-mono text-zinc-500">{shop.shopCode}</p>
+      {codeResult && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-brand-green">
+            {t(locale, "shopCodeSearchResult")}
+          </h2>
+          {renderShop(codeResult)}
+        </section>
+      )}
 
-                <div className="mt-0.5">
-                  <ShopRatingBadge
-                    locale={locale}
-                    average={rating?.average ?? 0}
-                    count={rating?.count ?? 0}
-                    compact
-                  />
-                </div>
+      {!hasCustomerLocation && (
+        <p className="text-xs text-zinc-500">
+          {t(locale, "enableLocationForNearby")}{" "}
+          <Link href="/customer/profile" className="font-semibold text-brand-green underline">
+            {t(locale, "customerProfileTitle")}
+          </Link>
+        </p>
+      )}
 
-                {shop.address ? (
-                  <p className="mt-1 flex items-start gap-1 text-xs text-zinc-600">
-                    <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-brand-green" />
-                    <span className="line-clamp-2">{shop.address}</span>
-                  </p>
-                ) : (
-                  <p className="mt-1 text-xs text-zinc-400">{t(locale, "shopLocationNotSet")}</p>
-                )}
+      {myShops.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-brand-green">
+            {t(locale, "myShops")}
+          </h2>
+          <p className="text-xs text-zinc-500">{t(locale, "myShopsHint")}</p>
+          {myShops.map((shop) => renderShop(shop))}
+        </section>
+      )}
 
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-medium text-brand-green-soft">
-                  {distanceKm != null && (
-                    <span className="inline-flex items-center gap-0.5 text-brand-gold-dark">
-                      <Navigation className="h-3 w-3" />
-                      {formatDistanceKm(distanceKm, locale)}
-                    </span>
-                  )}
-                  <span className="inline-flex items-center gap-0.5">
-                    <Images className="h-3 w-3" />
-                    {designCount} {t(locale, "shopCollectionCount")}
-                  </span>
-                </div>
-              </div>
+      {nearbyShops.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-brand-green">
+            {t(locale, "nearbyShops")}
+          </h2>
+          <p className="text-xs text-zinc-500">
+            {t(locale, "nearbyShopsHint", { km: NEARBY_SHOP_RADIUS_KM })}
+          </p>
+          {nearbyShops.map((shop, index) => renderShop(shop, index === 0))}
+        </section>
+      )}
 
-              <ChevronRight className="h-5 w-5 shrink-0 text-brand-gold-dark" aria-hidden />
-            </Link>
-          );
-        })}
-      </div>
+      <section className="space-y-2">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-brand-green">
+          {hasCustomerLocation && (myShops.length > 0 || nearbyShops.length > 0)
+            ? t(locale, "allShops")
+            : t(locale, "browseShops")}
+        </h2>
+        <p className="text-sm font-semibold text-brand-green">
+          {t(locale, "activeShopsCount", { count: active.length })}
+        </p>
+        {allOtherShops.map((shop, index) =>
+          renderShop(
+            shop,
+            hasCustomerLocation && myShops.length === 0 && nearbyShops.length === 0 && index === 0
+          )
+        )}
+      </section>
 
       {active.length === 0 && (
         <p className="card-premium p-8 text-center text-zinc-500">{t(locale, "noShops")}</p>

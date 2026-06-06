@@ -1,3 +1,6 @@
+/** Default radius for "nearby shops" on the customer browse page. */
+export const NEARBY_SHOP_RADIUS_KM = 25;
+
 /** Haversine distance in kilometres between two WGS84 points. */
 export function distanceKm(
   lat1: number,

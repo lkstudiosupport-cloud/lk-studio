@@ -10,7 +10,7 @@ export const CUSTOMER_MONTHLY_PRICE_INR = 100;
 export function isSubscriptionActive(status: SubscriptionStatus, endsAt: Date | null) {
   if (status === "EXPIRED") return false;
   if (!endsAt) return status === "ACTIVE" || status === "TRIAL" || status === "PAST_DUE";
-  return endsAt > new Date() && status !== "EXPIRED";
+  return endsAt > new Date();
 }
 
 /** @deprecated use isSubscriptionActive */

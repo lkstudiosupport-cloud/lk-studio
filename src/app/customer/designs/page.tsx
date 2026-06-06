@@ -10,6 +10,7 @@ import type { ServiceCategory } from "@prisma/client";
 import Link from "next/link";
 import { shopRatingSummaries } from "@/lib/shop-rating";
 import { ShopRatingBadge } from "@/components/ShopRatingBadge";
+import { SaveShopButton } from "@/components/SaveShopButton";
 
 export default async function CustomerDesignsPage({
   searchParams,
@@ -37,7 +38,7 @@ export default async function CustomerDesignsPage({
     );
   }
 
-  const [designs, totalDesigns, ratingMap, customerFavorites] = await Promise.all([
+  const [designs, totalDesigns, ratingMap, customerFavorites, savedShop] = await Promise.all([
     prisma.design.findMany({
       where: {
         shopId: shop.id,
@@ -51,6 +52,10 @@ export default async function CustomerDesignsPage({
     prisma.customerFavorite.findMany({
       where: { customerId: session!.id, shopId: shop.id },
       select: { designId: true },
+    }),
+    prisma.customerSavedShop.findUnique({
+      where: { customerId_shopId: { customerId: session!.id, shopId: shop.id } },
+      select: { id: true },
     }),
   ]);
 
@@ -75,7 +80,8 @@ export default async function CustomerDesignsPage({
             count={rating?.count ?? 0}
           />
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <SaveShopButton shopId={shop.id} isSaved={!!savedShop} locale={locale} />
           <Link
             href={`/customer/favorites?shopId=${shop.id}`}
             className="inline-flex items-center gap-1 rounded-full bg-brand-gold/25 px-3 py-1.5 text-sm font-semibold text-brand-green"

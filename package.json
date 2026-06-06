@@ -26,6 +26,7 @@
     "mobile:hotspot": "powershell -ExecutionPolicy Bypass -File scripts/use-pc-hotspot.ps1"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1063.0",
     "@capacitor/android": "^6.2.1",
     "@capacitor/app": "^6.0.2",
     "@capacitor/camera": "^6.1.2",
@@ -49,11 +50,12 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^15.5.2",
+    "tailwindcss": "^4.3.0",
+    "@tailwindcss/postcss": "^4.3.0",
     "zod": "^3.25.42"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.1",
-    "@tailwindcss/postcss": "^4.1.8",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.15.21",
     "@types/react": "^19.1.4",
@@ -62,7 +64,6 @@
     "eslint-config-next": "^15.3.3",
     "localtunnel": "^2.0.2",
     "prisma": "^6.8.2",
-    "tailwindcss": "^4.1.8",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }

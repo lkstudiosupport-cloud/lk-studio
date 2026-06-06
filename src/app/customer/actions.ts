@@ -194,6 +194,27 @@ export async function placeOrder(
   }
 }
 
+export async function toggleSavedShop(shopId: string): Promise<boolean> {
+  const cid = await customerId();
+  await assertShopAcceptsOrders(shopId);
+
+  const existing = await prisma.customerSavedShop.findUnique({
+    where: { customerId_shopId: { customerId: cid, shopId } },
+  });
+
+  if (existing) {
+    await prisma.customerSavedShop.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.customerSavedShop.create({
+      data: { customerId: cid, shopId },
+    });
+  }
+
+  revalidatePath("/customer/shops");
+  revalidatePath("/customer/designs");
+  return !existing;
+}
+
 export async function toggleFavorite(designId: string, shopId: string): Promise<boolean> {
   const cid = await customerId();
   await assertCustomerSubscription(cid);

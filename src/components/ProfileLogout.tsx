@@ -23,11 +23,11 @@ export function ProfileLogout({ locale }: { locale: Locale }) {
       });
       const data = await parseApiResponse(res);
       if (data.error) {
-        setError(data.error);
+        setError(String(data.error));
         setPending(false);
         return;
       }
-      router.replace(data.redirect ?? "/");
+      router.replace(typeof data.redirect === "string" ? data.redirect : "/");
       router.refresh();
     } catch {
       setError(t(locale, "logoutFailed"));

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 
 /** Permanently delete customer account and associated data (Play Store requirement). */
 export async function deleteCustomerAccount(userId: string) {
@@ -19,6 +19,7 @@ export async function deleteCustomerAccount(userId: string) {
     await tx.bill.deleteMany({ where: { customerId: userId } });
     await tx.shopRating.deleteMany({ where: { customerId: userId } });
     await tx.customerFavorite.deleteMany({ where: { customerId: userId } });
+    await tx.customerSavedShop.deleteMany({ where: { customerId: userId } });
     await tx.priceRequest.deleteMany({ where: { customerId: userId } });
     await tx.person.deleteMany({ where: { customerId: userId } });
 
@@ -60,6 +61,3 @@ export async function deleteShopAccount(userId: string, shopId: string) {
     await tx.user.delete({ where: { id: userId } });
   });
 }
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { UserRole } from "@prisma/client";
