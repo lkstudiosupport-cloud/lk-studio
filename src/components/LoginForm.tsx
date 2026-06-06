@@ -167,6 +167,10 @@ export function LoginForm({
         </button>
       </div>
 
+      <p className="rounded-lg bg-brand-cream px-3 py-2 text-xs text-brand-green-soft">
+        {t(locale, "demoCredentials")}
+      </p>
+
       {mode === "password" ? (
         <form onSubmit={onPasswordSubmit} className="space-y-4">
           <PhoneInput locale={locale} value={phone} onChange={setPhone} required />

@@ -1,6 +1,5 @@
 import { PrismaClient, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { resolvePhoneE164 } from "../src/lib/phone";
 import { internalEmailForUser } from "../src/lib/internal-email";
 const prisma = new PrismaClient();
 
@@ -16,7 +15,9 @@ function trialEndDate() {
 }
 
 function storedPhoneKey(input: string) {
-  return resolvePhoneE164(input) ?? input.replace(/\D/g, "").slice(-10);
+  const digits = input.replace(/\D/g, "");
+  if (digits.length >= 10) return digits.slice(-10);
+  return digits;
 }
 
 async function upsertShop(
@@ -27,7 +28,7 @@ async function upsertShop(
   const hash = await bcrypt.hash("demo123", 10);
   const normalized = storedPhoneKey(phone);
   const email = internalEmailForUser(normalized, UserRole.SHOP);
-  const whatsapp = resolvePhoneE164(phone) ?? phone.replace(/\s/g, "");
+  const whatsapp = `91${normalized}`;
 
   const existing = await prisma.user.findFirst({
     where: { role: UserRole.SHOP, phoneNormalized: normalized },
@@ -39,6 +40,7 @@ async function upsertShop(
       where: { id: existing.id },
       data: {
         email,
+        passwordHash: hash,
         name,
         phone,
         phoneNormalized: normalized,
@@ -103,16 +105,16 @@ async function main() {
   const shop1 = await upsertShop(
     "LK Studio Owner",
     "LK Studio",
-    "+91 98765 43210"
+    "9876543210"
   );
 
   await upsertShop(
     "Royal Tailors Owner",
     "Royal Tailors",
-    "+91 99887 76655"
+    "9988776655"
   );
 
-  const customerPhone = "+91 91234 56789";
+  const customerPhone = "9123456789";
   const customerNormalized = storedPhoneKey(customerPhone);
   const customerEmail = internalEmailForUser(customerNormalized, UserRole.CUSTOMER);
 
@@ -125,6 +127,7 @@ async function main() {
       where: { id: existingCustomer.id },
       data: {
         email: customerEmail,
+        passwordHash: await bcrypt.hash("demo123", 10),
         subscriptionStatus: "ACTIVE",
         subscriptionEndsAt: trialEndDate(),
         phoneNormalized: customerNormalized,

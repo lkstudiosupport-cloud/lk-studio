@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { findUserByPhone } from "@/lib/auth-user";
-import { finishTrustedPasswordLogin } from "@/lib/login-session";
+import { finishLogin, finishTrustedPasswordLogin } from "@/lib/login-session";
+import { isDemoPhone } from "@/lib/demo-accounts";
 import { isValidPhone, INVALID_PHONE_MESSAGE } from "@/lib/phone";
 import { zodErrorMessage, formString, formOptionalString, formOptionalNumber } from "@/lib/zod-error-message";
 import { deviceIdSchema, requestUserAgent } from "@/lib/auth-device";
@@ -57,6 +58,19 @@ export async function POST(req: Request) {
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    if (isDemoPhone(phone)) {
+      const redirect = await finishLogin(
+        user,
+        role,
+        { latitude, longitude, address, locationLink },
+        {
+          bumpSession: true,
+          trustDevice: { deviceId, userAgent: requestUserAgent(req) },
+        }
+      );
+      return NextResponse.json({ ok: true, redirect });
     }
 
     const trusted = await isDeviceTrusted(user.id, deviceId);
