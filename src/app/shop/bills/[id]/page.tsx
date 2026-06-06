@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
+import { t } from "@/lib/i18n";
 import { BillReceipt } from "@/components/BillReceipt";
 import { BillShareActions } from "@/components/BillShareActions";
 import { BillDetailPage } from "@/components/BillDetailPage";
@@ -72,6 +73,7 @@ export default async function ShopBillDetailPage({
           billNumber={bill.billNumber}
           shopName={bill.shop.shopName}
           enabled={whatsapp === "1"}
+          preparingLabel={t(locale, "sharingBill")}
         />
       }
     >

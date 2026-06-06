@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -201,8 +202,10 @@ export async function createBill(formData: FormData) {
       voiceText,
     },
   });
-  revalidatePath("/shop/bills");
-  revalidatePath("/customer/bills");
+  after(() => {
+    revalidatePath("/shop/bills");
+    revalidatePath("/customer/bills");
+  });
   return { id: bill.id };
 }
 

@@ -1,35 +1,65 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { shareBillImageOnWhatsApp } from "@/lib/share-bill-image";
+import { useEffect, useRef, useState } from "react";
+import { preloadBillCaptureLib, shareBillImageOnWhatsApp } from "@/lib/share-bill-image";
+import { waitForBillReceiptReady } from "@/lib/bill-receipt-capture";
 
 export function BillWhatsAppAutoSend({
   phone,
   billNumber,
   shopName,
   enabled,
+  preparingLabel = "Preparing bill image…",
 }: {
   phone: string | null | undefined;
   billNumber: string;
   shopName?: string;
   enabled: boolean;
+  preparingLabel?: string;
 }) {
   const sent = useRef(false);
+  const [preparing, setPreparing] = useState(false);
+
+  useEffect(() => {
+    if (!enabled) return;
+    preloadBillCaptureLib();
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled || sent.current) return;
     sent.current = true;
-    const timer = window.setTimeout(() => {
-      void shareBillImageOnWhatsApp({
-        phone: phone ?? undefined,
-        fileName: `${billNumber}.png`,
-        shopName,
-      }).catch(() => {
+    let cancelled = false;
+
+    (async () => {
+      setPreparing(true);
+      try {
+        await waitForBillReceiptReady();
+        if (cancelled) return;
+        await shareBillImageOnWhatsApp({
+          phone: phone ?? undefined,
+          fileName: `${billNumber}.jpg`,
+          shopName,
+        });
+      } catch {
         sent.current = false;
-      });
-    }, 900);
-    return () => window.clearTimeout(timer);
+      } finally {
+        if (!cancelled) setPreparing(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [enabled, phone, billNumber, shopName]);
 
-  return null;
+  if (!preparing) return null;
+
+  return (
+    <div
+      role="status"
+      className="fixed bottom-4 left-1/2 z-50 max-w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl bg-brand-green px-4 py-2.5 text-center text-sm font-semibold text-white shadow-lg"
+    >
+      {preparingLabel}
+    </div>
+  );
 }

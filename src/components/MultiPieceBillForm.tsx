@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { VoiceNotes } from "./VoiceNotes";
+import { VoiceInput } from "./VoiceInput";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { BillLineItem } from "@/lib/bill-items";
@@ -100,20 +101,21 @@ export function MultiPieceBillForm({
 
     try {
       const result = await createBill(fd);
+      if (result?.id) {
+        router.push(`/shop/bills/${result.id}?whatsapp=1`);
+        return;
+      }
       setLines([newLine()]);
       setCustomerName("");
       setCustomerPhone("");
       setAdvancePaid(0);
       setPaidAmount(0);
-      if (result?.id) {
-        router.push(`/shop/bills/${result.id}?whatsapp=1`);
-      } else {
-        router.refresh();
-      }
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setPending(false);
     }
-    setPending(false);
   };
 
   return (
@@ -216,7 +218,10 @@ export function MultiPieceBillForm({
       )}
 
       <div className="space-y-3">
-        <p className="text-sm font-bold text-brand-green">{t(locale, "billLineItems")}</p>
+        <div>
+          <p className="text-sm font-bold text-brand-green">{t(locale, "billLineItems")}</p>
+          <p className="mt-0.5 text-xs text-zinc-500">{t(locale, "voicePieceHint")}</p>
+        </div>
 
         <div className="-mx-1 overflow-x-auto">
           <div className="min-w-[min(100%,22rem)]">
@@ -239,12 +244,15 @@ export function MultiPieceBillForm({
                     <span className="mb-0.5 block text-[10px] font-semibold text-zinc-500">
                       {t(locale, "piece")} {idx + 1}
                     </span>
-                    <input
+                    <VoiceInput
+                      locale={locale}
                       value={line.name}
-                      onChange={(e) => updateLine(line.id, { name: e.target.value })}
+                      onChange={(name) => updateLine(line.id, { name })}
                       placeholder={t(locale, "pieceNamePlaceholder")}
-                      className="input-premium w-full py-1.5 text-sm"
                       aria-label={`${t(locale, "piece")} ${idx + 1}`}
+                      micErrorLabel={t(locale, "micPermissionError")}
+                      startLabel={t(locale, "startListening")}
+                      stopLabel={t(locale, "stopListening")}
                     />
                   </div>
 
@@ -366,7 +374,7 @@ export function MultiPieceBillForm({
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <button type="submit" disabled={pending} className="btn-primary w-full py-3 text-lg">
-        {pending ? "..." : t(locale, "saveBill")}
+        {pending ? t(locale, "savingBill") : t(locale, "saveBill")}
       </button>
     </form>
   );

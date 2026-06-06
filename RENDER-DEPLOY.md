@@ -19,7 +19,12 @@ Use the **External Database URL** from Render Dashboard (ends with `.singapore-p
 | Where | `DATABASE_URL` |
 |-------|----------------|
 | **Local PC** | Direct: `db.<project-ref>.supabase.co:5432` |
-| **Render Web Service** | **Transaction pooler**: port `6543` + `?pgbouncer=true&connection_limit=1` |
+| **Render Web Service** | **Session pooler**: `*.pooler.supabase.com:5432` (from Supabase → Connect) |
+
+Render often **cannot** reach `db.<ref>.supabase.co:5432` (IPv6 / network). Use the **Session pooler** (port **5432** on the pooler host), not the direct host.
+
+If you must use **Transaction pooler** (port `6543`), append exactly:  
+`?pgbouncer=true&connection_limit=1` — otherwise login fails with `prepared statement "s1" already exists`.
 
 Get exact strings from Supabase Dashboard → **Connect**. Project ref for this repo: `stbyjzngeegpycuxiubo`.
 

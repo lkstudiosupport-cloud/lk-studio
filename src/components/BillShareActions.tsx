@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MessageCircle, ArrowLeft, Printer } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { shareBillImageOnWhatsApp } from "@/lib/share-bill-image";
+import { preloadBillCaptureLib, shareBillImageOnWhatsApp } from "@/lib/share-bill-image";
 
 export function BillShareActions({
   locale,
@@ -25,13 +25,17 @@ export function BillShareActions({
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (showWhatsApp) preloadBillCaptureLib();
+  }, [showWhatsApp]);
+
   async function onShareWhatsApp() {
     setError("");
     setSharing(true);
     try {
       await shareBillImageOnWhatsApp({
         phone: customerPhone,
-        fileName: `${billNumber ?? "bill"}.png`,
+        fileName: `${billNumber ?? "bill"}.jpg`,
         shopName,
         fallbackHint: t(locale, "shareBillFallback"),
       });

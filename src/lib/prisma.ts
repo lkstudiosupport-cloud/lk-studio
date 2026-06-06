@@ -30,9 +30,21 @@ function getPrismaClient() {
 
 export const prisma = getPrismaClient();
 
+const dbUrl = process.env.DATABASE_URL ?? "";
+
 /** Warn in production if SQLite is used — it does not scale to 1000+ concurrent writes. */
-if (process.env.NODE_ENV === "production" && process.env.DATABASE_URL?.startsWith("file:")) {
+if (process.env.NODE_ENV === "production" && dbUrl.startsWith("file:")) {
   console.warn(
     "[lk-studio] SQLite detected in production. Switch to PostgreSQL for many users at once."
+  );
+}
+
+if (
+  process.env.NODE_ENV === "production" &&
+  dbUrl.includes("pooler.supabase.com") &&
+  !dbUrl.includes("pgbouncer=true")
+) {
+  console.error(
+    "[lk-studio] DATABASE_URL uses Supabase pooler without ?pgbouncer=true — use direct db.<ref>.supabase.co:5432 on Render instead."
   );
 }

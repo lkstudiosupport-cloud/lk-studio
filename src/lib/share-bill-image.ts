@@ -1,8 +1,17 @@
 import { openWhatsApp } from "@/lib/whatsapp";
-import { BILL_RECEIPT_CAPTURE_ID } from "@/lib/bill-receipt-capture";
+import {
+  BILL_RECEIPT_CAPTURE_ID,
+  loadHtml2Canvas,
+  preloadBillCaptureLib,
+  waitForBillReceiptReady,
+} from "@/lib/bill-receipt-capture";
 import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
 
 const CAPTURE_WIDTH_PX = 448;
+const CAPTURE_SCALE = 1.25;
+const JPEG_QUALITY = 0.92;
+
+export { preloadBillCaptureLib };
 
 async function captureInIsolatedIframe(originalRoot: HTMLElement) {
   const iframe = document.createElement("iframe");
@@ -43,6 +52,9 @@ async function captureInIsolatedIframe(originalRoot: HTMLElement) {
     doc.body.appendChild(clone);
 
     const images = Array.from(clone.querySelectorAll("img"));
+    for (const img of images) {
+      if (img.src) img.src = img.src;
+    }
     await Promise.all(
       images.map(
         (img) =>
@@ -56,12 +68,10 @@ async function captureInIsolatedIframe(originalRoot: HTMLElement) {
       )
     );
 
-    await new Promise((resolve) => window.setTimeout(resolve, 100));
-
-    const html2canvas = (await import("html2canvas")).default;
+    const html2canvas = await loadHtml2Canvas();
     return await html2canvas(clone, {
       backgroundColor: "#ffffff",
-      scale: 2,
+      scale: CAPTURE_SCALE,
       logging: false,
       useCORS: true,
       width: CAPTURE_WIDTH_PX,
@@ -75,13 +85,19 @@ async function captureInIsolatedIframe(originalRoot: HTMLElement) {
 }
 
 async function captureBillImage() {
-  const el = document.getElementById(BILL_RECEIPT_CAPTURE_ID);
-  if (!el || !(el instanceof HTMLElement)) throw new Error("Bill receipt not ready");
-
+  const el = await waitForBillReceiptReady();
   const canvas = await captureInIsolatedIframe(el);
   return await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not create bill image"))), "image/png");
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("Could not create bill image"))),
+      "image/jpeg",
+      JPEG_QUALITY
+    );
   });
+}
+
+function billImageFileName(billNumber: string) {
+  return `${billNumber}.jpg`;
 }
 
 export async function shareBillImageOnWhatsApp({
@@ -95,8 +111,12 @@ export async function shareBillImageOnWhatsApp({
   shopName?: string;
   fallbackHint?: string;
 }) {
+  preloadBillCaptureLib();
   const blob = await captureBillImage();
-  const file = new File([blob], fileName, { type: "image/png" });
+  const resolvedName = fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")
+    ? fileName
+    : billImageFileName(fileName.replace(/\.(png|jpe?g)$/i, ""));
+  const file = new File([blob], resolvedName, { type: "image/jpeg" });
   const title = shopName ? `Bill — ${shopName}` : "Bill";
 
   if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] })) {
@@ -107,7 +127,7 @@ export async function shareBillImageOnWhatsApp({
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = fileName;
+  link.download = resolvedName;
   link.click();
   URL.revokeObjectURL(url);
 

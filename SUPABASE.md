@@ -53,14 +53,22 @@ npm run db:seed
 
 ### Render production (recommended)
 
-Use the **Transaction pooler** URI from the dashboard (port **6543**), with Prisma query params:
+Render often **cannot** connect to `db.<ref>.supabase.co` directly. Use **Session pooler** (port **5432** on the pooler host) from Supabase → **Connect**:
 
 ```env
-DATABASE_URL="postgresql://postgres.stbyjzngeegpycuxiubo:[YOUR-PASSWORD]@<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DATABASE_URL="postgresql://postgres.stbyjzngeegpycuxiubo:[YOUR-PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres"
+```
+
+Copy the exact host from your dashboard (region may differ).
+
+**Alternative:** Transaction pooler (port **6543**) — must include Prisma flags or login fails:
+
+```env
+DATABASE_URL="postgresql://postgres.stbyjzngeegpycuxiubo:[YOUR-PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
 ```
 
 - Set this in **Render → Web Service → Environment** (not in git).
-- Keep **direct** URL only on your machine for schema pushes if the pooler blocks migration-style operations; run `npx prisma db push` locally after changing the schema, or use a CI step with the direct URL.
+- Keep **direct** URL on your PC for `prisma db push`.
 
 See also [RENDER-DEPLOY.md](./RENDER-DEPLOY.md).
 
