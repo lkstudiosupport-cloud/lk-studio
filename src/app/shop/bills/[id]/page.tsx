@@ -80,7 +80,7 @@ export default async function ShopBillDetailPage({
         />
       }
       receipt={
-        <BillReceiptShell locale={locale}>
+        <BillReceiptShell locale={locale} defaultFullscreen={whatsapp === "1"}>
           <BillReceipt bill={receiptData} locale={locale} />
         </BillReceiptShell>
       }

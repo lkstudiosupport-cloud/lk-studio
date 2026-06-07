@@ -1,14 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
-import { CheckCircle2, IndianRupee } from "lucide-react";
+import { CheckCircle2, ChevronDown, IndianRupee } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { formatMoney } from "@/lib/bill-items";
 import { billPending } from "@/lib/bill-payment";
 import { recordBillPayment } from "@/app/shop/actions";
+import { isMobileWeb } from "@/lib/platform";
 
 export function BillPaymentPanel({
   billId,
@@ -18,6 +19,7 @@ export function BillPaymentPanel({
   paid,
   locale,
   compact,
+  collapsibleOnMobile,
 }: {
   billId: string;
   amount: number;
@@ -26,15 +28,24 @@ export function BillPaymentPanel({
   paid: boolean;
   locale: Locale;
   compact?: boolean;
+  /** Collapse payment form on mobile so receipt stays primary. */
+  collapsibleOnMobile?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [mobileExpanded, setMobileExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   useSwipeNavBlock(true);
+
+  useEffect(() => {
+    setIsMobile(isMobileWeb() && window.matchMedia("(max-width: 639px)").matches);
+  }, []);
 
   const balance = billPending(amount, advancePaid, paidAmount);
   const fullyPaid = paid && balance <= 0.01;
+  const useCollapsible = collapsibleOnMobile !== false && isMobile && !compact;
 
   if (fullyPaid) {
     return (
@@ -87,8 +98,8 @@ export function BillPaymentPanel({
     );
   }
 
-  return (
-    <div className="bill-payment-panel card-premium space-y-4 p-4">
+  const paymentForm = (
+    <>
       <div>
         <h2 className="font-bold text-brand-green">{t(locale, "recordCustomerPayment")}</h2>
         <p className="mt-1 text-sm text-zinc-600">{t(locale, "recordCustomerPaymentHint")}</p>
@@ -150,6 +161,35 @@ export function BillPaymentPanel({
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
-    </div>
+    </>
   );
+
+  if (useCollapsible) {
+    return (
+      <div className="bill-payment-panel bill-payment-panel--collapsible card-premium overflow-visible">
+        <button
+          type="button"
+          onClick={() => setMobileExpanded((v) => !v)}
+          className="bill-payment-panel-toggle flex w-full items-center justify-between gap-3 p-4 text-left"
+          aria-expanded={mobileExpanded}
+        >
+          <div className="min-w-0">
+            <p className="font-bold text-brand-green">{t(locale, "recordCustomerPayment")}</p>
+            <p className="mt-0.5 text-sm text-zinc-600">
+              {t(locale, "pendingAmount")}: ₹{formatMoney(balance)}
+            </p>
+          </div>
+          <ChevronDown
+            className={`h-5 w-5 shrink-0 text-brand-green transition-transform ${
+              mobileExpanded ? "rotate-180" : ""
+            }`}
+            aria-hidden
+          />
+        </button>
+        {mobileExpanded && <div className="bill-payment-panel-body space-y-4 px-4 pb-4">{paymentForm}</div>}
+      </div>
+    );
+  }
+
+  return <div className="bill-payment-panel card-premium space-y-4 overflow-visible p-4">{paymentForm}</div>;
 }

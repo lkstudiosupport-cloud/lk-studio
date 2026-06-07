@@ -5,7 +5,10 @@ import { useEffect, useState } from "react";
 import { MessageCircle, ArrowLeft, Printer } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
+import { withTimeout } from "@/lib/platform";
 import { preloadBillCaptureLib, shareBillImageOnWhatsApp } from "@/lib/share-bill-image";
+
+const SHARE_TIMEOUT_MS = 25000;
 
 export function BillShareActions({
   locale,
@@ -33,12 +36,16 @@ export function BillShareActions({
     setError("");
     setSharing(true);
     try {
-      await shareBillImageOnWhatsApp({
-        phone: customerPhone,
-        fileName: `${billNumber ?? "bill"}.jpg`,
-        shopName,
-        fallbackHint: t(locale, "shareBillFallback"),
-      });
+      await withTimeout(
+        shareBillImageOnWhatsApp({
+          phone: customerPhone,
+          fileName: `${billNumber ?? "bill"}.jpg`,
+          shopName,
+          fallbackHint: t(locale, "shareBillFallback"),
+        }),
+        SHARE_TIMEOUT_MS,
+        t(locale, "shareBillFailed")
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : t(locale, "shareBillFailed"));
     } finally {

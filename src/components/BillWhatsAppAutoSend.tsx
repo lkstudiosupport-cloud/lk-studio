@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { preloadBillCaptureLib, shareBillImageOnWhatsApp } from "@/lib/share-bill-image";
+import { withTimeout } from "@/lib/platform";
+
+const AUTO_SEND_TIMEOUT_MS = 25000;
 
 function autoSendStorageKey(billNumber: string) {
   return `lk-wa-bill-${billNumber}`;
@@ -29,6 +32,7 @@ export function BillWhatsAppAutoSend({
   const pathname = usePathname();
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState("");
+  const runningRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -36,45 +40,42 @@ export function BillWhatsAppAutoSend({
   }, [enabled]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || runningRef.current) return;
 
     const storageKey = autoSendStorageKey(billNumber);
     if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(storageKey)) return;
 
-    let cancelled = false;
+    runningRef.current = true;
+    setPreparing(true);
+    setError("");
 
     (async () => {
-      if (typeof sessionStorage !== "undefined") {
-        sessionStorage.setItem(storageKey, "1");
-      }
-      setPreparing(true);
-      setError("");
-
       try {
-        await shareBillImageOnWhatsApp({
-          phone: phone ?? undefined,
-          fileName: `${billNumber}.jpg`,
-          shopName,
-          fallbackHint,
-        });
-      } catch {
+        await withTimeout(
+          shareBillImageOnWhatsApp({
+            phone: phone ?? undefined,
+            fileName: `${billNumber}.jpg`,
+            shopName,
+            fallbackHint,
+          }),
+          AUTO_SEND_TIMEOUT_MS,
+          "Share timed out"
+        );
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(storageKey, "1");
+        }
+      } catch (err) {
         if (typeof sessionStorage !== "undefined") {
           sessionStorage.removeItem(storageKey);
         }
-        if (!cancelled) setError(errorLabel);
+        setError(err instanceof Error ? err.message : errorLabel);
       } finally {
-        if (!cancelled) {
-          setPreparing(false);
-          router.replace(pathname, { scroll: false });
-        }
+        runningRef.current = false;
+        setPreparing(false);
+        router.replace(pathname, { scroll: false });
       }
     })();
-
-    return () => {
-      cancelled = true;
-      setPreparing(false);
-    };
-  }, [enabled, phone, billNumber, shopName, pathname, router, preparingLabel, errorLabel, fallbackHint]);
+  }, [enabled, phone, billNumber, shopName, pathname, router, errorLabel, fallbackHint]);
 
   if (!preparing && !error) return null;
 

@@ -228,6 +228,13 @@ button {
 .bill-receipt-shell {
   width: 100%;
   min-width: 0;
+  overflow: visible;
+}
+
+.bill-receipt-shell-body {
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
 }
 
 .bill-receipt-shell-toolbar {
@@ -293,27 +300,50 @@ button {
 
 /* Mobile: receipt before payment, full width, no inner clip */
 @media (max-width: 639px) {
+  .bill-detail-page {
+    overflow: visible;
+  }
+
+  .bill-detail-body {
+    overflow: visible;
+  }
+
   .bill-detail-body .bill-receipt-shell {
     order: 1;
+    flex: 0 0 auto;
   }
 
   .bill-detail-body .bill-payment-panel {
     order: 2;
+    flex: 0 0 auto;
   }
 
   .bill-receipt {
     max-width: 100%;
+    width: 100%;
     margin-left: 0;
     margin-right: 0;
   }
 
   .bill-receipt-paper {
     overflow: visible;
+    max-height: none;
   }
 
   .bill-receipt-content {
     padding-top: 3.5rem;
     padding-bottom: 3.5rem;
+  }
+
+  .bill-payment-panel--collapsible .bill-payment-panel-toggle {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .bill-payment-panel-body {
+    border-top: 1px solid rgb(27 48 34 / 0.08);
+    padding-top: 1rem;
   }
 }
 

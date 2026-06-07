@@ -9,7 +9,7 @@ export const BILL_RECEIPT_STYLES = `
 
 .bill-receipt-paper {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   isolation: isolate;
   border: 2px dashed #a1a1aa;
   border-radius: 2px;

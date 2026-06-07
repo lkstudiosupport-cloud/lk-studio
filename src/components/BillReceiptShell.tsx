@@ -4,15 +4,24 @@ import { useEffect, useState } from "react";
 import { Maximize2, X } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
+import { isMobileWeb } from "@/lib/platform";
 
 export function BillReceiptShell({
   locale,
   children,
+  defaultFullscreen,
 }: {
   locale: Locale;
   children: React.ReactNode;
+  /** Open fullscreen receipt on mobile (e.g. right after bill save). */
+  defaultFullscreen?: boolean;
 }) {
   const [fullscreen, setFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!defaultFullscreen) return;
+    if (isMobileWeb()) setFullscreen(true);
+  }, [defaultFullscreen]);
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -47,7 +56,9 @@ export function BillReceiptShell({
           </button>
         )}
       </div>
-      <div className={fullscreen ? "bill-receipt-fullscreen-scroll" : undefined}>{children}</div>
+      <div className={fullscreen ? "bill-receipt-fullscreen-scroll" : "bill-receipt-shell-body"}>
+        {children}
+      </div>
     </div>
   );
 }
