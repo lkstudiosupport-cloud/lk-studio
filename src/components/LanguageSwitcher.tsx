@@ -8,7 +8,7 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
 
   return (
     <select
-      className="max-w-[4.25rem] rounded-lg border border-brand-gold/30 bg-brand-green/80 px-1.5 py-1 text-xs font-medium text-brand-gold shadow-sm sm:max-w-none sm:px-2 sm:text-sm"
+      className="shrink-0 min-w-[6.25rem] appearance-auto rounded-lg border border-brand-gold/30 bg-brand-green/80 py-1 pl-2 pr-7 text-xs font-medium text-brand-gold shadow-sm sm:min-w-0 sm:px-2.5 sm:text-sm"
       value={current}
       onChange={(e) => {
         document.cookie = `lk_locale=${e.target.value};path=/;max-age=31536000`;

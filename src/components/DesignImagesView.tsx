@@ -59,7 +59,7 @@ export function DesignImagesView({
           unoptimized={cover.endsWith(".svg")}
         />
         {images.length > 1 && (
-          <span className="absolute bottom-2 right-2 rounded-full bg-brand-green/90 px-2.5 py-1 text-[10px] font-bold text-brand-gold">
+          <span className="absolute bottom-2 right-2 rounded-full bg-brand-green/90 px-2.5 py-1 text-xs font-bold text-brand-gold">
             {photosBadge ?? `${images.length} photos`}
           </span>
         )}
@@ -103,7 +103,7 @@ export function DesignImagesView({
           sizes="(max-width: 640px) 100vw, 33vw"
           unoptimized={current.endsWith(".svg")}
         />
-        <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold text-white">
+        <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-xs font-bold text-white">
           {active + 1}/{images.length}
         </span>
       </div>

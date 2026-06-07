@@ -31,7 +31,7 @@ export function MultiImageUpload({
             className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-brand-green/15 bg-brand-cream/40 p-2 hover:border-brand-gold"
           >
             <Camera className="h-5 w-5 text-brand-green" />
-            <span className="mt-1 text-center text-[10px] font-medium text-brand-green">
+            <span className="mt-1 text-center text-xs font-medium text-brand-green">
               {cameraLabel} {i + 1}
             </span>
             <input
@@ -65,7 +65,7 @@ export function MultiImageUpload({
           className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 text-zinc-500"
         >
           <Plus className="h-6 w-6" />
-          <span className="mt-1 text-[10px] font-medium">More</span>
+          <span className="mt-1 text-xs font-medium">More</span>
         </button>
       </div>
       <label className="mt-2 block">

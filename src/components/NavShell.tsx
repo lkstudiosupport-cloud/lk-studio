@@ -48,7 +48,7 @@ function NavPill({
             : "brand-nav-pill"
       }
     >
-      {compact ? <span className="max-w-[4.5rem] truncate leading-tight">{label}</span> : label}
+      {compact ? <span className="max-w-[5rem] truncate leading-tight">{label}</span> : label}
     </button>
   );
 }
@@ -116,7 +116,7 @@ export function NavShell({
             <div className="min-w-0">
               <BrandNameTagline locale={locale} variant="header" />
               {title.trim() && title !== t(locale, "appName") && (
-                <p className="mt-0.5 truncate text-[10px] font-medium text-white/70 sm:text-xs">{title}</p>
+                <p className="mt-0.5 truncate text-xs font-medium text-white/70 sm:text-sm">{title}</p>
               )}
             </div>
           </div>

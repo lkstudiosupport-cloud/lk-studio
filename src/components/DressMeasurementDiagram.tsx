@@ -88,10 +88,10 @@ function DressMeasureTips({ locale }: { locale: Locale }) {
   const tips = ["dressTip1", "dressTip2", "dressTip3", "dressTip4"] as const;
   return (
     <div className="mt-3 rounded-lg border border-pink-100 bg-pink-50/60 px-3 py-2">
-      <p className="mb-1.5 text-[10px] font-bold uppercase text-pink-800">{t(locale, "dressMeasureTips")}</p>
+      <p className="mb-1.5 text-xs font-bold uppercase text-pink-800">{t(locale, "dressMeasureTips")}</p>
       <ul className="grid gap-1 sm:grid-cols-2">
         {tips.map((key) => (
-          <li key={key} className="text-[10px] leading-snug text-pink-900/80">
+          <li key={key} className="text-xs leading-snug text-pink-900/80">
             • {t(locale, key)}
           </li>
         ))}
@@ -123,7 +123,7 @@ export function DressMeasurementDiagram({
           {t(locale, "dressMeasurementChart")}
         </p>
         {filledCount > 0 && (
-          <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-bold text-pink-800">
+          <span className="rounded-full bg-pink-100 px-2 py-0.5 text-xs font-bold text-pink-800">
             {filledCount}/{totalFields}
           </span>
         )}

@@ -40,7 +40,7 @@ export default async function ShopOrdersPage() {
 
   return (
     <Suspense fallback={<OrdersPanelFallback />}>
-      <div className="mb-4 flex flex-wrap justify-end gap-2">
+      <div className="scroll-nav -mx-1 mb-4 flex flex-wrap justify-end gap-2 overflow-x-auto px-1">
         <Link
           href="/shop/customer-favorites"
           className="rounded-full bg-brand-gold/25 px-4 py-2 text-sm font-semibold text-brand-green"

@@ -57,7 +57,7 @@ export function DevAccessBanner() {
           Open
         </a>
       </div>
-      <p className="mt-2 text-[10px] text-emerald-700/80">
+      <p className="mt-2 text-xs text-emerald-700/80">
         Run <code className="rounded bg-white/80 px-1">npm run dev:anywhere</code> on PC. No IP setup needed.
       </p>
     </div>

@@ -62,12 +62,12 @@ export function ShopBrowseCard({
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate font-bold text-brand-green">{shop.shopName}</p>
             {showNearestBadge && distanceKm != null && (
-              <span className="rounded-full bg-brand-gold/30 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-green">
+              <span className="rounded-full bg-brand-gold/30 px-2 py-0.5 text-xs font-bold uppercase text-brand-green">
                 {t(locale, "nearestShop")}
               </span>
             )}
           </div>
-          <p className="text-[10px] font-mono text-zinc-500">{shop.shopCode}</p>
+          <p className="text-xs font-mono text-zinc-500">{shop.shopCode}</p>
 
           <div className="mt-0.5">
             <ShopRatingBadge

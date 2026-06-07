@@ -70,7 +70,7 @@ export function ProfileSubscriptionSection({
           <span className="text-sm font-semibold text-brand-green">{t(locale, "subscriptionTab")}</span>
         </span>
         <span className="flex shrink-0 items-center gap-2">
-          <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${statusClass}`}>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${statusClass}`}>
             {statusLabel}
           </span>
           <ChevronDown

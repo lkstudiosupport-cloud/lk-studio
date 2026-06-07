@@ -64,7 +64,7 @@ function ShopPriceRequestCard({ locale, request }: { locale: Locale; request: Ro
         <div className="grid grid-cols-2 gap-3">
           {request.design && (
             <div>
-              <p className="mb-1 text-[10px] font-bold uppercase text-brand-green">
+              <p className="mb-1 text-xs font-bold uppercase text-brand-green">
                 {t(locale, "shopDesign")}
               </p>
               <div className="overflow-hidden rounded-lg border border-brand-green/15">
@@ -83,7 +83,7 @@ function ShopPriceRequestCard({ locale, request }: { locale: Locale; request: Ro
           )}
           {request.customerImagePath && (
             <div>
-              <p className="mb-1 text-[10px] font-bold uppercase text-brand-green">
+              <p className="mb-1 text-xs font-bold uppercase text-brand-green">
                 {t(locale, "customerOwnPhoto")}
               </p>
               <div className="overflow-hidden rounded-lg border border-brand-green/15">

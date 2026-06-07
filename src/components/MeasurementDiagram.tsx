@@ -145,7 +145,7 @@ function ChartLegend({
 }) {
   const keys = legendKeysForType(measurementType);
   return (
-    <div className="sewing-chart-legend mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 rounded-lg bg-zinc-900 px-3 py-2.5 text-[10px] text-white sm:grid-cols-3">
+    <div className="sewing-chart-legend mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 rounded-lg bg-zinc-900 px-3 py-2.5 text-xs text-white sm:grid-cols-3">
       {keys.map((key) => {
         const letter = letterForField(measurementType, key);
         const active = activeField === key;
@@ -228,7 +228,7 @@ export function MeasurementDiagram({
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-brand-green">{t(locale, config.diagramTitleKey)}</p>
         {filledCount > 0 && (
-          <span className="rounded-full bg-brand-gold/25 px-2 py-0.5 text-[10px] font-bold text-brand-green">
+          <span className="rounded-full bg-brand-gold/25 px-2 py-0.5 text-xs font-bold text-brand-green">
             {filledCount}/{typeFields.length} {t(locale, "measurements")}
           </span>
         )}
@@ -260,7 +260,7 @@ export function MeasurementDiagram({
           {views.map((v) => (
             <div key={v} className={`${mobileView === v ? "block" : "hidden"} ${views.length > 1 ? "sm:block" : ""}`}>
               {views.length > 1 && (
-                <p className="mb-1.5 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                <p className="mb-1.5 text-center text-xs font-bold uppercase tracking-widest text-zinc-500">
                   {viewLabel(locale, v)}
                 </p>
               )}

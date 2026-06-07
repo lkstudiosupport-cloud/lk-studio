@@ -80,7 +80,7 @@ export function PlaceOrderFromFavoritesForm({
               </div>
               <div className="px-2 py-1.5">
                 <p className="truncate text-xs font-semibold text-brand-green">{fav.design.title}</p>
-                <p className="text-[10px] text-zinc-500">{t(locale, categoryLabelKey(fav.category))}</p>
+                <p className="text-xs text-zinc-500">{t(locale, categoryLabelKey(fav.category))}</p>
               </div>
             </label>
           ))}

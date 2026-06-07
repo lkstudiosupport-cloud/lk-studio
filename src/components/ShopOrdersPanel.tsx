@@ -76,13 +76,13 @@ export function ShopOrdersPanel({
         {listHint && <p className="mt-1 text-xs text-zinc-500">{listHint}</p>}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="scroll-nav -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {STATUS_TABS.map((s) => (
           <button
             key={s.id}
             type="button"
             onClick={() => selectTab(s.id)}
-            className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${
+            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-semibold ${
               tab === s.id
                 ? "bg-brand-green text-brand-gold"
                 : "bg-white text-brand-green ring-1 ring-brand-green/15"

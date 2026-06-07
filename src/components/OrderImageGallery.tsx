@@ -29,7 +29,7 @@ export function OrderImageGallery({
             <div className="relative aspect-square">
               <Image src={img.path} alt="" fill className="object-cover" unoptimized />
             </div>
-            <p className="bg-zinc-50 px-1 py-0.5 text-center text-[10px] text-zinc-600">
+            <p className="bg-zinc-50 px-1 py-0.5 text-center text-xs text-zinc-600">
               {img.caption ?? (img.by === "SHOP" ? t(locale, "shopUpload") : t(locale, "customerUpload"))}
             </p>
           </div>

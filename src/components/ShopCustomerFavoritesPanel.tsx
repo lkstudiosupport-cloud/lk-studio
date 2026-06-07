@@ -67,7 +67,7 @@ export function ShopCustomerFavoritesPanel({
                               unoptimized
                             />
                           </div>
-                          <p className="truncate px-1.5 py-1 text-[10px] font-medium text-brand-green">
+                          <p className="truncate px-1.5 py-1 text-xs font-medium text-brand-green">
                             {item.design.title}
                           </p>
                         </div>

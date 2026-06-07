@@ -42,7 +42,7 @@ export function OrderSelectedDesigns({
             </div>
             <div className="border-t border-brand-green/10 bg-brand-cream/50 px-2 py-1.5">
               <p className="truncate text-xs font-semibold text-brand-green">{design.title}</p>
-              <p className="text-[10px] text-zinc-500">{t(locale, categoryLabelKey(category))}</p>
+              <p className="text-xs text-zinc-500">{t(locale, categoryLabelKey(category))}</p>
             </div>
           </div>
         ))}

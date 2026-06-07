@@ -54,7 +54,7 @@ export function ShopRateForm({
           </button>
         ))}
         {saved && (
-          <span className="ml-2 text-[10px] font-medium text-emerald-700">{t(locale, "ratingSaved")}</span>
+          <span className="ml-2 text-xs font-medium text-emerald-700">{t(locale, "ratingSaved")}</span>
         )}
       </div>
     </div>

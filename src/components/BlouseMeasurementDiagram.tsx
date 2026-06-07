@@ -209,7 +209,7 @@ export function BlouseMeasurementDiagram({
           {t(locale, "blouseMeasurementChart")}
         </p>
         {filledCount > 0 && (
-          <span className="rounded-full bg-brand-gold/25 px-2 py-0.5 text-[10px] font-bold text-brand-green">
+          <span className="rounded-full bg-brand-gold/25 px-2 py-0.5 text-xs font-bold text-brand-green">
             {filledCount}/{totalFields}
           </span>
         )}
@@ -251,7 +251,7 @@ export function BlouseMeasurementDiagram({
               {t(locale, "measurementBack")}
             </button>
           </div>
-          <span className="rounded-full bg-brand-green/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-green">
+          <span className="rounded-full bg-brand-green/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-green">
             {viewLabel}
           </span>
         </div>
