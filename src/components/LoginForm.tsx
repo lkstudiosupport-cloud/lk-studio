@@ -141,7 +141,7 @@ export function LoginForm({
   }
 
   return (
-    <div className="card-premium space-y-4 p-4 sm:p-6">
+    <div className="card-premium min-w-0 space-y-4 p-4 sm:p-6">
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
           type="button"

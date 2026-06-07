@@ -18,6 +18,11 @@
   --accent: #f1d35e;
 }
 
+html {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--background);
   background-image:
@@ -53,11 +58,11 @@ button {
 }
 
 .card-premium {
-  @apply rounded-2xl border border-brand-green/10 bg-white/95 shadow-lg shadow-brand-green/10 backdrop-blur-sm;
+  @apply min-w-0 max-w-full rounded-2xl border border-brand-green/10 bg-white/95 shadow-lg shadow-brand-green/10 backdrop-blur-sm;
 }
 
 .input-premium {
-  @apply min-h-11 rounded-xl border border-brand-green/15 bg-white px-3 py-2.5 text-base text-brand-green shadow-sm transition focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30 sm:text-sm;
+  @apply min-h-11 min-w-0 max-w-full rounded-xl border border-brand-green/15 bg-white px-3 py-2.5 text-base text-brand-green shadow-sm transition focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30 sm:text-sm;
 }
 
 .btn-primary {
@@ -92,11 +97,15 @@ button {
 }
 
 .app-page-shell {
+  width: 100%;
+  min-width: 0;
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
 .app-main-content {
+  width: 100%;
+  min-width: 0;
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
@@ -134,6 +143,9 @@ button {
 .brand-page-bg {
   position: relative;
   isolation: isolate;
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .brand-page-bg::before,
@@ -166,15 +178,27 @@ button {
 
 /* Bill detail — full page scroll on phone (no nested scroll trap) */
 .bill-detail-page {
-  margin: -1.5rem -1rem 0;
+  margin-top: -1.5rem;
+  margin-left: calc(-1 * max(1rem, env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(1rem, env(safe-area-inset-right, 0px)));
   padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 0px));
+  max-width: 100%;
   min-height: 0;
+  overflow-x: clip;
+}
+
+.bill-detail-actions {
+  margin-left: calc(-1 * max(1rem, env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(1rem, env(safe-area-inset-right, 0px)));
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
 .bill-detail-body {
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
-  padding: 0 0.25rem 1.5rem;
+  padding: 0 max(0.25rem, env(safe-area-inset-right, 0px)) 1.5rem
+    max(0.25rem, env(safe-area-inset-left, 0px));
 }
 
 .order-card-perf {
@@ -375,7 +399,8 @@ button {
   --mannequin-depth: 58px;
   perspective: 920px;
   perspective-origin: 50% 38%;
-  overflow: visible;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .mannequin-3d-cube {

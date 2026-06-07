@@ -45,7 +45,7 @@ export function CreateBillFlow({ locale, customers }: { locale: Locale; customer
   }
 
   return (
-    <div className="card-premium space-y-5 p-5">
+    <div className="card-premium min-w-0 space-y-5 p-4 sm:p-5">
       <div className="flex items-center gap-3">
         <Link
           href="/shop/bills"

@@ -72,7 +72,7 @@ export function PhoneInput({
       <label htmlFor={id} className="sr-only">
         {t(locale, "mobileNumber")}
       </label>
-      <div className="flex gap-2">
+      <div className="flex min-w-0 gap-2">
         <select
           aria-label={t(locale, "phoneCountry")}
           value={country}

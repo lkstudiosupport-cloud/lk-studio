@@ -35,7 +35,7 @@ export function SwipeNavContent({
 
   return (
     <div
-      className="min-h-[50vh] touch-pan-y"
+      className="min-h-[50vh] w-full min-w-0 touch-pan-y"
       {...(swipeEnabled
         ? { onTouchStart: swipe.onTouchStart, onTouchEnd: swipe.onTouchEnd }
         : {})}

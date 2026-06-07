@@ -117,7 +117,7 @@ export function DressMeasurementDiagram({
   const hasFocus = Boolean(activeField);
 
   return (
-    <div className="dress-measurement-diagram w-full">
+    <div className="dress-measurement-diagram w-full min-w-0 max-w-full">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-brand-green">
           {t(locale, "dressMeasurementChart")}

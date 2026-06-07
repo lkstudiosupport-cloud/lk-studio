@@ -203,8 +203,8 @@ export function BlouseMeasurementDiagram({
   };
 
   return (
-    <div className="blouse-measurement-diagram w-full">
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <div className="blouse-measurement-diagram w-full min-w-0 max-w-full overflow-x-clip">
+      <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-brand-green">
           {t(locale, "blouseMeasurementChart")}
         </p>
@@ -218,8 +218,8 @@ export function BlouseMeasurementDiagram({
       <p className="mb-2 text-[11px] leading-snug text-zinc-600">{t(locale, "blouseMeasurementHint3d")}</p>
 
       <div className="rounded-xl border border-zinc-200 bg-gradient-to-b from-stone-100 via-white to-stone-50 p-3 shadow-md">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <div className="flex gap-1">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap gap-1">
             <button
               type="button"
               onClick={() => rotateBy(-90)}
@@ -258,7 +258,7 @@ export function BlouseMeasurementDiagram({
 
         <div className="flex justify-center">
           <div
-            className="mannequin-3d-stage relative aspect-[13/17] w-full max-w-[340px] cursor-grab touch-none active:cursor-grabbing"
+            className="mannequin-3d-stage relative aspect-[13/17] w-full max-w-full cursor-grab touch-none active:cursor-grabbing sm:max-w-[340px]"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}

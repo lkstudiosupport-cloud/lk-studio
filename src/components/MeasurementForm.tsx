@@ -175,7 +175,7 @@ export function MeasurementForm({
             <input type="hidden" name="personId" value={personId} />
             <input type="hidden" name="measurementType" value={measureType} />
 
-            <div className="grid gap-6 xl:grid-cols-[minmax(300px,360px)_1fr]">
+            <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
               <MeasurementDiagram
                 measurementType={measureType}
                 activeField={active}

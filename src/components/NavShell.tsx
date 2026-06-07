@@ -110,7 +110,7 @@ export function NavShell({
   return (
     <>
       <header className="brand-header sticky top-0 z-20">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-1.5 px-3 py-2.5 sm:gap-2 sm:px-4 sm:py-3.5 md:py-4">
+        <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-1.5 px-3 py-2.5 sm:gap-2 sm:px-4 sm:py-3.5 md:py-4">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <BrandLogoMark locale={locale} />
             <div className="min-w-0">
@@ -131,7 +131,7 @@ export function NavShell({
           </div>
         </div>
         {!hideNav && navPosition === "top" && (
-          <nav className="scroll-nav mx-auto flex max-w-5xl gap-1.5 overflow-x-auto px-2 pb-3 pt-0.5 sm:gap-2 sm:px-3 sm:pb-3.5 md:gap-2.5 md:pb-4">
+          <nav className="scroll-nav mx-auto flex w-full min-w-0 max-w-5xl gap-1.5 overflow-x-auto px-2 pb-3 pt-0.5 sm:gap-2 sm:px-3 sm:pb-3.5 md:gap-2.5 md:pb-4">
             {navItems}
           </nav>
         )}
@@ -139,7 +139,7 @@ export function NavShell({
 
       {!hideNav && navPosition === "bottom" && (
         <nav className="brand-bottom-nav fixed inset-x-0 bottom-0 z-30">
-          <div className="mx-auto flex max-w-5xl items-stretch justify-around gap-0.5 px-1 pt-1 sm:px-2">
+          <div className="mx-auto flex w-full min-w-0 max-w-5xl items-stretch justify-around gap-0.5 px-1 pt-1 sm:px-2">
             {navItems}
           </div>
         </nav>

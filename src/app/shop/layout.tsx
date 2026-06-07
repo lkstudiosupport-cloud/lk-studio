@@ -32,7 +32,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     <SubscriptionGate>
       <SessionRefresh />
       <AutopayGuard autopayEnabled={profile?.autopayEnabled ?? false} setupPath="/register/autopay">
-        <div className="min-h-dvh brand-page-bg">
+        <div className="brand-page-bg min-h-dvh w-full min-w-0">
           <NavShell
             locale={locale}
             title={profile?.shopName ?? t(locale, "appName")}
@@ -43,7 +43,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
             navPosition="bottom"
           />
           <SwipeNavContent navHrefs={navLinks.map((l) => l.href)}>
-            <div className="app-main-content app-main-content-with-bottom-nav mx-auto max-w-5xl py-4 sm:py-6">
+            <div className="app-main-content app-main-content-with-bottom-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
               {children}
             </div>
           </SwipeNavContent>

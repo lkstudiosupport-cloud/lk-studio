@@ -46,7 +46,7 @@ export function BillShareActions({
   }
 
   return (
-    <div className="bill-detail-actions sticky top-0 z-10 -mx-4 mb-4 flex flex-wrap items-center gap-2 border-b border-brand-green/10 bg-brand-page-bg/95 px-4 py-3 backdrop-blur">
+    <div className="bill-detail-actions sticky top-0 z-10 mb-4 flex min-w-0 flex-wrap items-center gap-2 border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur">
       <Link
         href={backHref}
         className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-brand-green shadow-sm"

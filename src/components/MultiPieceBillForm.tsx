@@ -119,7 +119,7 @@ export function MultiPieceBillForm({
   };
 
   return (
-    <form onSubmit={onSubmit} className="card-premium space-y-5 p-5">
+    <form onSubmit={onSubmit} className="card-premium min-w-0 space-y-5 p-4 sm:p-5">
       {hideCustomerSection && (
         <Link
           href="/shop/bills"
@@ -223,8 +223,8 @@ export function MultiPieceBillForm({
           <p className="mt-0.5 text-xs text-zinc-500">{t(locale, "voicePieceHint")}</p>
         </div>
 
-        <div className="-mx-1 overflow-x-auto">
-          <div className="min-w-[min(100%,22rem)]">
+        <div className="-mx-1 overflow-x-auto overscroll-x-contain">
+          <div className="min-w-[18rem]">
             <div className="grid grid-cols-[minmax(0,1.5fr)_3.25rem_4.25rem_4.25rem_2rem] items-end gap-x-1.5 border-b border-brand-green/15 px-1 pb-2 text-[10px] font-bold uppercase tracking-wide text-brand-green-soft">
               <span>{t(locale, "piece")}</span>
               <span className="text-center">{t(locale, "quantity")}</span>

@@ -188,7 +188,7 @@ export function ShopReportPanel({
           )}
         </div>
 
-        <div className="hidden overflow-x-auto sm:block">
+        <div className="hidden max-w-full overflow-x-auto sm:block">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="bg-brand-green text-left text-xs uppercase text-white">

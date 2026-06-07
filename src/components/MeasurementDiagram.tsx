@@ -224,7 +224,7 @@ export function MeasurementDiagram({
   }
 
   return (
-    <div className="measurement-diagram-advanced w-full">
+    <div className="measurement-diagram-advanced w-full min-w-0 max-w-full">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-brand-green">{t(locale, config.diagramTitleKey)}</p>
         {filledCount > 0 && (
