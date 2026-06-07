@@ -1,6 +1,9 @@
+import { withTimeout } from "@/lib/platform";
+
 export const BILL_RECEIPT_CAPTURE_ID = "bill-receipt-capture";
 
-const CAPTURE_READY_MAX_MS = 2500;
+const CAPTURE_READY_MAX_MS = 5000;
+const CAPTURE_CANVAS_TIMEOUT_MS = 12000;
 
 function nextPaint(): Promise<void> {
   return new Promise((resolve) => {
@@ -31,7 +34,7 @@ export async function waitForBillReceiptReady(): Promise<HTMLElement> {
               })
           )
         ),
-        new Promise<void>((resolve) => window.setTimeout(resolve, 400)),
+        new Promise<void>((resolve) => window.setTimeout(resolve, 600)),
       ]);
       await nextPaint();
       return el;
@@ -58,4 +61,42 @@ export async function loadHtml2Canvas() {
     html2canvasModule = import("html2canvas").then((m) => m.default);
   }
   return html2canvasModule;
+}
+
+const CAPTURE_SCALE = 1.25;
+
+async function waitForImages(root: HTMLElement) {
+  const images = Array.from(root.querySelectorAll("img"));
+  await Promise.all(
+    images.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) resolve();
+          else {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          }
+        })
+    )
+  );
+}
+
+/** Capture the on-page receipt element (preferred — uses live styles). */
+export async function captureReceiptCanvas(el: HTMLElement) {
+  await waitForImages(el);
+  const html2canvas = await loadHtml2Canvas();
+  return withTimeout(
+    html2canvas(el, {
+      backgroundColor: "#ffffff",
+      scale: CAPTURE_SCALE,
+      logging: false,
+      useCORS: true,
+      width: el.offsetWidth || el.scrollWidth,
+      height: el.scrollHeight,
+      windowWidth: el.offsetWidth || el.scrollWidth,
+      windowHeight: el.scrollHeight,
+    }),
+    CAPTURE_CANVAS_TIMEOUT_MS,
+    "Bill image capture timed out"
+  );
 }

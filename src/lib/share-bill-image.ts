@@ -1,6 +1,8 @@
 import { openWhatsApp } from "@/lib/whatsapp";
+import { isMobileWeb, withTimeout } from "@/lib/platform";
 import {
   BILL_RECEIPT_CAPTURE_ID,
+  captureReceiptCanvas,
   loadHtml2Canvas,
   preloadBillCaptureLib,
   waitForBillReceiptReady,
@@ -10,6 +12,7 @@ import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
 const CAPTURE_WIDTH_PX = 448;
 const CAPTURE_SCALE = 1.25;
 const JPEG_QUALITY = 0.92;
+const CAPTURE_TOTAL_TIMEOUT_MS = 15000;
 
 export { preloadBillCaptureLib };
 
@@ -86,7 +89,14 @@ async function captureInIsolatedIframe(originalRoot: HTMLElement) {
 
 async function captureBillImage() {
   const el = await waitForBillReceiptReady();
-  const canvas = await captureInIsolatedIframe(el);
+
+  let canvas;
+  try {
+    canvas = await captureReceiptCanvas(el);
+  } catch {
+    canvas = await captureInIsolatedIframe(el);
+  }
+
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error("Could not create bill image"))),
@@ -98,6 +108,35 @@ async function captureBillImage() {
 
 function billImageFileName(billNumber: string) {
   return `${billNumber}.jpg`;
+}
+
+function downloadBillImage(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+type WebShareResult = "shared" | "cancelled" | "unavailable" | "failed";
+
+async function tryWebShareFile(
+  file: File,
+  title: string,
+  text: string
+): Promise<WebShareResult> {
+  if (typeof navigator === "undefined" || !navigator.share) return "unavailable";
+  try {
+    if (navigator.canShare && !navigator.canShare({ files: [file] })) return "unavailable";
+    await navigator.share({ files: [file], title, text });
+    return "shared";
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") return "cancelled";
+    return "failed";
+  }
 }
 
 export async function shareBillImageOnWhatsApp({
@@ -112,26 +151,37 @@ export async function shareBillImageOnWhatsApp({
   fallbackHint?: string;
 }) {
   preloadBillCaptureLib();
-  const blob = await captureBillImage();
-  const resolvedName = fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")
-    ? fileName
-    : billImageFileName(fileName.replace(/\.(png|jpe?g)$/i, ""));
+
+  const blob = await withTimeout(
+    captureBillImage(),
+    CAPTURE_TOTAL_TIMEOUT_MS,
+    "Bill image capture timed out"
+  );
+
+  const resolvedName =
+    fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")
+      ? fileName
+      : billImageFileName(fileName.replace(/\.(png|jpe?g)$/i, ""));
   const file = new File([blob], resolvedName, { type: "image/jpeg" });
   const title = shopName ? `Bill — ${shopName}` : "Bill";
+  const hint =
+    fallbackHint ?? "Your bill image is saved. Please attach it in WhatsApp.";
 
-  if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title });
+  const preferWebShare = isMobileWeb() && typeof navigator !== "undefined" && !!navigator.share;
+  if (preferWebShare) {
+    const shareResult = await tryWebShareFile(file, title, hint);
+    if (shareResult === "shared" || shareResult === "cancelled") return;
+  }
+
+  downloadBillImage(blob, resolvedName);
+
+  if (phone?.trim()) {
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 400));
+    openWhatsApp(phone.trim(), hint);
     return;
   }
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = resolvedName;
-  link.click();
-  URL.revokeObjectURL(url);
-
-  if (phone) {
-    openWhatsApp(phone, fallbackHint ?? "Your bill image is saved. Please attach it in WhatsApp.");
+  if (!preferWebShare) {
+    throw new Error("Could not share bill image");
   }
 }

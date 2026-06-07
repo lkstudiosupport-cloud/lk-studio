@@ -41,8 +41,9 @@ export function BillShareActions({
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : t(locale, "shareBillFailed"));
+    } finally {
+      setSharing(false);
     }
-    setSharing(false);
   }
 
   return (

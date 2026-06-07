@@ -75,6 +75,8 @@ export default async function ShopBillDetailPage({
           shopName={bill.shop.shopName}
           enabled={whatsapp === "1"}
           preparingLabel={t(locale, "sharingBill")}
+          errorLabel={t(locale, "shareBillFailed")}
+          fallbackHint={t(locale, "shareBillFallback")}
         />
       }
       receipt={
