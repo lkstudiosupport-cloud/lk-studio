@@ -1,7 +1,13 @@
+/** Shop bill create/detail/edit — keep swipe on list only (/shop/bills). */
+function isShopBillSubPage(pathname: string): boolean {
+  return pathname.startsWith("/shop/bills/");
+}
+
 /** Pages where horizontal swipe must not change main nav (forms, wizards, …). */
-const SWIPE_NAV_BLOCKED: readonly string[] = ["/shop/bills/new"];
+const SWIPE_NAV_BLOCKED: readonly string[] = [];
 
 export function isSwipeNavBlocked(pathname: string): boolean {
+  if (isShopBillSubPage(pathname)) return true;
   return SWIPE_NAV_BLOCKED.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );

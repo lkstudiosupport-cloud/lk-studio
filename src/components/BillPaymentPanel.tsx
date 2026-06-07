@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 import { CheckCircle2, IndianRupee } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -30,6 +31,7 @@ export function BillPaymentPanel({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [paymentAmount, setPaymentAmount] = useState("");
+  useSwipeNavBlock(true);
 
   const balance = billPending(amount, advancePaid, paidAmount);
   const fullyPaid = paid && balance <= 0.01;

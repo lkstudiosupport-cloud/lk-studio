@@ -32,14 +32,13 @@ export function SwipeNavContent({
     for (const href of navHrefs) router.prefetch(href);
   }, [navHrefs, router]);
 
-  const swipe = useSwipeTabs(navHrefs, activeHref ?? navHrefs[0], onTabChange);
+  const swipe = useSwipeTabs(navHrefs, activeHref ?? navHrefs[0], onTabChange, swipeEnabled);
 
   return (
     <div
       className="min-h-[50vh] w-full min-w-0 touch-pan-y"
-      {...(swipeEnabled
-        ? { onTouchStart: swipe.onTouchStart, onTouchEnd: swipe.onTouchEnd }
-        : {})}
+      onTouchStart={swipe.onTouchStart}
+      onTouchEnd={swipe.onTouchEnd}
     >
       {children}
     </div>

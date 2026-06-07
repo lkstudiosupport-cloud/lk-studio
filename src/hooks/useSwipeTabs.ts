@@ -43,11 +43,28 @@ function isInteractiveElement(el: Element | null): boolean {
   return el.closest("input, textarea, select, button, [contenteditable='true']") != null;
 }
 
+function isHorizontalScrollArea(el: Element | null): boolean {
+  if (!el || !(el instanceof HTMLElement)) return false;
+  let node: HTMLElement | null = el;
+  while (node) {
+    const { overflowX } = getComputedStyle(node);
+    if (
+      (overflowX === "auto" || overflowX === "scroll" || overflowX === "overlay") &&
+      node.scrollWidth > node.clientWidth + 1
+    ) {
+      return true;
+    }
+    node = node.parentElement;
+  }
+  return false;
+}
+
 function shouldSuppressSwipe(target: EventTarget | null): boolean {
   if (swipeBlockCount > 0) return true;
   const el = target instanceof Element ? target : null;
   if (isInteractiveElement(el)) return true;
   if (isInteractiveElement(document.activeElement)) return true;
+  if (isHorizontalScrollArea(el)) return true;
   return false;
 }
 
@@ -55,23 +72,27 @@ function shouldSuppressSwipe(target: EventTarget | null): boolean {
 export function useSwipeTabs<T extends string>(
   tabs: readonly T[],
   activeTab: T,
-  onTabChange: (tab: T) => void
+  onTabChange: (tab: T) => void,
+  enabled = true
 ) {
   const start = useRef<{ x: number; y: number } | null>(null);
 
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (shouldSuppressSwipe(e.target)) {
-      start.current = null;
-      return;
-    }
-    const touch = e.touches[0];
-    if (!touch) return;
-    start.current = { x: touch.clientX, y: touch.clientY };
-  }, []);
+  const onTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (!enabled || shouldSuppressSwipe(e.target)) {
+        start.current = null;
+        return;
+      }
+      const touch = e.touches[0];
+      if (!touch) return;
+      start.current = { x: touch.clientX, y: touch.clientY };
+    },
+    [enabled]
+  );
 
   const onTouchEnd = useCallback(
     (e: React.TouchEvent) => {
-      if (!start.current || shouldSuppressSwipe(e.target)) {
+      if (!enabled || !start.current || shouldSuppressSwipe(e.target)) {
         start.current = null;
         return;
       }
@@ -95,7 +116,7 @@ export function useSwipeTabs<T extends string>(
         e.stopPropagation();
       }
     },
-    [tabs, activeTab, onTabChange]
+    [enabled, tabs, activeTab, onTabChange]
   );
 
   return { onTouchStart, onTouchEnd };

@@ -15,8 +15,7 @@ export function CreateBillFlow({ locale, customers }: { locale: Locale; customer
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [error, setError] = useState("");
-  const hasUnsavedInput = Boolean(customerName.trim() || customerPhone.trim());
-  useSwipeNavBlock(hasUnsavedInput);
+  useSwipeNavBlock(true);
 
   const pickCustomer = (id: string) => {
     const c = customers.find((x) => x.id === id);

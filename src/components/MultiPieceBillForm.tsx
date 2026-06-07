@@ -50,14 +50,7 @@ export function MultiPieceBillForm({
     [lines]
   );
 
-  const hasUnsavedInput = useMemo(() => {
-    if (customerName.trim() !== initialCustomerName.trim()) return true;
-    if (customerPhone.trim() !== initialCustomerPhone.trim()) return true;
-    if (advancePaid > 0 || paidAmount > 0) return true;
-    if (lines.length > 1) return true;
-    return lines.some((l) => l.name.trim() || l.price > 0 || l.quantity !== 1);
-  }, [customerName, customerPhone, initialCustomerName, initialCustomerPhone, advancePaid, paidAmount, lines]);
-  useSwipeNavBlock(hasUnsavedInput);
+  useSwipeNavBlock(true);
 
   const updateLine = (id: string, patch: Partial<BillLineItem>) => {
     setLines((prev) =>
