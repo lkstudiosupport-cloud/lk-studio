@@ -1,17 +1,33 @@
 export function BillDetailPage({
   actions,
-  children,
+  receipt,
+  paymentPanel,
   extra,
+  children,
 }: {
   actions: React.ReactNode;
-  children: React.ReactNode;
+  /** Bill receipt — shown first on mobile when provided with payment. */
+  receipt?: React.ReactNode;
+  /** Payment panel — below receipt on mobile. */
+  paymentPanel?: React.ReactNode;
   extra?: React.ReactNode;
+  /** Legacy: single children slot (customer bill detail). */
+  children?: React.ReactNode;
 }) {
   return (
     <div className="bill-detail-page">
       {actions}
-      <div className="bill-detail-body">{children}</div>
       {extra}
+      <div className="bill-detail-body">
+        {receipt != null || paymentPanel != null ? (
+          <>
+            {receipt}
+            {paymentPanel}
+          </>
+        ) : (
+          children
+        )}
+      </div>
     </div>
   );
 }

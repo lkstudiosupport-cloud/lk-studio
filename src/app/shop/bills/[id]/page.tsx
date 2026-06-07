@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { BillReceipt } from "@/components/BillReceipt";
+import { BillReceiptShell } from "@/components/BillReceiptShell";
 import { BillShareActions } from "@/components/BillShareActions";
 import { BillDetailPage } from "@/components/BillDetailPage";
 import { BillWhatsAppAutoSend } from "@/components/BillWhatsAppAutoSend";
@@ -76,16 +77,21 @@ export default async function ShopBillDetailPage({
           preparingLabel={t(locale, "sharingBill")}
         />
       }
-    >
-      <BillPaymentPanel
-        billId={bill.id}
-        amount={bill.amount}
-        advancePaid={bill.advancePaid}
-        paidAmount={bill.paidAmount}
-        paid={bill.paid}
-        locale={locale}
-      />
-      <BillReceipt bill={receiptData} locale={locale} />
-    </BillDetailPage>
+      receipt={
+        <BillReceiptShell locale={locale}>
+          <BillReceipt bill={receiptData} locale={locale} />
+        </BillReceiptShell>
+      }
+      paymentPanel={
+        <BillPaymentPanel
+          billId={bill.id}
+          amount={bill.amount}
+          advancePaid={bill.advancePaid}
+          paidAmount={bill.paidAmount}
+          paid={bill.paid}
+          locale={locale}
+        />
+      }
+    />
   );
 }

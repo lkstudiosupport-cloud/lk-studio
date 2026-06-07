@@ -57,7 +57,7 @@ export function BillWhatsAppAutoSend({
   return (
     <div
       role="status"
-      className="fixed bottom-4 left-1/2 z-50 max-w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl bg-brand-green px-4 py-2.5 text-center text-sm font-semibold text-white shadow-lg"
+      className="bill-detail-status mx-auto mb-3 max-w-full rounded-xl bg-brand-green px-4 py-2.5 text-center text-sm font-semibold text-white shadow-md"
     >
       {preparingLabel}
     </div>

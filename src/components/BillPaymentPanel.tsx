@@ -39,7 +39,7 @@ export function BillPaymentPanel({
   if (fullyPaid) {
     return (
       <div
-        className={`flex items-center gap-2 rounded-xl bg-emerald-600 text-white ${
+        className={`bill-payment-panel flex items-center gap-2 rounded-xl bg-emerald-600 text-white ${
           compact ? "px-3 py-2 text-sm font-semibold" : "px-4 py-3 font-semibold"
         }`}
       >
@@ -69,7 +69,7 @@ export function BillPaymentPanel({
 
   if (compact) {
     return (
-      <div className="border-t border-brand-green/10 bg-brand-cream/50 p-3">
+      <div className="bill-payment-panel border-t border-brand-green/10 bg-brand-cream/50 p-3">
         <button
           type="button"
           disabled={pending}
@@ -88,7 +88,7 @@ export function BillPaymentPanel({
   }
 
   return (
-    <div className="card-premium space-y-4 p-4">
+    <div className="bill-payment-panel card-premium space-y-4 p-4">
       <div>
         <h2 className="font-bold text-brand-green">{t(locale, "recordCustomerPayment")}</h2>
         <p className="mt-1 text-sm text-zinc-600">{t(locale, "recordCustomerPaymentHint")}</p>

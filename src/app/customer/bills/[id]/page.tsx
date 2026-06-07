@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { BillReceipt } from "@/components/BillReceipt";
+import { BillReceiptShell } from "@/components/BillReceiptShell";
 import { BillShareActions } from "@/components/BillShareActions";
 import { BillDetailPage } from "@/components/BillDetailPage";
 import { billReceiptCustomer } from "@/lib/bill-customer";
@@ -47,7 +48,9 @@ export default async function CustomerBillDetailPage({ params }: { params: Promi
     <BillDetailPage
       actions={<BillShareActions locale={locale} backHref="/customer/bills" />}
     >
-      <BillReceipt bill={receiptData} locale={locale} />
+      <BillReceiptShell locale={locale}>
+        <BillReceipt bill={receiptData} locale={locale} />
+      </BillReceiptShell>
     </BillDetailPage>
   );
 }
