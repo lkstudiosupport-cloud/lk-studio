@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { VoiceNotes } from "./VoiceNotes";
@@ -48,6 +49,15 @@ export function MultiPieceBillForm({
     () => lines.reduce((s, l) => s + lineItemTotal(l.quantity, l.price), 0),
     [lines]
   );
+
+  const hasUnsavedInput = useMemo(() => {
+    if (customerName.trim() !== initialCustomerName.trim()) return true;
+    if (customerPhone.trim() !== initialCustomerPhone.trim()) return true;
+    if (advancePaid > 0 || paidAmount > 0) return true;
+    if (lines.length > 1) return true;
+    return lines.some((l) => l.name.trim() || l.price > 0 || l.quantity !== 1);
+  }, [customerName, customerPhone, initialCustomerName, initialCustomerPhone, advancePaid, paidAmount, lines]);
+  useSwipeNavBlock(hasUnsavedInput);
 
   const updateLine = (id: string, patch: Partial<BillLineItem>) => {
     setLines((prev) =>

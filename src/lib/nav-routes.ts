@@ -1,3 +1,12 @@
+/** Pages where horizontal swipe must not change main nav (forms, wizards, …). */
+const SWIPE_NAV_BLOCKED: readonly string[] = ["/shop/bills/new"];
+
+export function isSwipeNavBlocked(pathname: string): boolean {
+  return SWIPE_NAV_BLOCKED.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
+
 /** Off-nav pages map to a main tab so swipe still works (profile, designs, …). */
 const OFF_NAV_TAB: Record<string, string> = {
   "/customer/profile": "/customer",

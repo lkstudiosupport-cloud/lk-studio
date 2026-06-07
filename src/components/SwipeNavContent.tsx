@@ -2,8 +2,8 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useTransition } from "react";
-import { useSwipeTabs } from "@/hooks/useSwipeTabs";
-import { resolveNavHref } from "@/lib/nav-routes";
+import { useIsSwipeNavBlocked, useSwipeTabs } from "@/hooks/useSwipeTabs";
+import { isSwipeNavBlocked, resolveNavHref } from "@/lib/nav-routes";
 
 /** Swipe left/right on page content to move between main nav sections (Dashboard, Designs, Orders, …). */
 export function SwipeNavContent({
@@ -18,7 +18,8 @@ export function SwipeNavContent({
   const [, startTransition] = useTransition();
 
   const activeHref = useMemo(() => resolveNavHref(pathname, navHrefs), [pathname, navHrefs]);
-  const swipeEnabled = activeHref != null;
+  const formBlocked = useIsSwipeNavBlocked();
+  const swipeEnabled = activeHref != null && !isSwipeNavBlocked(pathname) && !formBlocked;
 
   const onTabChange = useCallback(
     (href: string) => {

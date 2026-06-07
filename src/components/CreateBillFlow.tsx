@@ -6,6 +6,7 @@ import { ArrowLeft, Receipt, UserRound } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { MultiPieceBillForm } from "@/components/MultiPieceBillForm";
+import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 
 type Customer = { id: string; name: string; phone: string | null; whatsapp: string | null };
 
@@ -14,6 +15,8 @@ export function CreateBillFlow({ locale, customers }: { locale: Locale; customer
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [error, setError] = useState("");
+  const hasUnsavedInput = Boolean(customerName.trim() || customerPhone.trim());
+  useSwipeNavBlock(hasUnsavedInput);
 
   const pickCustomer = (id: string) => {
     const c = customers.find((x) => x.id === id);
