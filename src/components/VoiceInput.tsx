@@ -15,6 +15,8 @@ type Props = {
   list?: string;
   required?: boolean;
   autoFocus?: boolean;
+  /** "inline" = mic beside input (default); "micInside" = mic overlaid inside input on the right */
+  micVariant?: "inline" | "micInside";
   micErrorLabel: string;
   startLabel: string;
   stopLabel: string;
@@ -30,6 +32,7 @@ export function VoiceInput({
   list,
   required,
   autoFocus,
+  micVariant = "inline",
   micErrorLabel,
   startLabel,
   stopLabel,
@@ -57,6 +60,43 @@ export function VoiceInput({
     onError: (message) => alert(micErrorLabel || message),
   });
 
+  const micButton = (
+    <button
+      type="button"
+      title={active ? stopLabel : startLabel}
+      aria-label={active ? stopLabel : startLabel}
+      onClick={() => (active ? void stop() : void start())}
+      className={`shrink-0 rounded-lg p-1.5 ${
+        active
+          ? "animate-pulse bg-red-600 text-white"
+          : "bg-brand-green/10 text-brand-green hover:bg-brand-green/20"
+      }`}
+    >
+      {active ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+    </button>
+  );
+
+  if (micVariant === "micInside") {
+    return (
+      <div className={`relative min-w-0 ${className}`}>
+        <input
+          value={value}
+          onChange={(e) => {
+            interimRef.current = "";
+            onChange(e.target.value);
+          }}
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          list={list}
+          required={required}
+          autoFocus={autoFocus}
+          className="input-premium w-full py-1.5 pe-10 text-sm"
+        />
+        <div className="absolute inset-y-0 end-1 flex items-center">{micButton}</div>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex min-w-0 items-center gap-1 ${className}`}>
       <input
@@ -72,19 +112,7 @@ export function VoiceInput({
         autoFocus={autoFocus}
         className="input-premium min-w-0 flex-1 py-1.5 text-sm"
       />
-      <button
-        type="button"
-        title={active ? stopLabel : startLabel}
-        aria-label={active ? stopLabel : startLabel}
-        onClick={() => (active ? void stop() : void start())}
-        className={`shrink-0 rounded-lg p-1.5 ${
-          active
-            ? "animate-pulse bg-red-600 text-white"
-            : "bg-brand-green/10 text-brand-green hover:bg-brand-green/20"
-        }`}
-      >
-        {active ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-      </button>
+      {micButton}
     </div>
   );
 }

@@ -52,6 +52,7 @@ export default async function ShopBillsPage() {
             }}
             locale={locale}
             href={`/shop/bills/${b.id}`}
+            editHref={`/shop/bills/${b.id}/edit`}
             shopMode
           />
         ))}

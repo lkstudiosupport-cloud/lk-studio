@@ -247,7 +247,7 @@ export function MultiPieceBillForm({
 
         <div className="-mx-1 overflow-x-auto overscroll-x-contain">
           <div className="min-w-[20rem] sm:min-w-[24rem]">
-            <div className="grid grid-cols-[minmax(9rem,2.5fr)_2.25rem_3.25rem_3.25rem_1.75rem] items-end gap-x-1 border-b border-brand-green/15 px-1 pb-2 text-xs font-bold uppercase tracking-wide text-brand-green-soft sm:grid-cols-[minmax(11rem,3fr)_2.5rem_3.5rem_3.5rem_2rem] sm:gap-x-1.5">
+            <div className="grid grid-cols-[minmax(8rem,2fr)_3.5rem_4rem_4rem_1.75rem] items-end gap-x-1 border-b border-brand-green/15 px-1 pb-2 text-xs font-bold uppercase tracking-wide text-brand-green-soft sm:grid-cols-[minmax(10rem,2.5fr)_4rem_4.5rem_4.5rem_2rem] sm:gap-x-1.5">
               <span>{t(locale, "piece")}</span>
               <span className="text-center">{t(locale, "quantity")}</span>
               <span className="text-center">{t(locale, "unitPrice")}</span>
@@ -260,7 +260,7 @@ export function MultiPieceBillForm({
               return (
                 <div
                   key={line.id}
-                  className="grid grid-cols-[minmax(9rem,2.5fr)_2.25rem_3.25rem_3.25rem_1.75rem] items-center gap-x-1 border-b border-zinc-100 px-1 py-2 last:border-b-0 sm:grid-cols-[minmax(11rem,3fr)_2.5rem_3.5rem_3.5rem_2rem] sm:gap-x-1.5"
+                  className="grid grid-cols-[minmax(8rem,2fr)_3.5rem_4rem_4rem_1.75rem] items-center gap-x-1 border-b border-zinc-100 px-1 py-2 last:border-b-0 sm:grid-cols-[minmax(10rem,2.5fr)_4rem_4.5rem_4.5rem_2rem] sm:gap-x-1.5"
                 >
                   <div className="min-w-0">
                     <span className="mb-0.5 block text-xs font-semibold text-zinc-500">
@@ -272,7 +272,8 @@ export function MultiPieceBillForm({
                       onChange={(name) => updateLine(line.id, { name })}
                       placeholder={t(locale, "pieceNamePlaceholder")}
                       aria-label={`${t(locale, "piece")} ${idx + 1}`}
-                      className="min-w-[14ch]"
+                      className="w-full"
+                      micVariant="micInside"
                       micErrorLabel={t(locale, "micPermissionError")}
                       startLabel={t(locale, "startListening")}
                       stopLabel={t(locale, "stopListening")}

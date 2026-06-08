@@ -4,7 +4,7 @@ import { t } from "@/lib/i18n";
 import { parseBillItems, formatMoney, formatBillLineSummary } from "@/lib/bill-items";
 import { billPending } from "@/lib/bill-payment";
 import { BillPaymentPanel } from "@/components/BillPaymentPanel";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Pencil } from "lucide-react";
 
 type BillView = {
   id: string;
@@ -26,12 +26,14 @@ export function BillCard({
   locale,
   showShop,
   href,
+  editHref,
   shopMode,
 }: {
   bill: BillView;
   locale: Locale;
   showShop?: boolean;
   href?: string;
+  editHref?: string;
   shopMode?: boolean;
 }) {
   const items = parseBillItems(bill.itemsJson, bill.amount);
@@ -61,14 +63,27 @@ export function BillCard({
         </div>
         <div className="text-right">
           <p className="text-xl font-bold">₹{formatMoney(bill.amount)}</p>
-          {href && (
-            <Link
-              href={href}
-              className="mt-1 inline-flex items-center justify-end gap-0.5 text-xs font-medium text-brand-gold hover:underline"
-            >
-              {t(locale, "viewFullBill")}
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
+          {(href || editHref) && (
+            <div className="mt-1 flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+              {editHref && (
+                <Link
+                  href={editHref}
+                  className="inline-flex items-center gap-0.5 text-xs font-medium text-white/90 hover:text-white hover:underline"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  {t(locale, "editShort")}
+                </Link>
+              )}
+              {href && (
+                <Link
+                  href={href}
+                  className="inline-flex items-center gap-0.5 text-xs font-medium text-brand-gold hover:underline"
+                >
+                  {t(locale, "viewFullBill")}
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
+            </div>
           )}
         </div>
       </div>
