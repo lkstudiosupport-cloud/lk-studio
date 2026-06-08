@@ -69,8 +69,8 @@ export function BillReceiptShell({
               <button
                 type="button"
                 onClick={() => setFullscreen(false)}
-                className="bill-receipt-fullscreen-close"
-                aria-label={t(locale, "viewFullBill")}
+                className="bill-receipt-fullscreen-close shrink-0"
+                aria-label={t(locale, "closeReceipt")}
               >
                 <X className="h-5 w-5" aria-hidden />
               </button>
