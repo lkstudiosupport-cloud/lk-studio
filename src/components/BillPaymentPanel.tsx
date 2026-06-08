@@ -9,7 +9,6 @@ import { t } from "@/lib/i18n";
 import { formatMoney } from "@/lib/bill-items";
 import { billPending } from "@/lib/bill-payment";
 import { recordBillPayment } from "@/app/shop/actions";
-import { isMobileWeb } from "@/lib/platform";
 
 export function BillPaymentPanel({
   billId,
@@ -40,7 +39,7 @@ export function BillPaymentPanel({
   useSwipeNavBlock(true);
 
   useEffect(() => {
-    setIsMobile(isMobileWeb() && window.matchMedia("(max-width: 639px)").matches);
+    setIsMobile(window.matchMedia("(max-width: 639px)").matches);
   }, []);
 
   const balance = billPending(amount, advancePaid, paidAmount);
@@ -129,24 +128,30 @@ export function BillPaymentPanel({
           <span className="mb-1 block text-xs font-semibold text-brand-green">
             {t(locale, "paymentAmountNow")}
           </span>
-          <p className="mb-1.5 text-xs text-zinc-500">
-            {t(locale, "pendingAmount")}: ₹{formatMoney(balance)}
-          </p>
-          <input
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            spellCheck={false}
-            value={paymentAmount}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/[^\d.]/g, "");
-              const dot = raw.indexOf(".");
-              const sanitized =
-                dot === -1 ? raw : `${raw.slice(0, dot + 1)}${raw.slice(dot + 1).replace(/\./g, "")}`;
-              setPaymentAmount(sanitized);
-            }}
-            className="bill-payment-amount-input input-premium w-full"
-          />
+          <div className="bill-payment-amount-field flex min-w-0 overflow-hidden rounded-xl border border-brand-green/15 bg-white shadow-sm transition focus-within:border-brand-gold focus-within:ring-2 focus-within:ring-brand-gold/30">
+            <span
+              className="flex shrink-0 items-center border-r border-brand-green/10 bg-brand-cream/60 px-3 text-base font-semibold text-brand-green sm:text-sm"
+              aria-hidden
+            >
+              ₹
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder=""
+              value={paymentAmount}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^\d.]/g, "");
+                const dot = raw.indexOf(".");
+                const sanitized =
+                  dot === -1 ? raw : `${raw.slice(0, dot + 1)}${raw.slice(dot + 1).replace(/\./g, "")}`;
+                setPaymentAmount(sanitized);
+              }}
+              className="bill-payment-amount-input min-h-11 min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-base text-brand-green focus:outline-none sm:text-sm"
+            />
+          </div>
         </label>
         <button
           type="button"

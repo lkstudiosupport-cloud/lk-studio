@@ -374,4 +374,26 @@ export const BILL_RECEIPT_STYLES = `
   font-size: 0.75rem;
   color: #71717a;
 }
+
+@media (max-width: 639px) {
+  .bill-receipt {
+    max-width: none;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .bill-receipt-paper {
+    width: 100%;
+    max-width: none;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .bill-receipt-content {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+}
 `;

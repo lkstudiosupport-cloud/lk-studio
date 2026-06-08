@@ -263,6 +263,8 @@ button {
   z-index: 60;
   display: flex;
   flex-direction: column;
+  width: 100vw;
+  max-width: 100vw;
   background: #faf6ee;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -294,8 +296,8 @@ button {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 0 max(0.75rem, env(safe-area-inset-right, 0px)) 1.5rem
-    max(0.75rem, env(safe-area-inset-left, 0px));
+  padding: 0 env(safe-area-inset-right, 0px) max(1.5rem, env(safe-area-inset-bottom, 0px))
+    env(safe-area-inset-left, 0px);
 }
 
 /* Mobile: receipt before payment, full width, no inner clip */
@@ -304,18 +306,29 @@ button {
     overflow: visible;
   }
 
+  .bill-detail-page--receipt-primary {
+    margin-left: calc(-1 * max(1rem, env(safe-area-inset-left, 0px)));
+    margin-right: calc(-1 * max(1rem, env(safe-area-inset-right, 0px)));
+  }
+
   .bill-detail-body {
     overflow: visible;
+    gap: 0.75rem;
+    padding: 0;
   }
 
   .bill-detail-body .bill-receipt-shell {
     order: 1;
     flex: 0 0 auto;
+    width: 100%;
+    max-width: none;
   }
 
   .bill-detail-body .bill-payment-panel {
     order: 2;
     flex: 0 0 auto;
+    margin-left: max(0.5rem, env(safe-area-inset-left, 0px));
+    margin-right: max(0.5rem, env(safe-area-inset-right, 0px));
   }
 
   /* When user dismisses fullscreen, receipt still fills the viewport above payment */
@@ -340,20 +353,38 @@ button {
   }
 
   .bill-receipt {
-    max-width: 100%;
-    width: 100%;
-    margin-left: 0;
-    margin-right: 0;
+    max-width: none !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
   .bill-receipt-paper {
     overflow: visible;
     max-height: none;
+    width: 100%;
+    max-width: none;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
   }
 
   .bill-receipt-content {
     padding-top: 3.5rem;
     padding-bottom: 3.5rem;
+  }
+
+  .bill-receipt-fullscreen .bill-receipt {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .bill-receipt-fullscreen .bill-receipt-paper {
+    min-height: calc(100dvh - 4rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
   }
 
   .bill-payment-panel--collapsible .bill-payment-panel-toggle {
@@ -370,6 +401,10 @@ button {
 
 .bill-payment-amount-input {
   font-variant-numeric: tabular-nums;
+}
+
+.bill-payment-amount-field {
+  width: 100%;
 }
 
 @media (min-width: 640px) {

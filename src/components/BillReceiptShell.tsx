@@ -4,10 +4,9 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { Maximize2, X } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { isMobileWeb } from "@/lib/platform";
 
 function isMobileViewport() {
-  return isMobileWeb() && window.matchMedia("(max-width: 639px)").matches;
+  return window.matchMedia("(max-width: 639px)").matches;
 }
 
 export function BillReceiptShell({
@@ -40,7 +39,7 @@ export function BillReceiptShell({
   }, [fullscreen]);
 
   return (
-    <div className={fullscreen ? "bill-receipt-fullscreen" : "bill-receipt-shell"}>
+    <div className={fullscreen ? "bill-receipt-shell bill-receipt-fullscreen" : "bill-receipt-shell"}>
       <div className={fullscreen ? "bill-receipt-fullscreen-bar" : "bill-receipt-shell-toolbar"}>
         {fullscreen ? (
           <button
