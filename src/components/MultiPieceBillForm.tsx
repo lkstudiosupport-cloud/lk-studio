@@ -10,7 +10,7 @@ import { t } from "@/lib/i18n";
 import type { BillLineItem } from "@/lib/bill-items";
 import { lineItemTotal } from "@/lib/bill-items";
 import { Plus, Trash2, Receipt, ArrowLeft, UserRound, Pencil } from "lucide-react";
-import { createBill } from "@/app/shop/actions";
+import { createBill, updateBill } from "@/app/shop/actions";
 import { billPending } from "@/lib/bill-payment";
 import { newId } from "@/lib/new-id";
 import { CustomerPhoneField } from "@/components/CustomerPhoneField";
@@ -26,6 +26,10 @@ export function MultiPieceBillForm({
   customers,
   initialCustomerName = "",
   initialCustomerPhone = "",
+  initialLines,
+  initialAdvancePaid = 0,
+  initialPaidAmount = 0,
+  editBillId,
   hideCustomerSection = false,
   onChangeCustomer,
 }: {
@@ -33,16 +37,24 @@ export function MultiPieceBillForm({
   customers: Customer[];
   initialCustomerName?: string;
   initialCustomerPhone?: string;
+  initialLines?: BillLineItem[];
+  initialAdvancePaid?: number;
+  initialPaidAmount?: number;
+  /** When set, form updates an existing bill instead of creating one. */
+  editBillId?: string;
   hideCustomerSection?: boolean;
   onChangeCustomer?: () => void;
 }) {
+  const isEdit = Boolean(editBillId);
   const [customerName, setCustomerName] = useState(initialCustomerName);
   const [customerPhone, setCustomerPhone] = useState(initialCustomerPhone);
-  const [lines, setLines] = useState<BillLineItem[]>([newLine()]);
+  const [lines, setLines] = useState<BillLineItem[]>(
+    initialLines?.length ? initialLines : [newLine()]
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [advancePaid, setAdvancePaid] = useState(0);
-  const [paidAmount, setPaidAmount] = useState(0);
+  const [advancePaid, setAdvancePaid] = useState(initialAdvancePaid);
+  const [paidAmount, setPaidAmount] = useState(initialPaidAmount);
   const router = useRouter();
 
   const total = useMemo(
@@ -103,6 +115,14 @@ export function MultiPieceBillForm({
     fd.set("paidAmount", String(paidAmount));
 
     try {
+      if (isEdit && editBillId) {
+        fd.set("billId", editBillId);
+        await updateBill(fd);
+        router.push(`/shop/bills/${editBillId}`);
+        router.refresh();
+        return;
+      }
+
       const result = await createBill(fd);
       if (result?.id) {
         router.push(`/shop/bills/${result.id}?share=1`);
@@ -123,19 +143,19 @@ export function MultiPieceBillForm({
 
   return (
     <form onSubmit={onSubmit} className="card-premium min-w-0 space-y-5 p-4 sm:p-5">
-      {hideCustomerSection && (
+      {(hideCustomerSection || isEdit) && (
         <Link
-          href="/shop/bills"
+          href={isEdit && editBillId ? `/shop/bills/${editBillId}` : "/shop/bills"}
           className="inline-flex items-center gap-1 text-sm font-semibold text-brand-green"
         >
           <ArrowLeft className="h-4 w-4" />
-          {t(locale, "backToBills")}
+          {isEdit ? t(locale, "backToBill") : t(locale, "backToBills")}
         </Link>
       )}
 
       <h2 className="flex items-center gap-2 text-lg font-bold text-brand-green">
         <Receipt className="h-6 w-6" />
-        {hideCustomerSection ? t(locale, "billBook") : t(locale, "createBill")}
+        {isEdit ? t(locale, "editBill") : hideCustomerSection ? t(locale, "billBook") : t(locale, "createBill")}
       </h2>
 
       {hideCustomerSection ? (
@@ -226,8 +246,8 @@ export function MultiPieceBillForm({
         </div>
 
         <div className="-mx-1 overflow-x-auto overscroll-x-contain">
-          <div className="min-w-[18rem]">
-            <div className="grid grid-cols-[minmax(0,2fr)_3.25rem_4rem_4rem_2rem] items-end gap-x-1.5 border-b border-brand-green/15 px-1 pb-2 text-xs font-bold uppercase tracking-wide text-brand-green-soft">
+          <div className="min-w-[20rem] sm:min-w-[24rem]">
+            <div className="grid grid-cols-[minmax(9rem,2.5fr)_2.25rem_3.25rem_3.25rem_1.75rem] items-end gap-x-1 border-b border-brand-green/15 px-1 pb-2 text-xs font-bold uppercase tracking-wide text-brand-green-soft sm:grid-cols-[minmax(11rem,3fr)_2.5rem_3.5rem_3.5rem_2rem] sm:gap-x-1.5">
               <span>{t(locale, "piece")}</span>
               <span className="text-center">{t(locale, "quantity")}</span>
               <span className="text-center">{t(locale, "unitPrice")}</span>
@@ -240,7 +260,7 @@ export function MultiPieceBillForm({
               return (
                 <div
                   key={line.id}
-                  className="grid grid-cols-[minmax(0,2fr)_3.25rem_4rem_4rem_2rem] items-center gap-x-1.5 border-b border-zinc-100 px-1 py-2 last:border-b-0"
+                  className="grid grid-cols-[minmax(9rem,2.5fr)_2.25rem_3.25rem_3.25rem_1.75rem] items-center gap-x-1 border-b border-zinc-100 px-1 py-2 last:border-b-0 sm:grid-cols-[minmax(11rem,3fr)_2.5rem_3.5rem_3.5rem_2rem] sm:gap-x-1.5"
                 >
                   <div className="min-w-0">
                     <span className="mb-0.5 block text-xs font-semibold text-zinc-500">
@@ -252,6 +272,7 @@ export function MultiPieceBillForm({
                       onChange={(name) => updateLine(line.id, { name })}
                       placeholder={t(locale, "pieceNamePlaceholder")}
                       aria-label={`${t(locale, "piece")} ${idx + 1}`}
+                      className="min-w-[14ch]"
                       micErrorLabel={t(locale, "micPermissionError")}
                       startLabel={t(locale, "startListening")}
                       stopLabel={t(locale, "stopListening")}
@@ -374,7 +395,13 @@ export function MultiPieceBillForm({
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <button type="submit" disabled={pending} className="btn-primary w-full py-3 text-lg">
-        {pending ? t(locale, "savingBill") : t(locale, "saveBill")}
+        {pending
+          ? isEdit
+            ? t(locale, "updatingBill")
+            : t(locale, "savingBill")
+          : isEdit
+            ? t(locale, "updateBill")
+            : t(locale, "saveBill")}
       </button>
     </form>
   );

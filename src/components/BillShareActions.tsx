@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Share2, ArrowLeft, Printer } from "lucide-react";
+import { Share2, ArrowLeft, Printer, Pencil } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { withTimeout } from "@/lib/platform";
@@ -16,6 +16,7 @@ export function BillShareActions({
   billNumber,
   shopName,
   showShare,
+  editHref,
   compact,
 }: {
   locale: Locale;
@@ -23,6 +24,7 @@ export function BillShareActions({
   billNumber?: string;
   shopName?: string;
   showShare?: boolean;
+  editHref?: string;
   /** Inline bar for fullscreen receipt hero view. */
   compact?: boolean;
 }) {
@@ -72,6 +74,15 @@ export function BillShareActions({
         <ArrowLeft className="h-4 w-4 shrink-0" />
         <span>{backLabel}</span>
       </Link>
+      {editHref && (
+        <Link
+          href={editHref}
+          className={`${btnBase} border border-brand-green/20 bg-white text-brand-green`}
+        >
+          <Pencil className="h-4 w-4 shrink-0" />
+          <span>{compact ? t(locale, "editShort") : t(locale, "editBill")}</span>
+        </Link>
+      )}
       {showShare && (
         <button
           type="button"

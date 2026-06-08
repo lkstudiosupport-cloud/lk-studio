@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Contact, Mic, Square } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -46,7 +46,11 @@ export function CustomerPhoneField({
 }) {
   const [picking, setPicking] = useState(false);
   const [pickError, setPickError] = useState("");
-  const pickerSupported = isContactPickerSupported();
+  const [pickerSupported, setPickerSupported] = useState(false);
+
+  useEffect(() => {
+    setPickerSupported(isContactPickerSupported());
+  }, []);
 
   const { active: voiceActive, start: startVoice, stop: stopVoice } = useVoiceCapture({
     locale,
@@ -88,7 +92,7 @@ export function CustomerPhoneField({
       <span className="mb-1 block text-sm font-semibold text-brand-green">
         {t(locale, "mobileNumber")}
       </span>
-      <div className="flex min-w-0 items-start gap-2">
+      <div className="flex min-w-0 items-start gap-1.5">
         <div className="min-w-0 flex-1">
           <PhoneInput
             locale={locale}
@@ -96,32 +100,37 @@ export function CustomerPhoneField({
             onChange={onChange}
             name="customerPhone"
             hideFooter
+            compactCountry
           />
         </div>
-        <button
-          type="button"
-          title={voiceActive ? t(locale, "stopListening") : t(locale, "startListening")}
-          aria-label={voiceActive ? t(locale, "stopListening") : t(locale, "startListening")}
-          onClick={() => (voiceActive ? void stopVoice() : void startVoice())}
-          className={`inline-flex h-[2.75rem] shrink-0 items-center justify-center rounded-xl p-2.5 ${
-            voiceActive
-              ? "animate-pulse bg-red-600 text-white"
-              : "bg-brand-green/10 text-brand-green hover:bg-brand-green/20"
-          }`}
-        >
-          {voiceActive ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-        </button>
-        <button
-          type="button"
-          onClick={onPickContact}
-          disabled={picking}
-          title={pickerSupported ? t(locale, "pickFromContacts") : t(locale, "contactPickUnsupported")}
-          aria-label={t(locale, "pickFromContacts")}
-          className="inline-flex h-[2.75rem] shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-100 disabled:opacity-60"
-        >
-          <Contact className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">{t(locale, "pickFromContactsShort")}</span>
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            title={voiceActive ? t(locale, "stopListening") : t(locale, "startListening")}
+            aria-label={voiceActive ? t(locale, "stopListening") : t(locale, "startListening")}
+            onClick={() => (voiceActive ? void stopVoice() : void startVoice())}
+            className={`inline-flex h-[2.75rem] w-10 items-center justify-center rounded-xl p-2 ${
+              voiceActive
+                ? "animate-pulse bg-red-600 text-white"
+                : "bg-brand-green/10 text-brand-green hover:bg-brand-green/20"
+            }`}
+          >
+            {voiceActive ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => void onPickContact()}
+            disabled={picking}
+            title={pickerSupported ? t(locale, "pickFromContacts") : t(locale, "contactPickUnsupported")}
+            aria-label={t(locale, "pickFromContacts")}
+            className="inline-flex h-[2.75rem] w-10 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 shadow-sm transition hover:bg-zinc-100 disabled:opacity-60 sm:w-auto sm:gap-1.5 sm:px-3"
+          >
+            <Contact className="h-4 w-4 shrink-0" />
+            <span className="hidden text-xs font-semibold sm:inline">
+              {t(locale, "pickFromContactsShort")}
+            </span>
+          </button>
+        </div>
       </div>
       <p className="text-xs text-zinc-500">{t(locale, "whatsappNumberHint")}</p>
       {pickError && <p className="text-xs text-red-600">{pickError}</p>}

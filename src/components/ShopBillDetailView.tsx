@@ -54,6 +54,7 @@ export function ShopBillDetailView({
         <BillShareActions
           locale={locale}
           backHref="/shop/bills"
+          editHref={`/shop/bills/${billId}/edit`}
           billNumber={receiptData.billNumber}
           shopName={receiptData.shop.shopName}
           showShare
@@ -83,6 +84,7 @@ export function ShopBillDetailView({
             <BillShareActions
               locale={locale}
               backHref="/shop/bills"
+              editHref={`/shop/bills/${billId}/edit`}
               billNumber={receiptData.billNumber}
               shopName={receiptData.shop.shopName}
               showShare

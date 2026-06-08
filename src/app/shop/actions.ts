@@ -209,6 +209,41 @@ export async function createBill(formData: FormData) {
   return { id: bill.id };
 }
 
+export async function updateBill(formData: FormData) {
+  const shop = await shopId();
+  const billId = String(formData.get("billId") ?? "").trim();
+  if (!billId) throw new Error("Bill not found");
+
+  const existing = await prisma.bill.findFirst({ where: { id: billId, shopId: shop } });
+  if (!existing) throw new Error("Bill not found");
+
+  const itemsJson = String(formData.get("itemsJson") ?? "[]");
+  const items = parseBillItems(itemsJson);
+  if (items.length === 0) throw new Error("Add at least one item with name, quantity and price");
+
+  const amount = parseFloat(String(formData.get("amount"))) || billItemsTotal(items);
+  const advancePaid = parseFloat(String(formData.get("advancePaid") ?? "0")) || 0;
+  const paidAmount = parseFloat(String(formData.get("paidAmount") ?? "0")) || 0;
+  const firstOrderId = items.find((i) => i.orderId)?.orderId;
+  const paid =
+    formData.get("paid") === "on" || billFullyPaid(amount, advancePaid, paidAmount);
+
+  await prisma.bill.update({
+    where: { id: billId },
+    data: {
+      amount,
+      advancePaid,
+      paidAmount,
+      paid,
+      itemsJson,
+      ...(firstOrderId ? { order: { connect: { id: firstOrderId } } } : {}),
+    },
+  });
+
+  revalidateBillPaths(billId);
+  return { id: billId };
+}
+
 function revalidateBillPaths(billId: string) {
   revalidatePath("/shop");
   revalidatePath("/shop/bills");
