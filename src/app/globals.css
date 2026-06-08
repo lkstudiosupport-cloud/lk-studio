@@ -318,6 +318,27 @@ button {
     flex: 0 0 auto;
   }
 
+  /* When user dismisses fullscreen, receipt still fills the viewport above payment */
+  .bill-detail-page--receipt-primary .bill-receipt-shell:not(.bill-receipt-fullscreen) {
+    min-height: calc(100dvh - 7.5rem - env(safe-area-inset-top, 0px));
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bill-detail-page--receipt-primary .bill-receipt-shell:not(.bill-receipt-fullscreen) .bill-receipt-shell-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .bill-detail-page--receipt-primary .bill-receipt-shell:not(.bill-receipt-fullscreen) .bill-receipt {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
   .bill-receipt {
     max-width: 100%;
     width: 100%;
@@ -345,6 +366,10 @@ button {
     border-top: 1px solid rgb(27 48 34 / 0.08);
     padding-top: 1rem;
   }
+}
+
+.bill-payment-amount-input {
+  font-variant-numeric: tabular-nums;
 }
 
 @media (min-width: 640px) {

@@ -1,27 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Maximize2, X } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { isMobileWeb } from "@/lib/platform";
 
+function isMobileViewport() {
+  return isMobileWeb() && window.matchMedia("(max-width: 639px)").matches;
+}
+
 export function BillReceiptShell({
   locale,
   children,
   defaultFullscreen,
+  autoFullscreenOnMobile = true,
 }: {
   locale: Locale;
   children: React.ReactNode;
-  /** Open fullscreen receipt on mobile (e.g. right after bill save). */
+  /** Force fullscreen on mobile (e.g. right after bill save / WhatsApp share). */
   defaultFullscreen?: boolean;
+  /** Open fullscreen receipt on mobile bill detail load (default on). */
+  autoFullscreenOnMobile?: boolean;
 }) {
   const [fullscreen, setFullscreen] = useState(false);
 
-  useEffect(() => {
-    if (!defaultFullscreen) return;
-    if (isMobileWeb()) setFullscreen(true);
-  }, [defaultFullscreen]);
+  useLayoutEffect(() => {
+    if (!isMobileViewport()) return;
+    if (autoFullscreenOnMobile || defaultFullscreen) setFullscreen(true);
+  }, [autoFullscreenOnMobile, defaultFullscreen]);
 
   useEffect(() => {
     if (!fullscreen) return;

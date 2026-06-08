@@ -129,16 +129,28 @@ export function BillPaymentPanel({
           <span className="mb-1 block text-xs font-semibold text-brand-green">
             {t(locale, "paymentAmountNow")}
           </span>
+          <p className="mb-1.5 text-xs text-zinc-500">
+            {t(locale, "pendingAmount")}: ₹{formatMoney(balance)}
+          </p>
           <div className="relative">
-            <IndianRupee className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-gold" />
+            <IndianRupee
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-gold"
+              aria-hidden
+            />
             <input
-              type="number"
-              min="0"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              spellCheck={false}
               value={paymentAmount}
-              onChange={(e) => setPaymentAmount(e.target.value)}
-              placeholder={formatMoney(balance)}
-              className="input-premium w-full pl-9"
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^\d.]/g, "");
+                const dot = raw.indexOf(".");
+                const sanitized =
+                  dot === -1 ? raw : `${raw.slice(0, dot + 1)}${raw.slice(dot + 1).replace(/\./g, "")}`;
+                setPaymentAmount(sanitized);
+              }}
+              className="bill-payment-amount-input input-premium w-full pl-10"
             />
           </div>
         </label>

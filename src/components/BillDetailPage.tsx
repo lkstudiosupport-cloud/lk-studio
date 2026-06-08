@@ -4,6 +4,7 @@ export function BillDetailPage({
   paymentPanel,
   extra,
   children,
+  receiptPrimaryOnMobile,
 }: {
   actions: React.ReactNode;
   /** Bill receipt — shown first on mobile when provided with payment. */
@@ -13,9 +14,17 @@ export function BillDetailPage({
   extra?: React.ReactNode;
   /** Legacy: single children slot (customer bill detail). */
   children?: React.ReactNode;
+  /** Receipt fills mobile viewport; payment stays collapsed until user scrolls past. */
+  receiptPrimaryOnMobile?: boolean;
 }) {
+  const receiptPrimary = receiptPrimaryOnMobile ?? (receipt != null && paymentPanel != null);
+
   return (
-    <div className="bill-detail-page">
+    <div
+      className={
+        receiptPrimary ? "bill-detail-page bill-detail-page--receipt-primary" : "bill-detail-page"
+      }
+    >
       {actions}
       {extra}
       <div className="bill-detail-body">
