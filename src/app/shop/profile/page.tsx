@@ -4,6 +4,8 @@ import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { ShopProfileForm } from "@/components/ShopProfileForm";
 import { ProfileLogout } from "@/components/ProfileLogout";
+import { DeleteAccountSection } from "@/components/DeleteAccountSection";
+import { LegalFooter } from "@/components/LegalFooter";
 import { ProfileSubscriptionSection } from "@/components/ProfileSubscriptionSection";
 import { Store } from "lucide-react";
 import { SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
@@ -40,7 +42,9 @@ export default async function ShopProfilePage({
         payeeLabel={profile.shopName}
         defaultOpen={sp?.subscription === "1"}
       />
+      <DeleteAccountSection locale={locale} />
       <ProfileLogout locale={locale} />
+      <LegalFooter locale={locale} className="pt-2" />
     </div>
   );
 }

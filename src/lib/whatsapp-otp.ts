@@ -1,4 +1,5 @@
 import { isDemoPhoneE164 } from "@/lib/demo-accounts";
+import { allowDemoOtpOnScreen } from "@/lib/production";
 
 /**
  * Send login OTP via WhatsApp Business Cloud API, custom webhook, or demo log.
@@ -81,9 +82,8 @@ export async function sendWhatsAppOtp(e164Digits: string, code: string): Promise
   console.log(`[LK Studio OTP] +${e164Digits}: ${code}`);
 
   const demoMode =
-    process.env.NODE_ENV !== "production" ||
-    process.env.LOGIN_OTP_DEMO === "true" ||
-    isDemoPhoneE164(e164Digits);
+    allowDemoOtpOnScreen() ||
+    (process.env.NODE_ENV !== "production" && isDemoPhoneE164(e164Digits));
 
   return { sent: false, demoMode, message };
 }

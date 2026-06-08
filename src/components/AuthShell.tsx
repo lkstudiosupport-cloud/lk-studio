@@ -2,6 +2,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DevAccessBanner } from "@/components/DevAccessBanner";
+import { LegalFooter } from "@/components/LegalFooter";
 import { LocaleLocationBar } from "@/components/LocaleLocationBar";
 
 /** Same centered layout as the home page — for login / register. */
@@ -29,6 +30,7 @@ export function AuthShell({
           </div>
         )}
         <div className="mt-6 w-full text-left">{children}</div>
+        <LegalFooter locale={locale} className="mt-8" />
       </div>
     </main>
   );

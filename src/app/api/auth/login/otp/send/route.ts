@@ -5,6 +5,7 @@ import { findUserByPhone, generateOtpCode } from "@/lib/auth-user";
 import { deliverLoginOtpWhatsApp, storeLoginOtp } from "@/lib/login-session";
 import { isValidPhone, resolvePhoneE164, INVALID_PHONE_MESSAGE } from "@/lib/phone";
 import { zodErrorMessage, formString } from "@/lib/zod-error-message";
+import { allowDemoOtpOnScreen } from "@/lib/production";
 
 const schema = z.object({
   phone: formString(1),
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       expiresAt: expiresAt.toISOString(),
-      ...(demoMode ? { demoCode: code } : {}),
+      ...(demoMode && allowDemoOtpOnScreen() ? { demoCode: code } : {}),
     });
   } catch (err) {
     console.error("OTP send error:", err);

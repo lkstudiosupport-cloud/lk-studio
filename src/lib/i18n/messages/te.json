@@ -496,5 +496,18 @@
   "shopDesign": "షాప్ డిజైన్",
   "customerOwnPhoto": "కస్టమర్ ఫోటో",
   "waitingForShopQuote": "షాప్ ఇంకా సమాధానం ఇవ్వలేదు.",
-  "selectCategory": "కేటగిరీ ఎంచుకోండి"
+  "selectCategory": "కేటగిరీ ఎంచుకోండి",
+  "privacyPolicy": "గోప్యతా విధానం",
+  "termsOfService": "సేవా నిబంధనలు",
+  "supportEmail": "సపోర్ట్",
+  "legalLastUpdated": "చివరి అప్‌డేట్",
+  "legalEnglishFallback": "విభాగ శీర్షికలు అనువదించబడ్డాయి; పూర్తి న్యాయపరమైన వచనం ఇంగ్లీష్‌లో ఉంది.",
+  "deleteAccountTitle": "ఖాతాను తొలగించండి",
+  "deleteAccountHint": "మీ ఖాతా మరియు సంబంధిత డేటాను శాశ్వతంగా తొలగిస్తుంది. ఇది రద్దు చేయలేము.",
+  "deleteAccountButton": "నా ఖాతాను తొలగించండి",
+  "deleteAccountConfirmTitle": "ఖాతా తొలగింపు నిర్ధారణ",
+  "deleteAccountConfirmBody": "మీ ప్రొఫైల్, ఆర్డర్‌లు, కొలతలు, ఇష్టమైనవి మరియు అప్‌లోడ్ చేసిన ఫోటోలు శాశ్వతంగా తొలగించబడతాయి.",
+  "deleteAccountConfirmWord": "DELETE",
+  "deleteAccountTypeConfirm": "నిర్ధారించడానికి {word} టైప్ చేయండి",
+  "deleteAccountFailed": "ఖాతాను తొలగించలేకపోయాం. కనెక్షన్ చెక్ చేసి మళ్లీ ప్రయత్నించండి."
 }

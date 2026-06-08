@@ -5,6 +5,8 @@ import { LocaleLocationBar } from "@/components/LocaleLocationBar";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
+import { LegalFooter } from "@/components/LegalFooter";
+import { showDemoLogin } from "@/lib/production";
 
 export default async function HomePage() {
   const locale = await getLocale();
@@ -34,12 +36,15 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <p className="mt-8 text-xs text-brand-green-soft">{t(locale, "demoCredentials")}</p>
+        {showDemoLogin() && (
+          <p className="mt-8 text-xs text-brand-green-soft">{t(locale, "demoCredentials")}</p>
+        )}
         {process.env.NODE_ENV !== "production" && (
           <p className="mt-2 text-xs text-brand-green-soft">
             Test on phone: <strong>npm run dev:anywhere</strong> · Send app to friends: <strong>SHARE-WITH-FRIENDS.md</strong>
           </p>
         )}
+        <LegalFooter locale={locale} className="mt-8" />
       </div>
     </main>
   );

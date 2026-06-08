@@ -103,16 +103,48 @@ npm run db:seed
 | `NEXT_PUBLIC_SUPABASE_URL` | If using Supabase clients | From Supabase â†’ API |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | If using Supabase clients | Publishable key only |
 | `S3_BUCKET` | Yes* | For order/design photos on Render |
-| `S3_ACCESS_KEY_ID` | Yes* | |
+| `S3_ACCESS_KEY_ID` | Yes* | IAM user with `s3:PutObject` on the bucket |
 | `S3_SECRET_ACCESS_KEY` | Yes* | |
 | `S3_REGION` | Yes* | e.g. `ap-south-1` |
-| `S3_PUBLIC_URL` | Recommended | Public base URL for images |
-| `RAZORPAY_*` | If live payments | |
+| `S3_PUBLIC_URL` | Recommended | Public base URL for images (bucket website or CloudFront) |
+| `S3_ENDPOINT` | Optional | Cloudflare R2 or other S3-compatible endpoint |
+| `NEXT_PUBLIC_SITE_URL` | Recommended | e.g. `https://lk-studio-1.onrender.com` (privacy/terms links) |
+| `RAZORPAY_KEY_ID` | If live autopay | Test `rzp_test_...` from dashboard |
+| `RAZORPAY_KEY_SECRET` | If live autopay | Server-only; from same API key pair |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | If live autopay | Same Key Id as `RAZORPAY_KEY_ID` |
+| `RAZORPAY_WEBHOOK_SECRET` | If webhooks | Razorpay webhook signing secret |
 | `WHATSAPP_*` | If OTP on production | |
 
-\* Without S3, file uploads fail in production (ephemeral disk).
+\* Without S3, file uploads fail in production (ephemeral disk). The API returns a clear error: *File storage not configured…*
 
-**Do not set** `LOGIN_OTP_DEMO=true` in production.
+
+### Razorpay (test mode for staging)
+
+Use **Test mode** in [Razorpay Dashboard](https://dashboard.razorpay.com/) → **Account & Settings** → **API Keys**. Copy **Key Id** and **Key Secret** (secret is shown once when generated or regenerated).
+
+| Key | Required | Notes |
+|-----|----------|--------|
+| `RAZORPAY_KEY_ID` | Yes (live autopay) | Test: `rzp_test_...` |
+| `RAZORPAY_KEY_SECRET` | Yes (live autopay) | **Never** commit; set only in Render Environment or local `.env` / `.env.local` |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Recommended | Same **Key Id** as `RAZORPAY_KEY_ID` for client checkout |
+| `RAZORPAY_WEBHOOK_SECRET` | Recommended | Dashboard → **Webhooks** → endpoint `https://<your-service>/api/subscription/webhook` |
+| `RAZORPAY_PLAN_ID_SHOP` | Optional | Omit to auto-create shop plan on first subscription |
+| `RAZORPAY_PLAN_ID_CUSTOMER` | Optional | Omit to auto-create customer plan on first subscription |
+
+**Local dev:** copy `.env.example` to `.env.local` (or use `.env`), set `RAZORPAY_KEY_ID`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, and `RAZORPAY_KEY_SECRET` from the dashboard. Autopay stays in demo mode until **both** Key Id and Key Secret are set (`isRazorpayConfigured()` in `src/lib/razorpay-config.ts`).
+
+**Render:** add the same values under Environment, redeploy, and register the webhook URL in Razorpay to your Render service URL.
+
+### S3 setup (AWS example)
+
+1. Create an S3 bucket (e.g. `lk-studio-uploads`) in `ap-south-1`.
+2. Enable **Block Public Access** off only if using public object URLs, or serve via CloudFront.
+3. Bucket policy: allow public `GetObject` on `uploads/*` if using direct S3 URLs, **or** use `S3_PUBLIC_URL` pointing to a CDN.
+4. IAM → Users → create access key with policy limited to `s3:PutObject`, `s3:GetObject` on that bucket.
+5. In Render → Environment, set `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`, and `S3_PUBLIC_URL` (e.g. `https://lk-studio-uploads.s3.ap-south-1.amazonaws.com`).
+6. Redeploy. Test profile photo or order image upload in the app.
+
+**Do not set** `LOGIN_OTP_DEMO=true`, `NEXT_PUBLIC_SHOW_DEMO_LOGIN=true`, or `ALLOW_DEMO_FEATURES=true` in production.
 
 ---
 
@@ -141,4 +173,3 @@ See `SHARE-WITH-FRIENDS.md` and `PLAY-STORE-CHECKLIST.md` (if present). Use HTTP
 **Start phase:** `npm run db:seed` is **not** run automatically. `SKIP_DEMO_SEED=true` only affects manual `npm run db:seed`. Missing it does **not** hang startup.
 
 **After changing schema:** run `npm run db:deploy` once (Release Command or Render Shell), not on every build.
-

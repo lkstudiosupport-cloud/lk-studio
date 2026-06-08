@@ -1,0 +1,21 @@
+LK Studio helps tailoring and boutique shops grow with less effort.
+
+For shop owners:
+• Manage your design catalog with photos
+• Receive and track customer orders with measurements
+• Create bills, record advances and payments
+• Share bills on WhatsApp
+• Set shop profile, timings, location, and UPI details
+• Monthly subscription with optional autopay
+
+For customers:
+• Find and save favourite shops
+• Place orders with photos and measurement charts
+• Track order status from measuring to ready for pickup
+• View and pay bills
+• Ask for price quotes on designs
+
+Built for Indian tailoring businesses with support for English, Hindi, and Telugu.
+
+Privacy policy: https://lk-studio-1.onrender.com/privacy
+Support: lkstudio.support@gmail.com

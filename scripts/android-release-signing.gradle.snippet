@@ -1,0 +1,27 @@
+// Paste into android/app/build.gradle inside the `android { }` block
+// after running: npx cap add android
+// Requires android/keystore.properties (see keystore.properties.example)
+
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+signingConfigs {
+    release {
+        if (keystorePropertiesFile.exists()) {
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+        }
+    }
+}
+
+buildTypes {
+    release {
+        signingConfig signingConfigs.release
+        minifyEnabled false
+    }
+}

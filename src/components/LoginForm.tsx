@@ -8,6 +8,7 @@ import { PhoneInput } from "@/components/PhoneInput";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
+import { showDemoLoginUI, showDemoOtpOnScreenUI } from "@/lib/demo-ui";
 
 type LoginMode = "password" | "whatsapp";
 
@@ -93,7 +94,7 @@ export function LoginForm({
       }
 
       setOtpSent(true);
-      if (data.demoCode) setDemoCode(String(data.demoCode));
+      if (showDemoOtpOnScreenUI() && data.demoCode) setDemoCode(String(data.demoCode));
     } catch {
       setLoading(false);
       setError("Cannot reach server. Keep mobile:dev running on PC.");
@@ -167,9 +168,11 @@ export function LoginForm({
         </button>
       </div>
 
-      <p className="rounded-lg bg-brand-cream px-3 py-2 text-xs text-brand-green-soft">
-        {t(locale, "demoCredentials")}
-      </p>
+      {showDemoLoginUI() && (
+        <p className="rounded-lg bg-brand-cream px-3 py-2 text-xs text-brand-green-soft">
+          {t(locale, "demoCredentials")}
+        </p>
+      )}
 
       {mode === "password" ? (
         <form onSubmit={onPasswordSubmit} className="space-y-4">
@@ -203,7 +206,7 @@ export function LoginForm({
           ) : (
             <>
               <p className="text-sm text-brand-green-soft">{t(locale, "whatsappCodeSent")}</p>
-              {demoCode && (
+              {showDemoOtpOnScreenUI() && demoCode && (
                 <p className="rounded-lg bg-brand-gold/20 px-3 py-2 text-sm text-brand-green">
                   {t(locale, "demoOtpCode")}: <strong>{demoCode}</strong>
                 </p>

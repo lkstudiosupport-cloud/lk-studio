@@ -9,10 +9,13 @@ const poppins = Poppins({
   variable: "--font-brand",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://lk-studio-1.onrender.com";
+
 export const metadata: Metadata = {
   title: "LK Studio",
   description: "Grow your business with less effort",
   manifest: "/manifest.json",
+  metadataBase: new URL(siteUrl),
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

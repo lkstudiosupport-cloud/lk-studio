@@ -1,7 +1,7 @@
 {
   "name": "LK Studio",
   "short_name": "LK Studio",
-  "description": "Grow your business with less effort",
+  "description": "Tailoring shop management — orders, measurements, bills, and customer connections.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1b3022",
@@ -9,10 +9,12 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     }
-  ]
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

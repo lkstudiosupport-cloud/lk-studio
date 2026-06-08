@@ -71,12 +71,50 @@ Run on a device/emulator from Android Studio.
 
 ---
 
-## Production APK (Play Store later)
+## Production / Play Store (signed AAB)
 
-1. Deploy Next.js + database to a host (Vercel + Postgres, VPS, etc.).
-2. Set `CAPACITOR_SERVER_URL=https://your-domain.com` in `.env.capacitor`.
-3. Rebuild APK.
-4. For release signing, use Android Studio → **Build → Generate Signed Bundle/APK**.
+1. Deploy Next.js + database — see [RENDER-DEPLOY.md](./RENDER-DEPLOY.md).
+2. Set production URL in `.env.capacitor`:
+   ```env
+   CAPACITOR_SERVER_URL=https://lk-studio-1.onrender.com
+   ```
+3. Create a release keystore (once, back up safely):
+   ```powershell
+   keytool -genkeypair -v -storetype PKCS12 -keystore lk-studio-release.keystore -alias lkstudio -keyalg RSA -keysize 2048 -validity 10000
+   ```
+4. Copy `keystore.properties.example` → `android\keystore.properties` and fill in passwords.
+5. Add release signing to `android\app\build.gradle` (after `npx cap add android`):
+   ```gradle
+   def keystorePropertiesFile = rootProject.file("keystore.properties")
+   def keystoreProperties = new Properties()
+   if (keystorePropertiesFile.exists()) {
+       keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+   }
+   android {
+       signingConfigs {
+           release {
+               if (keystorePropertiesFile.exists()) {
+                   storeFile file(keystoreProperties['storeFile'])
+                   storePassword keystoreProperties['storePassword']
+                   keyAlias keystoreProperties['keyAlias']
+                   keyPassword keystoreProperties['keyPassword']
+               }
+           }
+       }
+       buildTypes {
+           release {
+               signingConfig signingConfigs.release
+           }
+       }
+   }
+   ```
+6. Build signed AAB:
+   ```powershell
+   npm.cmd run build:aab:release
+   ```
+   Output: **`LK-Studio-release.aab`** — upload to Google Play Console.
+
+See [PLAY-STORE-CHECKLIST.md](./PLAY-STORE-CHECKLIST.md) and [play-store/ASSETS.md](./play-store/ASSETS.md) for listing assets and privacy URL.
 
 ---
 

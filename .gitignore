@@ -29,3 +29,8 @@ tunnel-out.txt
 tunnel-err.txt
 LK-Studio-debug.apk
 LK-Studio-release.apk
+LK-Studio-release.aab
+*.keystore
+*.jks
+keystore.properties
+android/keystore.properties

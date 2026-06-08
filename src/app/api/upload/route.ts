@@ -30,7 +30,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ path });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Upload failed";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const status = message.includes("File storage not configured") ? 503 : 400;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
