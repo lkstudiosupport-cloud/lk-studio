@@ -1,4 +1,3 @@
-import { openExternalUrl, openWhatsApp, cleanPhoneForWhatsApp } from "@/lib/whatsapp";
 import { isCapacitorNative, isMobileWeb, withTimeout } from "@/lib/platform";
 import {
   BILL_RECEIPT_CAPTURE_ID,
@@ -171,45 +170,16 @@ async function writeCapacitorShareFile(blob: Blob, fileName: string) {
   return uri;
 }
 
-function androidWhatsAppImageIntent(fileUri: string, phone: string, text: string) {
-  const digits = cleanPhoneForWhatsApp(phone).replace(/\D/g, "");
-  if (!digits) return null;
-
-  const jid = `${digits}@s.whatsapp.net`;
-  const stream = encodeURIComponent(fileUri);
-  const extraText = encodeURIComponent(text);
-  const extraJid = encodeURIComponent(jid);
-
-  return (
-    `intent:#Intent;action=android.intent.action.SEND;` +
-    `type=image/jpeg;package=com.whatsapp;` +
-    `S.android.intent.extra.STREAM=${stream};` +
-    `S.jid=${extraJid};` +
-    `S.android.intent.extra.TEXT=${extraText};` +
-    `flag=1;end`
-  );
-}
-
 async function tryCapacitorNativeShare(
   blob: Blob,
   fileName: string,
   title: string,
-  text: string,
-  phone?: string | null
+  text: string
 ): Promise<ShareResult> {
   if (!isCapacitorNative()) return "unavailable";
 
   try {
     const fileUri = await writeCapacitorShareFile(blob, fileName);
-
-    if (phone?.trim() && /Android/i.test(navigator.userAgent)) {
-      const intent = androidWhatsAppImageIntent(fileUri, phone.trim(), text);
-      if (intent) {
-        openExternalUrl(intent);
-        return "shared";
-      }
-    }
-
     const { Share } = await import("@capacitor/share");
     await Share.share({
       title,
@@ -236,26 +206,15 @@ async function tryWebShareFile(file: File, title: string, text: string): Promise
   }
 }
 
-async function fallbackDownloadAndWhatsApp(
-  blob: Blob,
-  fileName: string,
-  phone: string | null | undefined,
-  text: string
-) {
+function fallbackDownloadBillImage(blob: Blob, fileName: string) {
   downloadBillImage(blob, fileName);
-  if (phone?.trim()) {
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 450));
-    openWhatsApp(phone.trim(), text);
-  }
 }
 
-export async function shareBillImageOnWhatsApp({
-  phone,
+export async function shareBillImage({
   fileName,
   shopName,
   fallbackHint,
 }: {
-  phone?: string | null;
   fileName: string;
   shopName?: string;
   fallbackHint?: string;
@@ -275,16 +234,16 @@ export async function shareBillImageOnWhatsApp({
   const file = new File([blob], resolvedName, { type: "image/jpeg" });
   const title = shopName ? `Bill — ${shopName}` : "Bill";
   const hint =
-    fallbackHint ?? "Your bill image is saved. Please attach it in WhatsApp.";
+    fallbackHint ?? "Your bill image is saved. Open your app and attach the saved image.";
 
   if (isCapacitorNative()) {
     const nativeResult = await withTimeout(
-      tryCapacitorNativeShare(blob, resolvedName, title, hint, phone),
+      tryCapacitorNativeShare(blob, resolvedName, title, hint),
       NATIVE_SHARE_TIMEOUT_MS,
       "Share timed out"
     );
     if (nativeResult === "shared" || nativeResult === "cancelled") return;
-    await fallbackDownloadAndWhatsApp(blob, resolvedName, phone, hint);
+    fallbackDownloadBillImage(blob, resolvedName);
     return;
   }
 
@@ -297,5 +256,5 @@ export async function shareBillImageOnWhatsApp({
     if (shareResult === "shared" || shareResult === "cancelled") return;
   }
 
-  await fallbackDownloadAndWhatsApp(blob, resolvedName, phone, hint);
+  fallbackDownloadBillImage(blob, resolvedName);
 }

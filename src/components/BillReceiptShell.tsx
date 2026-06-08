@@ -20,7 +20,7 @@ export function BillReceiptShell({
 }: {
   locale: Locale;
   children: React.ReactNode;
-  /** Force fullscreen on mobile (e.g. right after bill save / WhatsApp share). */
+  /** Force fullscreen on mobile (e.g. right after bill save / share). */
   defaultFullscreen?: boolean;
   /** Open fullscreen receipt on mobile bill detail load (default on). */
   autoFullscreenOnMobile?: boolean;

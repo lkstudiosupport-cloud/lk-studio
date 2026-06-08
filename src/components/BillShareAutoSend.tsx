@@ -2,17 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { preloadBillCaptureLib, shareBillImageOnWhatsApp } from "@/lib/share-bill-image";
+import { preloadBillCaptureLib, shareBillImage } from "@/lib/share-bill-image";
 import { withTimeout } from "@/lib/platform";
 
 const AUTO_SEND_TIMEOUT_MS = 25000;
 
-function autoSendStorageKey(billNumber: string) {
-  return `lk-wa-bill-${billNumber}`;
+function autoShareStorageKey(billNumber: string) {
+  return `lk-share-bill-${billNumber}`;
 }
 
-export function BillWhatsAppAutoSend({
-  phone,
+export function BillShareAutoSend({
   billNumber,
   shopName,
   enabled,
@@ -21,7 +20,6 @@ export function BillWhatsAppAutoSend({
   errorLabel = "Could not share bill image — try again",
   fallbackHint,
 }: {
-  phone: string | null | undefined;
   billNumber: string;
   shopName?: string;
   enabled: boolean;
@@ -45,7 +43,7 @@ export function BillWhatsAppAutoSend({
   useEffect(() => {
     if (!enabled || runningRef.current) return;
 
-    const storageKey = autoSendStorageKey(billNumber);
+    const storageKey = autoShareStorageKey(billNumber);
     if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(storageKey)) return;
 
     runningRef.current = true;
@@ -55,8 +53,7 @@ export function BillWhatsAppAutoSend({
     (async () => {
       try {
         await withTimeout(
-          shareBillImageOnWhatsApp({
-            phone: phone ?? undefined,
+          shareBillImage({
             fileName: `${billNumber}.jpg`,
             shopName,
             fallbackHint,
@@ -78,7 +75,7 @@ export function BillWhatsAppAutoSend({
         router.replace(pathname, { scroll: false });
       }
     })();
-  }, [enabled, phone, billNumber, shopName, pathname, router, errorLabel, fallbackHint]);
+  }, [enabled, billNumber, shopName, pathname, router, errorLabel, fallbackHint]);
 
   if (!preparing && !error) return null;
   if (silent && preparing && !error) return null;

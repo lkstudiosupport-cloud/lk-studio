@@ -4,19 +4,19 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { ShopBillDetailView } from "@/components/ShopBillDetailView";
-import { billCustomerPhone, billReceiptCustomer } from "@/lib/bill-customer";
+import { billReceiptCustomer } from "@/lib/bill-customer";
 
 export default async function ShopBillDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ whatsapp?: string }>;
+  searchParams: Promise<{ share?: string; whatsapp?: string }>;
 }) {
   const session = await requireSession(["SHOP"]);
   const locale = await getLocale();
   const { id } = await params;
-  const { whatsapp } = await searchParams;
+  const { share, whatsapp } = await searchParams;
 
   const bill = await prisma.bill.findFirst({
     where: { id, shopId: session!.shopId! },
@@ -54,8 +54,7 @@ export default async function ShopBillDetailPage({
       locale={locale}
       billId={bill.id}
       receiptData={receiptData}
-      customerPhone={billCustomerPhone(bill)}
-      isPostCreate={whatsapp === "1"}
+      isPostCreate={share === "1" || whatsapp === "1"}
       preparingLabel={t(locale, "sharingBill")}
       errorLabel={t(locale, "shareBillFailed")}
       fallbackHint={t(locale, "shareBillFallback")}

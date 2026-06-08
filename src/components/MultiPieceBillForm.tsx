@@ -106,7 +106,7 @@ export function MultiPieceBillForm({
     try {
       const result = await createBill(fd);
       if (result?.id) {
-        router.push(`/shop/bills/${result.id}?whatsapp=1`);
+        router.push(`/shop/bills/${result.id}?share=1`);
         return;
       }
       setLines([newLine()]);

@@ -7,14 +7,13 @@ import { BillReceipt } from "@/components/BillReceipt";
 import { BillReceiptShell } from "@/components/BillReceiptShell";
 import { BillShareActions } from "@/components/BillShareActions";
 import { BillDetailPage } from "@/components/BillDetailPage";
-import { BillWhatsAppAutoSend } from "@/components/BillWhatsAppAutoSend";
+import { BillShareAutoSend } from "@/components/BillShareAutoSend";
 import { BillPaymentPanel } from "@/components/BillPaymentPanel";
 
 export function ShopBillDetailView({
   locale,
   billId,
   receiptData,
-  customerPhone,
   isPostCreate,
   preparingLabel,
   errorLabel,
@@ -23,8 +22,7 @@ export function ShopBillDetailView({
   locale: Locale;
   billId: string;
   receiptData: BillReceiptData;
-  customerPhone: string | null;
-  /** Landed after save — receipt hero, payment deferred, WhatsApp in background. */
+  /** Landed after save — receipt hero, payment deferred, share sheet in background. */
   isPostCreate: boolean;
   preparingLabel: string;
   errorLabel: string;
@@ -56,15 +54,13 @@ export function ShopBillDetailView({
         <BillShareActions
           locale={locale}
           backHref="/shop/bills"
-          customerPhone={customerPhone}
           billNumber={receiptData.billNumber}
           shopName={receiptData.shop.shopName}
-          showWhatsApp
+          showShare
         />
       }
       extra={
-        <BillWhatsAppAutoSend
-          phone={customerPhone}
+        <BillShareAutoSend
           billNumber={receiptData.billNumber}
           shopName={receiptData.shop.shopName}
           enabled={isPostCreate}
@@ -87,10 +83,9 @@ export function ShopBillDetailView({
             <BillShareActions
               locale={locale}
               backHref="/shop/bills"
-              customerPhone={customerPhone}
               billNumber={receiptData.billNumber}
               shopName={receiptData.shop.shopName}
-              showWhatsApp
+              showShare
               compact
             />
           }
