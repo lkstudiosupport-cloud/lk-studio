@@ -6,7 +6,8 @@ import { ArrowLeft, Receipt, UserRound } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { MultiPieceBillForm } from "@/components/MultiPieceBillForm";
-import { WhatsAppPhoneField } from "@/components/WhatsAppPhoneField";
+import { VoiceInput } from "@/components/VoiceInput";
+import { CustomerPhoneField } from "@/components/CustomerPhoneField";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 
 type Customer = { id: string; name: string; phone: string | null; whatsapp: string | null };
@@ -22,7 +23,7 @@ export function CreateBillFlow({ locale, customers }: { locale: Locale; customer
     const c = customers.find((x) => x.id === id);
     if (!c) return;
     setCustomerName(c.name);
-    setCustomerPhone(c.whatsapp || c.phone || "");
+    setCustomerPhone(c.phone || c.whatsapp || "");
   };
 
   const continueToBill = () => {
@@ -74,13 +75,17 @@ export function CreateBillFlow({ locale, customers }: { locale: Locale; customer
           <span className="mb-1 block text-sm font-semibold text-brand-green">
             {t(locale, "customerName")}
           </span>
-          <input
+          <VoiceInput
+            locale={locale}
             value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
+            onChange={setCustomerName}
             list="create-bill-customer-names"
             autoFocus
             placeholder={t(locale, "customerNamePlaceholder")}
-            className="input-premium w-full"
+            className="w-full"
+            micErrorLabel={t(locale, "micPermissionError")}
+            startLabel={t(locale, "startListening")}
+            stopLabel={t(locale, "stopListening")}
           />
           <datalist id="create-bill-customer-names">
             {customers.map((c) => (
@@ -92,7 +97,7 @@ export function CreateBillFlow({ locale, customers }: { locale: Locale; customer
         {customers.length > 0 && (
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-zinc-600">
-              {t(locale, "pickCustomerForWhatsApp")}
+              {t(locale, "pickSavedCustomer")}
             </span>
             <select
               defaultValue=""
@@ -106,14 +111,14 @@ export function CreateBillFlow({ locale, customers }: { locale: Locale; customer
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
-                  {c.whatsapp || c.phone ? ` · ${c.whatsapp || c.phone}` : ""}
+                  {c.phone || c.whatsapp ? ` · ${c.phone || c.whatsapp}` : ""}
                 </option>
               ))}
             </select>
           </label>
         )}
 
-        <WhatsAppPhoneField
+        <CustomerPhoneField
           locale={locale}
           value={customerPhone}
           onChange={setCustomerPhone}

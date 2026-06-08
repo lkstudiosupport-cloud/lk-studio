@@ -12,6 +12,9 @@ type Props = {
   placeholder?: string;
   "aria-label"?: string;
   className?: string;
+  list?: string;
+  required?: boolean;
+  autoFocus?: boolean;
   micErrorLabel: string;
   startLabel: string;
   stopLabel: string;
@@ -24,6 +27,9 @@ export function VoiceInput({
   placeholder,
   "aria-label": ariaLabel,
   className = "",
+  list,
+  required,
+  autoFocus,
   micErrorLabel,
   startLabel,
   stopLabel,
@@ -61,6 +67,9 @@ export function VoiceInput({
         }}
         placeholder={placeholder}
         aria-label={ariaLabel}
+        list={list}
+        required={required}
+        autoFocus={autoFocus}
         className="input-premium min-w-0 flex-1 py-1.5 text-sm"
       />
       <button

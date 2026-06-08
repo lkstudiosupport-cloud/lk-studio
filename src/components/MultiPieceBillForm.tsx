@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { VoiceNotes } from "./VoiceNotes";
 import { VoiceInput } from "./VoiceInput";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -14,12 +13,12 @@ import { Plus, Trash2, Receipt, ArrowLeft, UserRound, Pencil } from "lucide-reac
 import { createBill } from "@/app/shop/actions";
 import { billPending } from "@/lib/bill-payment";
 import { newId } from "@/lib/new-id";
-import { WhatsAppPhoneField } from "@/components/WhatsAppPhoneField";
+import { CustomerPhoneField } from "@/components/CustomerPhoneField";
 
 type Customer = { id: string; name: string; phone: string | null; whatsapp: string | null };
 
 function newLine(): BillLineItem {
-  return { id: newId(), name: "", quantity: 1, price: 0, amount: 0 };
+  return { id: newId(), name: "", quantity: 0, price: 0, amount: 0 };
 }
 
 export function MultiPieceBillForm({
@@ -72,7 +71,7 @@ export function MultiPieceBillForm({
     const c = customers.find((x) => x.id === id);
     if (!c) return;
     setCustomerName(c.name);
-    setCustomerPhone(c.whatsapp || c.phone || "");
+    setCustomerPhone(c.phone || c.whatsapp || "");
   };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -166,13 +165,17 @@ export function MultiPieceBillForm({
             <span className="mb-1 block text-sm font-semibold text-brand-green">
               {t(locale, "customerName")}
             </span>
-            <input
+            <VoiceInput
+              locale={locale}
               value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
+              onChange={setCustomerName}
               list="bill-customer-names"
               required
               placeholder={t(locale, "customerNamePlaceholder")}
-              className="input-premium w-full"
+              className="w-full"
+              micErrorLabel={t(locale, "micPermissionError")}
+              startLabel={t(locale, "startListening")}
+              stopLabel={t(locale, "stopListening")}
             />
             <datalist id="bill-customer-names">
               {customers.map((c) => (
@@ -184,7 +187,7 @@ export function MultiPieceBillForm({
           {customers.length > 0 && (
             <label className="block">
               <span className="mb-1 block text-xs font-semibold text-zinc-600">
-                {t(locale, "pickCustomerForWhatsApp")}
+                {t(locale, "pickSavedCustomer")}
               </span>
               <select
                 defaultValue=""
@@ -198,14 +201,14 @@ export function MultiPieceBillForm({
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
-                    {(c.whatsapp || c.phone) ? ` · ${c.whatsapp || c.phone}` : ""}
+                    {(c.phone || c.whatsapp) ? ` · ${c.phone || c.whatsapp}` : ""}
                   </option>
                 ))}
               </select>
             </label>
           )}
 
-          <WhatsAppPhoneField
+          <CustomerPhoneField
             locale={locale}
             value={customerPhone}
             onChange={setCustomerPhone}
@@ -224,7 +227,7 @@ export function MultiPieceBillForm({
 
         <div className="-mx-1 overflow-x-auto overscroll-x-contain">
           <div className="min-w-[18rem]">
-            <div className="grid grid-cols-[minmax(0,1.5fr)_3.25rem_4.25rem_4.25rem_2rem] items-end gap-x-1.5 border-b border-brand-green/15 px-1 pb-2 text-xs font-bold uppercase tracking-wide text-brand-green-soft">
+            <div className="grid grid-cols-[minmax(0,2fr)_3.25rem_4rem_4rem_2rem] items-end gap-x-1.5 border-b border-brand-green/15 px-1 pb-2 text-xs font-bold uppercase tracking-wide text-brand-green-soft">
               <span>{t(locale, "piece")}</span>
               <span className="text-center">{t(locale, "quantity")}</span>
               <span className="text-center">{t(locale, "unitPrice")}</span>
@@ -237,7 +240,7 @@ export function MultiPieceBillForm({
               return (
                 <div
                   key={line.id}
-                  className="grid grid-cols-[minmax(0,1.5fr)_3.25rem_4.25rem_4.25rem_2rem] items-center gap-x-1.5 border-b border-zinc-100 px-1 py-2 last:border-b-0"
+                  className="grid grid-cols-[minmax(0,2fr)_3.25rem_4rem_4rem_2rem] items-center gap-x-1.5 border-b border-zinc-100 px-1 py-2 last:border-b-0"
                 >
                   <div className="min-w-0">
                     <span className="mb-0.5 block text-xs font-semibold text-zinc-500">
@@ -259,10 +262,18 @@ export function MultiPieceBillForm({
                     type="number"
                     min={1}
                     step={1}
-                    value={line.quantity || ""}
-                    onChange={(e) =>
-                      updateLine(line.id, { quantity: parseInt(e.target.value, 10) || 1 })
-                    }
+                    value={line.quantity > 0 ? line.quantity : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") {
+                        updateLine(line.id, { quantity: 0 });
+                        return;
+                      }
+                      const n = parseInt(raw, 10);
+                      if (!Number.isNaN(n) && n > 0) {
+                        updateLine(line.id, { quantity: n });
+                      }
+                    }}
                     className="input-premium w-full px-1 py-1.5 text-center text-sm"
                     aria-label={`${t(locale, "quantity")} ${idx + 1}`}
                   />
@@ -354,16 +365,6 @@ export function MultiPieceBillForm({
           </p>
         </div>
       </div>
-
-      <VoiceNotes
-        locale={locale}
-        textLabel={t(locale, "notes")}
-        hintLabel={t(locale, "voiceDictationHint")}
-        startLabel={t(locale, "startListening")}
-        stopLabel={t(locale, "stopListening")}
-        micErrorLabel={t(locale, "micPermissionError")}
-        fieldName="notes"
-      />
 
       <label className="flex items-center gap-2">
         <input name="paid" type="checkbox" className="h-4 w-4" />

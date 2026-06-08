@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import type { CountryCode } from "libphonenumber-js";
+import { getCountryCallingCode } from "libphonenumber-js";
 import {
   buildPhoneInternational,
   dialCodeFor,
@@ -20,7 +21,7 @@ type PhoneInputProps = {
   required?: boolean;
   defaultCountry?: CountryCode;
   id?: string;
-  /** Hide formatted preview and hint (e.g. when wrapped by WhatsAppPhoneField). */
+  /** Hide formatted preview and hint (e.g. when wrapped by CustomerPhoneField). */
   hideFooter?: boolean;
 };
 
@@ -40,13 +41,24 @@ export function PhoneInput({
   const [national, setNational] = useState("");
 
   useEffect(() => {
-    if (!value.trim()) return;
+    if (!value.trim()) {
+      setNational("");
+      return;
+    }
     const parsed = parsePhone(value, defaultCountry);
     if (parsed) {
       setCountry(parsed.country);
       setNational(parsed.national);
+      return;
     }
-  }, [value, defaultCountry]);
+    const allDigits = value.replace(/\D/g, "");
+    const cc = getCountryCallingCode(country);
+    const nationalDigits =
+      allDigits.startsWith(cc) && allDigits.length > cc.length
+        ? allDigits.slice(cc.length)
+        : allDigits;
+    setNational(nationalDigits);
+  }, [value, defaultCountry, country]);
 
   function emit(nextCountry: CountryCode, nextNational: string) {
     const digits = nextNational.replace(/\D/g, "");
