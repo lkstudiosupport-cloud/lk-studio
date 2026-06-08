@@ -11,7 +11,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "LK Studio",
-  description: "We stitch your designs",
+  description: "Grow your business with less effort",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
