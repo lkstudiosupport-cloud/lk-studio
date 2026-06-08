@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
-import { CheckCircle2, ChevronDown, IndianRupee } from "lucide-react";
+import { CheckCircle2, ChevronDown } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { formatMoney } from "@/lib/bill-items";
@@ -132,27 +132,21 @@ export function BillPaymentPanel({
           <p className="mb-1.5 text-xs text-zinc-500">
             {t(locale, "pendingAmount")}: ₹{formatMoney(balance)}
           </p>
-          <div className="relative">
-            <IndianRupee
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-gold"
-              aria-hidden
-            />
-            <input
-              type="text"
-              inputMode="decimal"
-              autoComplete="off"
-              spellCheck={false}
-              value={paymentAmount}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/[^\d.]/g, "");
-                const dot = raw.indexOf(".");
-                const sanitized =
-                  dot === -1 ? raw : `${raw.slice(0, dot + 1)}${raw.slice(dot + 1).replace(/\./g, "")}`;
-                setPaymentAmount(sanitized);
-              }}
-              className="bill-payment-amount-input input-premium w-full pl-10"
-            />
-          </div>
+          <input
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            spellCheck={false}
+            value={paymentAmount}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^\d.]/g, "");
+              const dot = raw.indexOf(".");
+              const sanitized =
+                dot === -1 ? raw : `${raw.slice(0, dot + 1)}${raw.slice(dot + 1).replace(/\./g, "")}`;
+              setPaymentAmount(sanitized);
+            }}
+            className="bill-payment-amount-input input-premium w-full"
+          />
         </label>
         <button
           type="button"
