@@ -14,6 +14,7 @@ import { Plus, Trash2, Receipt, ArrowLeft, UserRound, Pencil } from "lucide-reac
 import { createBill } from "@/app/shop/actions";
 import { billPending } from "@/lib/bill-payment";
 import { newId } from "@/lib/new-id";
+import { WhatsAppPhoneField } from "@/components/WhatsAppPhoneField";
 
 type Customer = { id: string; name: string; phone: string | null; whatsapp: string | null };
 
@@ -204,19 +205,14 @@ export function MultiPieceBillForm({
             </label>
           )}
 
-          <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-brand-green">
-              {t(locale, "whatsappNumber")}
-            </span>
-            <input
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              type="tel"
-              placeholder={t(locale, "whatsappNumberPlaceholder")}
-              className="input-premium w-full"
-            />
-            <p className="mt-1 text-xs text-zinc-500">{t(locale, "whatsappNumberHint")}</p>
-          </label>
+          <WhatsAppPhoneField
+            locale={locale}
+            value={customerPhone}
+            onChange={setCustomerPhone}
+            onNamePicked={(name) => {
+              if (!customerName.trim()) setCustomerName(name);
+            }}
+          />
         </div>
       )}
 

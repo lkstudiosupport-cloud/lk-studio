@@ -1,4 +1,4 @@
-import { openDeepLink, openWhatsApp, cleanPhoneForWhatsApp } from "@/lib/whatsapp";
+import { openExternalUrl, openWhatsApp, cleanPhoneForWhatsApp } from "@/lib/whatsapp";
 import { isCapacitorNative, isMobileWeb, withTimeout } from "@/lib/platform";
 import {
   BILL_RECEIPT_CAPTURE_ID,
@@ -185,7 +185,8 @@ function androidWhatsAppImageIntent(fileUri: string, phone: string, text: string
     `type=image/jpeg;package=com.whatsapp;` +
     `S.android.intent.extra.STREAM=${stream};` +
     `S.jid=${extraJid};` +
-    `S.android.intent.extra.TEXT=${extraText};end`
+    `S.android.intent.extra.TEXT=${extraText};` +
+    `flag=1;end`
   );
 }
 
@@ -204,7 +205,7 @@ async function tryCapacitorNativeShare(
     if (phone?.trim() && /Android/i.test(navigator.userAgent)) {
       const intent = androidWhatsAppImageIntent(fileUri, phone.trim(), text);
       if (intent) {
-        openDeepLink(intent);
+        openExternalUrl(intent);
         return "shared";
       }
     }
@@ -232,6 +233,19 @@ async function tryWebShareFile(file: File, title: string, text: string): Promise
   } catch (err) {
     if (isShareCancelled(err)) return "cancelled";
     return "failed";
+  }
+}
+
+async function fallbackDownloadAndWhatsApp(
+  blob: Blob,
+  fileName: string,
+  phone: string | null | undefined,
+  text: string
+) {
+  downloadBillImage(blob, fileName);
+  if (phone?.trim()) {
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 450));
+    openWhatsApp(phone.trim(), text);
   }
 }
 
@@ -270,7 +284,8 @@ export async function shareBillImageOnWhatsApp({
       "Share timed out"
     );
     if (nativeResult === "shared" || nativeResult === "cancelled") return;
-    throw new Error("Could not share bill image");
+    await fallbackDownloadAndWhatsApp(blob, resolvedName, phone, hint);
+    return;
   }
 
   if (isMobileWeb() && typeof navigator !== "undefined" && "share" in navigator) {
@@ -282,14 +297,5 @@ export async function shareBillImageOnWhatsApp({
     if (shareResult === "shared" || shareResult === "cancelled") return;
   }
 
-  if (!isMobileWeb()) {
-    downloadBillImage(blob, resolvedName);
-    if (phone?.trim()) {
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 400));
-      openWhatsApp(phone.trim(), hint);
-    }
-    return;
-  }
-
-  throw new Error("Could not share bill image");
+  await fallbackDownloadAndWhatsApp(blob, resolvedName, phone, hint);
 }

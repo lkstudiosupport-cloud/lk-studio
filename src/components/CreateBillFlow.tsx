@@ -6,6 +6,7 @@ import { ArrowLeft, Receipt, UserRound } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { MultiPieceBillForm } from "@/components/MultiPieceBillForm";
+import { WhatsAppPhoneField } from "@/components/WhatsAppPhoneField";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 
 type Customer = { id: string; name: string; phone: string | null; whatsapp: string | null };
@@ -112,19 +113,14 @@ export function CreateBillFlow({ locale, customers }: { locale: Locale; customer
           </label>
         )}
 
-        <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-brand-green">
-            {t(locale, "whatsappNumber")}
-          </span>
-          <input
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            type="tel"
-            placeholder={t(locale, "whatsappNumberPlaceholder")}
-            className="input-premium w-full"
-          />
-          <p className="mt-1 text-xs text-zinc-500">{t(locale, "whatsappNumberHint")}</p>
-        </label>
+        <WhatsAppPhoneField
+          locale={locale}
+          value={customerPhone}
+          onChange={setCustomerPhone}
+          onNamePicked={(name) => {
+            if (!customerName.trim()) setCustomerName(name);
+          }}
+        />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

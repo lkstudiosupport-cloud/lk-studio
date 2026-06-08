@@ -22,27 +22,46 @@ export function whatsAppDeepLink(phone: string, text: string) {
   return `whatsapp://send?phone=${num}&text=${encodeURIComponent(text)}`;
 }
 
-/** Open a deep link — anchor click plus delayed navigation (Capacitor WebView + mobile browsers). */
-export function openDeepLink(primary: string, fallback?: string) {
-  if (typeof window === "undefined") return;
+function isExternalAppUrl(url: string) {
+  return /^(whatsapp|intent|tel|mailto):/i.test(url);
+}
 
+function clickExternalLink(url: string) {
   const a = document.createElement("a");
-  a.href = primary;
+  a.href = url;
   a.target = "_blank";
   a.rel = "noopener noreferrer";
   document.body.appendChild(a);
   a.click();
   a.remove();
+}
 
-  window.setTimeout(() => {
-    window.location.href = primary;
-  }, 350);
+/** Open a URL in an external app (WhatsApp, Android intent). Avoids navigating the WebView away on native. */
+export function openExternalUrl(primary: string, fallback?: string) {
+  if (typeof window === "undefined") return;
+
+  const anchorOnly = isCapacitorNative() || isExternalAppUrl(primary);
+  clickExternalLink(primary);
+
+  if (!anchorOnly) {
+    window.setTimeout(() => {
+      window.location.href = primary;
+    }, 350);
+  }
 
   if (fallback && fallback !== primary) {
     window.setTimeout(() => {
-      window.location.href = fallback;
+      clickExternalLink(fallback);
+      if (!anchorOnly && !isExternalAppUrl(fallback)) {
+        window.location.href = fallback;
+      }
     }, 900);
   }
+}
+
+/** Open a deep link — anchor click plus delayed navigation (mobile browsers). */
+export function openDeepLink(primary: string, fallback?: string) {
+  openExternalUrl(primary, fallback);
 }
 
 export function openWhatsApp(phone: string, text: string) {
@@ -52,7 +71,7 @@ export function openWhatsApp(phone: string, text: string) {
   const waScheme = whatsAppDeepLink(phone, text);
 
   if ((isCapacitorNative() || isMobileWeb()) && waScheme) {
-    openDeepLink(waScheme, waMe);
+    openExternalUrl(waScheme, waMe);
     return;
   }
 

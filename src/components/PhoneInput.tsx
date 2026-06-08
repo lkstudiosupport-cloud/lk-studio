@@ -20,6 +20,8 @@ type PhoneInputProps = {
   required?: boolean;
   defaultCountry?: CountryCode;
   id?: string;
+  /** Hide formatted preview and hint (e.g. when wrapped by WhatsAppPhoneField). */
+  hideFooter?: boolean;
 };
 
 export function PhoneInput({
@@ -30,6 +32,7 @@ export function PhoneInput({
   required,
   defaultCountry = DEFAULT_PHONE_COUNTRY,
   id: idProp,
+  hideFooter = false,
 }: PhoneInputProps) {
   const autoId = useId();
   const id = idProp ?? autoId;
@@ -99,12 +102,14 @@ export function PhoneInput({
         />
       </div>
       <input type="hidden" name={`${name}E164`} value={value} readOnly />
-      {displayValue && (
+      {!hideFooter && displayValue && (
         <p className="text-xs text-brand-green-soft">
           {t(locale, "phoneFormatted")}: {displayValue}
         </p>
       )}
-      <p className="text-xs text-zinc-500">{t(locale, "mobileNumberHint")}</p>
+      {!hideFooter && (
+        <p className="text-xs text-zinc-500">{t(locale, "mobileNumberHint")}</p>
+      )}
     </div>
   );
 }
