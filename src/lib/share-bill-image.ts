@@ -1,5 +1,6 @@
 import { isCapacitorNative, isMobileWeb, withTimeout } from "@/lib/platform";
 import {
+  BILL_CAPTURE_SCALE,
   BILL_RECEIPT_CAPTURE_ID,
   captureReceiptCanvas,
   loadHtml2Canvas,
@@ -9,13 +10,29 @@ import {
 import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
 
 const CAPTURE_WIDTH_PX = 448;
-const CAPTURE_SCALE = 1.25;
-const JPEG_QUALITY = 0.92;
-const CAPTURE_TOTAL_TIMEOUT_MS = 15000;
-const WEB_SHARE_TIMEOUT_MS = 12000;
-const NATIVE_SHARE_TIMEOUT_MS = 20000;
+const JPEG_QUALITY = 0.88;
+const CAPTURE_TOTAL_TIMEOUT_MS = 12000;
 
 export { preloadBillCaptureLib };
+
+export type ShareBillOutcome = "shared" | "cancelled" | "downloaded";
+
+type ShareResult = "shared" | "cancelled" | "unavailable" | "failed";
+
+let cachedBillBlob: { key: string; blob: Blob } | null = null;
+
+function isShareCancelled(err: unknown) {
+  if (err instanceof DOMException && err.name === "AbortError") return true;
+  const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+  return (
+    msg.includes("cancel") ||
+    msg.includes("canceled") ||
+    msg.includes("dismiss") ||
+    msg.includes("user") ||
+    msg.includes("abort") ||
+    msg.includes("closed")
+  );
+}
 
 async function captureInIsolatedIframe(originalRoot: HTMLElement) {
   const iframe = document.createElement("iframe");
@@ -56,26 +73,27 @@ async function captureInIsolatedIframe(originalRoot: HTMLElement) {
     doc.body.appendChild(clone);
 
     const images = Array.from(clone.querySelectorAll("img"));
-    for (const img of images) {
-      if (img.src) img.src = img.src;
-    }
-    await Promise.all(
-      images.map(
-        (img) =>
-          new Promise<void>((resolve) => {
-            if (img.complete) resolve();
-            else {
-              img.onload = () => resolve();
-              img.onerror = () => resolve();
-            }
-          })
-      )
-    );
+    await Promise.race([
+      Promise.all(
+        images.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.src) img.src = img.src;
+              if (img.complete) resolve();
+              else {
+                img.onload = () => resolve();
+                img.onerror = () => resolve();
+              }
+            })
+        )
+      ),
+      new Promise<void>((resolve) => window.setTimeout(resolve, 300)),
+    ]);
 
     const html2canvas = await loadHtml2Canvas();
     return await html2canvas(clone, {
       backgroundColor: "#ffffff",
-      scale: CAPTURE_SCALE,
+      scale: BILL_CAPTURE_SCALE,
       logging: false,
       useCORS: true,
       width: CAPTURE_WIDTH_PX,
@@ -105,6 +123,17 @@ async function captureBillImage() {
       JPEG_QUALITY
     );
   });
+}
+
+async function getBillImageBlob(cacheKey: string) {
+  if (cachedBillBlob?.key === cacheKey) return cachedBillBlob.blob;
+  const blob = await withTimeout(
+    captureBillImage(),
+    CAPTURE_TOTAL_TIMEOUT_MS,
+    "Bill image capture timed out"
+  );
+  cachedBillBlob = { key: cacheKey, blob };
+  return blob;
 }
 
 function billImageFileName(billNumber: string) {
@@ -143,14 +172,6 @@ async function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-type ShareResult = "shared" | "cancelled" | "unavailable" | "failed";
-
-function isShareCancelled(err: unknown) {
-  if (err instanceof DOMException && err.name === "AbortError") return true;
-  const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
-  return msg.includes("cancel") || msg.includes("dismiss") || msg.includes("user");
-}
-
 async function writeCapacitorShareFile(blob: Blob, fileName: string) {
   const { Filesystem, Directory } = await import("@capacitor/filesystem");
   const base64 = await blobToBase64(blob);
@@ -181,15 +202,20 @@ async function tryCapacitorNativeShare(
   try {
     const fileUri = await writeCapacitorShareFile(blob, fileName);
     const { Share } = await import("@capacitor/share");
-    await Share.share({
-      title,
-      text,
-      files: [fileUri],
-      dialogTitle: title,
-    });
+    try {
+      await Share.share({
+        title,
+        text,
+        files: [fileUri],
+        dialogTitle: title,
+      });
+    } catch (shareErr) {
+      // Android often rejects after a successful share or when the user dismisses the sheet.
+      if (isShareCancelled(shareErr)) return "cancelled";
+      return "shared";
+    }
     return "shared";
-  } catch (err) {
-    if (isShareCancelled(err)) return "cancelled";
+  } catch {
     return "failed";
   }
 }
@@ -218,43 +244,33 @@ export async function shareBillImage({
   fileName: string;
   shopName?: string;
   fallbackHint?: string;
-}) {
+}): Promise<ShareBillOutcome> {
   preloadBillCaptureLib();
-
-  const blob = await withTimeout(
-    captureBillImage(),
-    CAPTURE_TOTAL_TIMEOUT_MS,
-    "Bill image capture timed out"
-  );
 
   const resolvedName =
     fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")
       ? fileName
       : billImageFileName(fileName.replace(/\.(png|jpe?g)$/i, ""));
+
+  const blob = await getBillImageBlob(resolvedName);
+
   const file = new File([blob], resolvedName, { type: "image/jpeg" });
   const title = shopName ? `Bill — ${shopName}` : "Bill";
   const hint =
     fallbackHint ?? "Your bill image is saved. Open your app and attach the saved image.";
 
   if (isCapacitorNative()) {
-    const nativeResult = await withTimeout(
-      tryCapacitorNativeShare(blob, resolvedName, title, hint),
-      NATIVE_SHARE_TIMEOUT_MS,
-      "Share timed out"
-    );
-    if (nativeResult === "shared" || nativeResult === "cancelled") return;
+    const nativeResult = await tryCapacitorNativeShare(blob, resolvedName, title, hint);
+    if (nativeResult === "shared" || nativeResult === "cancelled") return nativeResult;
     fallbackDownloadBillImage(blob, resolvedName);
-    return;
+    return "downloaded";
   }
 
   if (isMobileWeb() && typeof navigator !== "undefined" && "share" in navigator) {
-    const shareResult = await withTimeout(
-      tryWebShareFile(file, title, hint),
-      WEB_SHARE_TIMEOUT_MS,
-      "Share timed out"
-    );
-    if (shareResult === "shared" || shareResult === "cancelled") return;
+    const shareResult = await tryWebShareFile(file, title, hint);
+    if (shareResult === "shared" || shareResult === "cancelled") return shareResult;
   }
 
   fallbackDownloadBillImage(blob, resolvedName);
+  return "downloaded";
 }

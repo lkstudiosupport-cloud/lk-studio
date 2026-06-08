@@ -5,10 +5,7 @@ import { useEffect, useState } from "react";
 import { Share2, ArrowLeft, Printer, Pencil } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { withTimeout } from "@/lib/platform";
 import { preloadBillCaptureLib, shareBillImage } from "@/lib/share-bill-image";
-
-const SHARE_TIMEOUT_MS = 25000;
 
 export function BillShareActions({
   locale,
@@ -39,15 +36,11 @@ export function BillShareActions({
     setError("");
     setSharing(true);
     try {
-      await withTimeout(
-        shareBillImage({
-          fileName: `${billNumber ?? "bill"}.jpg`,
-          shopName,
-          fallbackHint: t(locale, "shareBillFallback"),
-        }),
-        SHARE_TIMEOUT_MS,
-        t(locale, "shareBillFailed")
-      );
+      await shareBillImage({
+        fileName: `${billNumber ?? "bill"}.jpg`,
+        shopName,
+        fallbackHint: t(locale, "shareBillFallback"),
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : t(locale, "shareBillFailed"));
     } finally {

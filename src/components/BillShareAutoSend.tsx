@@ -1,14 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { preloadBillCaptureLib, shareBillImage } from "@/lib/share-bill-image";
-import { withTimeout } from "@/lib/platform";
-
-const AUTO_SEND_TIMEOUT_MS = 25000;
 
 function autoShareStorageKey(billNumber: string) {
   return `lk-share-bill-${billNumber}`;
+}
+
+function hasAutoShareAttempted(billNumber: string) {
+  if (typeof sessionStorage === "undefined") return false;
+  return sessionStorage.getItem(autoShareStorageKey(billNumber)) != null;
+}
+
+function markAutoShareAttempted(billNumber: string) {
+  if (typeof sessionStorage !== "undefined") {
+    sessionStorage.setItem(autoShareStorageKey(billNumber), "1");
+  }
+}
+
+function clearAutoShareAttempted(billNumber: string) {
+  if (typeof sessionStorage !== "undefined") {
+    sessionStorage.removeItem(autoShareStorageKey(billNumber));
+  }
 }
 
 export function BillShareAutoSend({
@@ -29,11 +42,9 @@ export function BillShareAutoSend({
   errorLabel?: string;
   fallbackHint?: string;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState("");
-  const runningRef = useRef(false);
+  const startedRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -41,41 +52,36 @@ export function BillShareAutoSend({
   }, [enabled]);
 
   useEffect(() => {
-    if (!enabled || runningRef.current) return;
+    if (!enabled || startedRef.current || hasAutoShareAttempted(billNumber)) return;
 
-    const storageKey = autoShareStorageKey(billNumber);
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(storageKey)) return;
-
-    runningRef.current = true;
+    startedRef.current = true;
+    markAutoShareAttempted(billNumber);
     setPreparing(true);
     setError("");
 
+    let cancelled = false;
+
     (async () => {
       try {
-        await withTimeout(
-          shareBillImage({
-            fileName: `${billNumber}.jpg`,
-            shopName,
-            fallbackHint,
-          }),
-          AUTO_SEND_TIMEOUT_MS,
-          "Share timed out"
-        );
-        if (typeof sessionStorage !== "undefined") {
-          sessionStorage.setItem(storageKey, "1");
-        }
+        await shareBillImage({
+          fileName: `${billNumber}.jpg`,
+          shopName,
+          fallbackHint,
+        });
       } catch (err) {
-        if (typeof sessionStorage !== "undefined") {
-          sessionStorage.removeItem(storageKey);
+        clearAutoShareAttempted(billNumber);
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : errorLabel);
         }
-        setError(err instanceof Error ? err.message : errorLabel);
       } finally {
-        runningRef.current = false;
-        setPreparing(false);
-        router.replace(pathname, { scroll: false });
+        if (!cancelled) setPreparing(false);
       }
     })();
-  }, [enabled, billNumber, shopName, pathname, router, errorLabel, fallbackHint]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, billNumber, shopName, fallbackHint, errorLabel]);
 
   if (!preparing && !error) return null;
   if (silent && preparing && !error) return null;
