@@ -3,12 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
-import { BillReceipt } from "@/components/BillReceipt";
-import { BillReceiptShell } from "@/components/BillReceiptShell";
-import { BillShareActions } from "@/components/BillShareActions";
-import { BillDetailPage } from "@/components/BillDetailPage";
-import { BillWhatsAppAutoSend } from "@/components/BillWhatsAppAutoSend";
-import { BillPaymentPanel } from "@/components/BillPaymentPanel";
+import { ShopBillDetailView } from "@/components/ShopBillDetailView";
 import { billCustomerPhone, billReceiptCustomer } from "@/lib/bill-customer";
 
 export default async function ShopBillDetailPage({
@@ -54,46 +49,16 @@ export default async function ShopBillDetailPage({
     customer: billReceiptCustomer(bill),
   };
 
-  const customerPhone = billCustomerPhone(bill);
-
   return (
-    <BillDetailPage
-      actions={
-        <BillShareActions
-          locale={locale}
-          backHref="/shop/bills"
-          customerPhone={customerPhone}
-          billNumber={bill.billNumber}
-          shopName={bill.shop.shopName}
-          showWhatsApp
-        />
-      }
-      extra={
-        <BillWhatsAppAutoSend
-          phone={customerPhone}
-          billNumber={bill.billNumber}
-          shopName={bill.shop.shopName}
-          enabled={whatsapp === "1"}
-          preparingLabel={t(locale, "sharingBill")}
-          errorLabel={t(locale, "shareBillFailed")}
-          fallbackHint={t(locale, "shareBillFallback")}
-        />
-      }
-      receipt={
-        <BillReceiptShell locale={locale} defaultFullscreen={whatsapp === "1"} autoFullscreenOnMobile>
-          <BillReceipt bill={receiptData} locale={locale} />
-        </BillReceiptShell>
-      }
-      paymentPanel={
-        <BillPaymentPanel
-          billId={bill.id}
-          amount={bill.amount}
-          advancePaid={bill.advancePaid}
-          paidAmount={bill.paidAmount}
-          paid={bill.paid}
-          locale={locale}
-        />
-      }
+    <ShopBillDetailView
+      locale={locale}
+      billId={bill.id}
+      receiptData={receiptData}
+      customerPhone={billCustomerPhone(bill)}
+      isPostCreate={whatsapp === "1"}
+      preparingLabel={t(locale, "sharingBill")}
+      errorLabel={t(locale, "shareBillFailed")}
+      fallbackHint={t(locale, "shareBillFallback")}
     />
   );
 }

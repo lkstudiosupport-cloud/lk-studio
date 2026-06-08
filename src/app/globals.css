@@ -277,6 +277,27 @@ button {
     max(0.75rem, env(safe-area-inset-left, 0px));
 }
 
+.bill-receipt-fullscreen-bar--with-actions {
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgb(27 48 34 / 0.08);
+  background: rgb(250 246 238 / 0.98);
+  padding-bottom: 0.5rem;
+}
+
+.bill-receipt-fullscreen-actions {
+  flex: 1;
+  min-width: 0;
+}
+
+.bill-detail-actions--compact {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
 .bill-receipt-fullscreen-close {
   display: inline-flex;
   align-items: center;
@@ -300,10 +321,29 @@ button {
     env(safe-area-inset-left, 0px);
 }
 
+.bill-detail-status--subtle {
+  position: fixed;
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  left: max(1rem, env(safe-area-inset-left, 0px));
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  z-index: 70;
+  margin: 0;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.15);
+}
+
 /* Mobile: receipt before payment, full width, no inner clip */
 @media (max-width: 639px) {
   .bill-detail-page {
     overflow: visible;
+  }
+
+  .bill-detail-page--receipt-hero.bill-detail-page--receipt-fullscreen-active {
+    margin-top: 0;
+    padding-bottom: 0;
+  }
+
+  .bill-detail-page--receipt-hero.bill-detail-page--receipt-fullscreen-active .bill-detail-body {
+    min-height: 100dvh;
   }
 
   .bill-detail-page--receipt-primary {

@@ -17,6 +17,7 @@ export function BillShareActions({
   billNumber,
   shopName,
   showWhatsApp,
+  compact,
 }: {
   locale: Locale;
   backHref: string;
@@ -24,6 +25,8 @@ export function BillShareActions({
   billNumber?: string;
   shopName?: string;
   showWhatsApp?: boolean;
+  /** Inline bar for fullscreen receipt hero view. */
+  compact?: boolean;
 }) {
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState("");
@@ -53,34 +56,51 @@ export function BillShareActions({
     }
   }
 
+  const barClass = compact
+    ? "bill-detail-actions bill-detail-actions--compact flex min-w-0 flex-1 flex-wrap items-center gap-2"
+    : "bill-detail-actions sticky top-0 z-10 mb-4 flex min-w-0 flex-wrap items-center gap-2 border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur";
+
   return (
-    <div className="bill-detail-actions sticky top-0 z-10 mb-4 flex min-w-0 flex-wrap items-center gap-2 border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur">
+    <div className={barClass}>
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-brand-green shadow-sm"
+        className={
+          compact
+            ? "inline-flex items-center gap-1 rounded-xl bg-white px-2.5 py-2 text-sm font-semibold text-brand-green shadow-sm"
+            : "inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-brand-green shadow-sm"
+        }
       >
         <ArrowLeft className="h-4 w-4" />
-        {t(locale, "backToBills")}
+        {!compact && t(locale, "backToBills")}
       </Link>
       {showWhatsApp && (
         <button
           type="button"
           onClick={onShareWhatsApp}
           disabled={sharing}
-          className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-md disabled:opacity-70"
+          aria-label={t(locale, "sendBillWhatsApp")}
+          className={
+            compact
+              ? "inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-3 py-2 text-sm font-bold text-white shadow-md disabled:opacity-70"
+              : "inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-md disabled:opacity-70"
+          }
         >
           <MessageCircle className="h-4 w-4" />
-          {sharing ? t(locale, "sharingBill") : t(locale, "sendBillWhatsApp")}
+          {!compact && (sharing ? t(locale, "sharingBill") : t(locale, "sendBillWhatsApp"))}
         </button>
       )}
       {error && <p className="w-full text-sm text-red-600">{error}</p>}
       <button
         type="button"
         onClick={() => window.print()}
-        className="ml-auto inline-flex items-center gap-1 rounded-xl border border-brand-green/20 bg-white px-3 py-2 text-sm font-semibold text-brand-green"
+        className={
+          compact
+            ? "ml-auto inline-flex items-center gap-1 rounded-xl border border-brand-green/20 bg-white px-2.5 py-2 text-sm font-semibold text-brand-green"
+            : "ml-auto inline-flex items-center gap-1 rounded-xl border border-brand-green/20 bg-white px-3 py-2 text-sm font-semibold text-brand-green"
+        }
       >
         <Printer className="h-4 w-4" />
-        {t(locale, "printBill")}
+        {!compact && t(locale, "printBill")}
       </button>
     </div>
   );

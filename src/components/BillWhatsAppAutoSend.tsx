@@ -16,6 +16,7 @@ export function BillWhatsAppAutoSend({
   billNumber,
   shopName,
   enabled,
+  silent,
   preparingLabel = "Preparing bill image…",
   errorLabel = "Could not share bill image — try again",
   fallbackHint,
@@ -24,6 +25,8 @@ export function BillWhatsAppAutoSend({
   billNumber: string;
   shopName?: string;
   enabled: boolean;
+  /** Run share in background without blocking receipt view. */
+  silent?: boolean;
   preparingLabel?: string;
   errorLabel?: string;
   fallbackHint?: string;
@@ -78,13 +81,14 @@ export function BillWhatsAppAutoSend({
   }, [enabled, phone, billNumber, shopName, pathname, router, errorLabel, fallbackHint]);
 
   if (!preparing && !error) return null;
+  if (silent && preparing && !error) return null;
 
   return (
     <div
       role="status"
       className={`bill-detail-status mx-auto mb-3 max-w-full rounded-xl px-4 py-2.5 text-center text-sm font-semibold shadow-md ${
         error ? "bg-red-600 text-white" : "bg-brand-green text-white"
-      }`}
+      } ${silent ? "bill-detail-status--subtle" : ""}`}
     >
       {error || preparingLabel}
     </div>
