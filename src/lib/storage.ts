@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { randomBytes } from "crypto";
 import { MAX_UPLOAD_BYTES } from "@/lib/limits";
@@ -93,6 +93,74 @@ export async function saveUpload(file: File, subfolder: string): Promise<string>
 
 function isProductionHosting(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+}
+
+/** Extract S3 object key from a stored path or public URL. */
+function storageKeyFromPath(pathOrUrl: string): string | null {
+  const trimmed = pathOrUrl.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith("/uploads/")) {
+    return trimmed.slice(1);
+  }
+
+  if (trimmed.startsWith("uploads/")) {
+    return trimmed;
+  }
+
+  const publicBase = process.env.S3_PUBLIC_URL?.trim()?.replace(/\/$/, "");
+  if (publicBase && trimmed.startsWith(`${publicBase}/`)) {
+    return trimmed.slice(publicBase.length + 1);
+  }
+
+  const bucket = process.env.S3_BUCKET?.trim();
+  if (bucket) {
+    const region = process.env.S3_REGION?.trim() || "ap-south-1";
+    const hostPrefix = `https://${bucket}.s3.${region}.amazonaws.com/`;
+    if (trimmed.startsWith(hostPrefix)) {
+      return trimmed.slice(hostPrefix.length);
+    }
+  }
+
+  return null;
+}
+
+/** Best-effort delete of a stored upload (S3/R2 or local dev file). */
+export async function deleteStoredUpload(pathOrUrl: string): Promise<void> {
+  const key = storageKeyFromPath(pathOrUrl);
+  if (!key) return;
+
+  if (s3Configured()) {
+    try {
+      const { S3Client, DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+      const client = new S3Client({
+        region: process.env.S3_REGION?.trim() || "ap-south-1",
+        endpoint: process.env.S3_ENDPOINT?.trim() || undefined,
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID!.trim(),
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!.trim(),
+        },
+        forcePathStyle: Boolean(process.env.S3_ENDPOINT?.trim()),
+      });
+      await client.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.S3_BUCKET!.trim(),
+          Key: key,
+        })
+      );
+    } catch {
+      // ignore — DB row is still removed
+    }
+    return;
+  }
+
+  if (!key.startsWith("uploads/")) return;
+  const localPath = path.join(process.cwd(), "public", key);
+  try {
+    await unlink(localPath);
+  } catch {
+    // ignore missing file
+  }
 }
 
 /** Resolve display URL (already absolute from S3, or site-relative local). */

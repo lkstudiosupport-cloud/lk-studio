@@ -77,18 +77,14 @@ export function ShopOrderWorkForm({
 
         <div>
           <p className="mb-1 text-xs font-semibold text-brand-green">{t(locale, "uploadClothPhoto")}</p>
-          <p className="mb-2 text-xs text-zinc-500">{t(locale, "clothPhotoHint")}</p>
           <FormPhotoAdd locale={locale} name="clothImage" compact />
         </div>
 
         <div>
-          <p className="mb-1 text-xs font-semibold text-brand-green">{t(locale, "uploadWorkPhotos")}</p>
-          <p className="mb-2 text-xs text-zinc-500">{t(locale, "workPhotosHint")}</p>
           <MultiImageUpload
             namePrefix="workImg"
             label={t(locale, "workPhotos")}
-            cameraLabel={t(locale, "camera")}
-            minHint={t(locale, "morePhotosHint")}
+            locale={locale}
           />
         </div>
       </div>

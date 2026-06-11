@@ -56,8 +56,7 @@ export function PlaceOrderForm({
       <MultiImageUpload
         namePrefix="orderImg"
         label={t(locale, "uploadRefDesigns")}
-        cameraLabel={t(locale, "camera")}
-        minHint={t(locale, "morePhotosHint")}
+        locale={locale}
       />
 
       <textarea name="notes" placeholder={t(locale, "notes")} rows={2} className="input-premium w-full text-sm" />
@@ -117,8 +116,7 @@ export function PlaceOrderCustomForm({
       <MultiImageUpload
         namePrefix="orderImg"
         label={t(locale, "uploadRefDesignsRequired")}
-        cameraLabel={t(locale, "camera")}
-        minHint={t(locale, "morePhotosHint")}
+        locale={locale}
       />
 
       <textarea name="notes" placeholder={t(locale, "notes")} rows={2} className="input-premium w-full" />

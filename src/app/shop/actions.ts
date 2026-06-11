@@ -5,9 +5,9 @@ import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { appendOrderImagesFromForm } from "@/lib/save-order-images";
-import { saveUpload } from "@/lib/upload";
+import { saveUpload, deleteStoredUpload } from "@/lib/storage";
 import { persistShopDesign } from "@/lib/shop-design-upload";
-import { MAX_DESIGN_IMAGES } from "@/lib/design-images";
+import { MAX_DESIGN_IMAGES, parseDesignImages } from "@/lib/design-images";
 import { billItemsTotal, parseBillItems } from "@/lib/bill-items";
 import { billFullyPaid, billPending } from "@/lib/bill-payment";
 import { isShopActive, extendSubscriptionEnd, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
@@ -37,7 +37,16 @@ export async function updateShopProfile(formData: FormData) {
   if (upiFile instanceof File && upiFile.size > 0) {
     upiQrImage = await saveUpload(upiFile, "upi");
   }
-  if (photoFile instanceof File && photoFile.size > 0) {
+  if (formData.get("removeProfilePhoto") === "true") {
+    const shop = await prisma.shopProfile.findUnique({
+      where: { id },
+      select: { profilePhoto: true },
+    });
+    if (shop?.profilePhoto) {
+      await deleteStoredUpload(shop.profilePhoto);
+    }
+    profilePhoto = null as unknown as undefined;
+  } else if (photoFile instanceof File && photoFile.size > 0) {
     profilePhoto = await saveUpload(photoFile, `profile/shop-${id}`);
   }
 
@@ -58,7 +67,11 @@ export async function updateShopProfile(formData: FormData) {
       instagram: String(formData.get("instagram") ?? "").trim() || null,
       upiId: String(formData.get("upiId") ?? "").trim() || null,
       ...(upiQrImage ? { upiQrImage } : {}),
-      ...(profilePhoto ? { profilePhoto } : {}),
+      ...(profilePhoto !== undefined
+        ? { profilePhoto }
+        : formData.get("removeProfilePhoto") === "true"
+          ? { profilePhoto: null }
+          : {}),
     },
   });
   revalidatePath("/shop/profile");
@@ -116,6 +129,76 @@ export async function uploadDesign(formData: FormData) {
   revalidatePath("/shop/designs");
   revalidatePath("/customer/designs");
   revalidatePath("/customer/shops");
+}
+
+export async function deleteDesignImage(formData: FormData) {
+  const id = await shopIdOnly();
+  const designId = String(formData.get("designId") ?? "").trim();
+  const imagePath = String(formData.get("imagePath") ?? "").trim();
+  if (!designId || !imagePath) throw new Error("Invalid request");
+
+  const design = await prisma.design.findFirst({
+    where: { id: designId, shopId: id },
+  });
+  if (!design) throw new Error("Design not found");
+
+  const images = parseDesignImages(design.imagesJson, design.imagePath);
+  const remaining = images.filter((p) => p !== imagePath);
+  if (remaining.length === images.length) throw new Error("Photo not found");
+
+  await deleteStoredUpload(imagePath);
+
+  if (remaining.length === 0) {
+    for (const p of images) {
+      if (p !== imagePath) await deleteStoredUpload(p);
+    }
+    await prisma.design.delete({ where: { id: designId } });
+  } else {
+    await prisma.design.update({
+      where: { id: designId },
+      data: {
+        imagePath: remaining[0]!,
+        imagesJson: JSON.stringify(remaining),
+      },
+    });
+  }
+
+  revalidatePath("/shop/designs");
+  revalidatePath("/customer/designs");
+  revalidatePath("/customer/shops");
+}
+
+export async function deleteDesign(designId: string) {
+  const id = await shopIdOnly();
+  const design = await prisma.design.findFirst({
+    where: { id: designId, shopId: id },
+  });
+  if (!design) throw new Error("Design not found");
+
+  const images = parseDesignImages(design.imagesJson, design.imagePath);
+  await Promise.all(images.map((p) => deleteStoredUpload(p)));
+  await prisma.design.delete({ where: { id: designId } });
+
+  revalidatePath("/shop/designs");
+  revalidatePath("/customer/designs");
+  revalidatePath("/customer/shops");
+}
+
+export async function deleteOrderImage(formData: FormData) {
+  const shop = await shopId();
+  const imageId = String(formData.get("imageId") ?? "").trim();
+  if (!imageId) throw new Error("Invalid request");
+
+  const row = await prisma.orderImage.findFirst({
+    where: { id: imageId, order: { shopId: shop } },
+  });
+  if (!row || row.uploadedBy !== "SHOP") throw new Error("Photo not found");
+
+  await deleteStoredUpload(row.imagePath);
+  await prisma.orderImage.delete({ where: { id: imageId } });
+
+  revalidatePath("/shop/orders");
+  revalidatePath("/customer/orders");
 }
 
 export async function updateOrderStatus(formData: FormData) {

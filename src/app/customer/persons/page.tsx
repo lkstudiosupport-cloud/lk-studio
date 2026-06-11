@@ -29,6 +29,7 @@ export default async function PersonsPage() {
             personId={p.id}
             personName={p.name}
             relation={p.relation}
+            photosJson={p.photosJson}
             locale={locale}
             measurements={p.measurements}
             footer={

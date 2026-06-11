@@ -238,6 +238,7 @@ model Person {
   name       String
   relation   String?
   notes      String?
+  photosJson String?
   createdAt  DateTime @default(now())
 
   measurements Measurement[]

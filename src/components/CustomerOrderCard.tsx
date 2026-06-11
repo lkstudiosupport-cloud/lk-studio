@@ -101,6 +101,7 @@ export function CustomerOrderCard({ order, locale }: { order: OrderView; locale:
               design: order.design?.imagePath,
             }}
             locale={locale}
+            deletableRole="CUSTOMER"
           />
         )}
 

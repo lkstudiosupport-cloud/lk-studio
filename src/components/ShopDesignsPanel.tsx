@@ -8,7 +8,7 @@ import { t } from "@/lib/i18n";
 import { CATEGORIES } from "@/lib/categories";
 import { MAX_DESIGN_IMAGES } from "@/lib/limits";
 import { DesignImageUpload } from "@/components/DesignImageUpload";
-import { DesignImagesView } from "@/components/DesignImagesView";
+import { ShopDesignItem } from "@/components/ShopDesignItem";
 import { ChevronDown, FolderClosed } from "lucide-react";
 
 export function ShopDesignsPanel({
@@ -72,7 +72,6 @@ export function ShopDesignsPanel({
   return (
     <div className="space-y-6">
       <h1 className="page-title">{t(locale, "designs")}</h1>
-      <p className="text-sm text-zinc-600">{t(locale, "designsUploadHint")}</p>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {CATEGORIES.map((c) => (
@@ -99,6 +98,15 @@ export function ShopDesignsPanel({
         </h2>
         <input type="hidden" name="category" value={category} />
         <label className="block">
+          <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "designPhoto")}</span>
+          <DesignImageUpload
+            locale={locale}
+            files={imageFiles}
+            onFilesChange={setImageFiles}
+            onCompressingChange={setCompressing}
+          />
+        </label>
+        <label className="block">
           <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "designName")}</span>
           <input
             name="title"
@@ -109,12 +117,6 @@ export function ShopDesignsPanel({
             className="input-premium w-full"
           />
         </label>
-        <DesignImageUpload
-          locale={locale}
-          files={imageFiles}
-          onFilesChange={setImageFiles}
-          onCompressingChange={setCompressing}
-        />
         {compressing && (
           <p className="text-center text-sm text-brand-green">{t(locale, "compressingPhotos")}</p>
         )}
@@ -160,17 +162,7 @@ export function ShopDesignsPanel({
                   {items.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                       {items.map((d) => (
-                        <article key={d.id} className="card-premium overflow-hidden">
-                          <DesignImagesView
-                            imagePath={d.imagePath}
-                            imagesJson={d.imagesJson}
-                            alt={d.title}
-                            aspectClass="aspect-[3/4]"
-                          />
-                          <p className="truncate px-2 py-2 text-center text-xs font-medium text-brand-green">
-                            {d.title}
-                          </p>
-                        </article>
+                        <ShopDesignItem key={d.id} design={d} locale={locale} />
                       ))}
                     </div>
                   ) : (

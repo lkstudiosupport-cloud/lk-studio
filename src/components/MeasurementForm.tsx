@@ -15,11 +15,13 @@ import { saveMeasurements, updatePerson } from "@/app/customer/actions";
 import { initialActionState } from "@/lib/action-state";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
+import { PersonPhotos } from "@/components/PersonPhotos";
 import { ChevronDown, ChevronUp, User, CheckCircle2, Shirt } from "lucide-react";
 type Props = {
   personId: string;
   personName: string;
   relation?: string | null;
+  photosJson?: string | null;
   locale: Locale;
   measurements?: SavedMeasurement[];
   footer?: React.ReactNode;
@@ -29,6 +31,7 @@ export function MeasurementForm({
   personId,
   personName,
   relation,
+  photosJson,
   locale,
   measurements = [],
   footer,
@@ -113,6 +116,8 @@ export function MeasurementForm({
               {measureState.error || personState.error}
             </p>
           )}
+
+          <PersonPhotos personId={personId} locale={locale} photosJson={photosJson ?? null} />
 
           <form action={personAction} className="mb-4 grid gap-2 rounded-xl bg-brand-cream/80 p-3 sm:grid-cols-3">
             <input type="hidden" name="personId" value={personId} />

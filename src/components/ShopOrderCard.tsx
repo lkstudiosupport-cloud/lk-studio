@@ -141,6 +141,7 @@ export function ShopOrderCard({
                   design: order.design?.imagePath,
                 }}
                 locale={locale}
+                deletableRole="SHOP"
               />
             )}
 

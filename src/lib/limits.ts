@@ -10,6 +10,12 @@ export const DESIGN_LIST_LIMIT = 200;
 /** Max photos per shop design (cover + gallery). */
 export const MAX_DESIGN_IMAGES = 2;
 
+/** Max reference photos per person profile. */
+export const MAX_PERSON_PHOTOS = 3;
+
+/** Max photos per order upload batch (customer/shop work photos). */
+export const MAX_ORDER_UPLOAD_PHOTOS = 8;
+
 /** Max upload size (bytes) — 8 MB. */
 export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 

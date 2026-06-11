@@ -7,7 +7,8 @@ import type { ServiceCategory, WorkType } from "@prisma/client";
 import { fieldKeysForType, idToPrismaType, MEASUREMENT_TYPES, type MeasurementTypeId } from "@/lib/measurements";
 import type { ActionState } from "@/lib/action-state";
 import { appendOrderImagesFromForm } from "@/lib/save-order-images";
-import { saveUpload } from "@/lib/upload";
+import { saveUpload, deleteStoredUpload } from "@/lib/storage";
+import { MAX_PERSON_PHOTOS, parsePersonPhotos } from "@/lib/person-photos";
 import { isShopActive } from "@/lib/subscription";
 import { assertCustomerSubscription } from "@/app/customer/subscription-actions";
 
@@ -50,6 +51,103 @@ export async function addPerson(
     });
     revalidateMeasurementPaths();
     return { ok: true, message: "personAdded" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function addPersonPhotos(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    const personId = String(formData.get("personId"));
+    const person = await prisma.person.findFirst({
+      where: { id: personId, customerId: cid },
+    });
+    if (!person) return { ok: false, error: "Person not found" };
+
+    const existing = parsePersonPhotos(person.photosJson);
+    const room = MAX_PERSON_PHOTOS - existing.length;
+    if (room <= 0) return { ok: false, error: "personPhotosMax" };
+
+    const uploadFiles: File[] = [];
+    for (let i = 0; i < room; i++) {
+      const entry = formData.get(`personPhoto${i}`);
+      if (entry instanceof File && entry.size > 0) uploadFiles.push(entry);
+    }
+    if (uploadFiles.length === 0) return { ok: false, error: "Add at least one photo" };
+
+    const paths = await Promise.all(
+      uploadFiles.slice(0, room).map((f) => saveUpload(f, `persons/${personId}`))
+    );
+    const merged = [...existing, ...paths].slice(0, MAX_PERSON_PHOTOS);
+
+    await prisma.person.update({
+      where: { id: personId },
+      data: { photosJson: JSON.stringify(merged) },
+    });
+
+    revalidateMeasurementPaths();
+    return { ok: true, message: "photosSaved" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function deletePersonPhoto(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    const personId = String(formData.get("personId"));
+    const imagePath = String(formData.get("imagePath") ?? "").trim();
+    if (!imagePath) return { ok: false, error: "Invalid request" };
+
+    const person = await prisma.person.findFirst({
+      where: { id: personId, customerId: cid },
+    });
+    if (!person) return { ok: false, error: "Person not found" };
+
+    const photos = parsePersonPhotos(person.photosJson);
+    const remaining = photos.filter((p) => p !== imagePath);
+    if (remaining.length === photos.length) return { ok: false, error: "Photo not found" };
+
+    await deleteStoredUpload(imagePath);
+    await prisma.person.update({
+      where: { id: personId },
+      data: { photosJson: remaining.length > 0 ? JSON.stringify(remaining) : null },
+    });
+
+    revalidateMeasurementPaths();
+    return { ok: true, message: "photoRemoved" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function deleteOrderImage(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    const imageId = String(formData.get("imageId") ?? "").trim();
+    if (!imageId) return { ok: false, error: "Invalid request" };
+
+    const row = await prisma.orderImage.findFirst({
+      where: { id: imageId, order: { customerId: cid } },
+    });
+    if (!row || row.uploadedBy !== "CUSTOMER") return { ok: false, error: "Photo not found" };
+
+    await deleteStoredUpload(row.imagePath);
+    await prisma.orderImage.delete({ where: { id: imageId } });
+
+    revalidatePath("/customer/orders");
+    revalidatePath("/shop/orders");
+    return { ok: true, message: "photoRemoved" };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Failed" };
   }
@@ -407,7 +505,16 @@ export async function updateCustomerProfile(formData: FormData) {
   const lngRaw = String(formData.get("longitude") ?? "").trim();
   const photoFile = formData.get("profilePhotoFile");
   let profilePhoto: string | undefined;
-  if (photoFile instanceof File && photoFile.size > 0) {
+  if (formData.get("removeProfilePhoto") === "true") {
+    const user = await prisma.user.findUnique({
+      where: { id: session.id },
+      select: { profilePhoto: true },
+    });
+    if (user?.profilePhoto) {
+      await deleteStoredUpload(user.profilePhoto);
+    }
+    profilePhoto = null as unknown as undefined;
+  } else if (photoFile instanceof File && photoFile.size > 0) {
     profilePhoto = await saveUpload(photoFile, `profile/user-${session.id}`);
   }
 
@@ -421,7 +528,11 @@ export async function updateCustomerProfile(formData: FormData) {
       locationLink: String(formData.get("locationLink") ?? "").trim() || null,
       latitude: latRaw ? parseFloat(latRaw) : null,
       longitude: lngRaw ? parseFloat(lngRaw) : null,
-      ...(profilePhoto ? { profilePhoto } : {}),
+      ...(profilePhoto !== undefined
+        ? { profilePhoto }
+        : formData.get("removeProfilePhoto") === "true"
+          ? { profilePhoto: null }
+          : {}),
     },
   });
   revalidatePath("/customer/profile");
