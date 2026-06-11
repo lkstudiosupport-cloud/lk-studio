@@ -1,5 +1,10 @@
 import type { Prisma } from "@prisma/client";
-import { monthRangeFromValue, currentMonthValue } from "@/lib/report-period";
+import {
+  monthRangeFromValue,
+  currentMonthValue,
+} from "@/lib/report-period";
+
+export { currentMonthValue };
 
 export type BillsTab = "all" | "pending" | "paid";
 export type BillsDateMode = "month" | "day";
