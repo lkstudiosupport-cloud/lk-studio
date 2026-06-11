@@ -6,7 +6,6 @@ import { ShieldCheck } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { AutopayRole } from "@/lib/subscription-autopay";
-import { PAID_PERIOD_DAYS, TRIAL_DAYS } from "@/lib/subscription";
 import { AutoPayPanel } from "@/components/AutoPayPanel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { LocaleLocationBar } from "@/components/LocaleLocationBar";
@@ -56,14 +55,8 @@ export function AutopayOnboardingPage({
           <ul className="space-y-2 rounded-xl bg-brand-cream/60 p-4 text-sm text-zinc-700">
             {allowSkip && (
               <>
-                <li>• {t(locale, "autopayOnboardingTrial", { days: TRIAL_DAYS })}</li>
-                <li>
-                  •{" "}
-                  {t(locale, "autopayOnboardingAfterTrial", {
-                    amount: amountInr,
-                    days: PAID_PERIOD_DAYS,
-                  })}
-                </li>
+                <li>• {t(locale, "autopayOnboardingTrial")}</li>
+                <li>• {t(locale, "autopayOnboardingAfterTrial", { amount: amountInr })}</li>
               </>
             )}
             <li>• {t(locale, "autopayOnboardingNoCancel")}</li>

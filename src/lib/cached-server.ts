@@ -26,6 +26,7 @@ export const cachedShopNavProfile = cache(async (shopId: string) => {
       autopayEnabled: true,
       subscriptionStatus: true,
       subscriptionEndsAt: true,
+      createdAt: true,
     },
   });
 });
@@ -39,6 +40,7 @@ export const cachedCustomerNavProfile = cache(async (userId: string) => {
       autopayEnabled: true,
       subscriptionStatus: true,
       subscriptionEndsAt: true,
+      createdAt: true,
     },
   });
 });

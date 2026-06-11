@@ -1,6 +1,6 @@
 import type { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { extendSubscriptionEnd } from "@/lib/subscription";
+import { extendSubscriptionEnd, isInTrial } from "@/lib/subscription";
 import { revalidatePath } from "next/cache";
 
 export type AutopayRole = Extract<UserRole, "SHOP" | "CUSTOMER">;
@@ -14,6 +14,7 @@ export async function getAutopayState(role: AutopayRole, entityId: string) {
         razorpaySubscriptionId: true,
         subscriptionStatus: true,
         subscriptionEndsAt: true,
+        createdAt: true,
       },
     });
   }
@@ -24,6 +25,7 @@ export async function getAutopayState(role: AutopayRole, entityId: string) {
       razorpaySubscriptionId: true,
       subscriptionStatus: true,
       subscriptionEndsAt: true,
+      createdAt: true,
     },
   });
 }
@@ -76,11 +78,9 @@ export async function activateAutopay(
   }
 
   const state = await getAutopayState(role, entityId);
-  const now = new Date();
   const inActiveTrial =
-    state?.subscriptionStatus === "TRIAL" &&
-    state.subscriptionEndsAt != null &&
-    state.subscriptionEndsAt > now;
+    state != null &&
+    isInTrial(state.subscriptionStatus, state.subscriptionEndsAt, state.createdAt);
 
   if (!inActiveTrial) {
     await grantSubscriptionPeriod(role, entityId);

@@ -17,6 +17,7 @@
     "db:deploy": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:fix": "tsx scripts/fix-db.ts && prisma db push",
+    "db:fix-trial": "tsx scripts/fix-trial-ends.ts",
     "postinstall": "prisma generate",
     "cap:sync": "powershell -ExecutionPolicy Bypass -File scripts/sync-capacitor.ps1",
     "cap:open": "npx cap open android",

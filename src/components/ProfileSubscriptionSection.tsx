@@ -23,6 +23,7 @@ export function ProfileSubscriptionSection({
   razorpayConfigured,
   payeeLabel,
   defaultOpen = false,
+  accountCreatedAt = null,
 }: {
   locale: Locale;
   status: SubscriptionStatus;
@@ -34,10 +35,11 @@ export function ProfileSubscriptionSection({
   razorpayConfigured: boolean;
   payeeLabel: string;
   defaultOpen?: boolean;
+  accountCreatedAt?: Date | null;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const blocked = isSubscriptionBlocked(status, endsAt);
-  const trial = isInTrial(status, endsAt);
+  const blocked = isSubscriptionBlocked(status, endsAt, accountCreatedAt);
+  const trial = isInTrial(status, endsAt, accountCreatedAt);
 
   const statusLabel = blocked
     ? t(locale, "subStatusExpired")
@@ -92,6 +94,7 @@ export function ProfileSubscriptionSection({
             razorpayConfigured={razorpayConfigured}
             payeeLabel={payeeLabel}
             inProfile
+            accountCreatedAt={accountCreatedAt}
           />
         </div>
       )}

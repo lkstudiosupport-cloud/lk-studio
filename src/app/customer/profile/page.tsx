@@ -35,6 +35,7 @@ export default async function CustomerProfilePage({
       subscriptionStatus: true,
       subscriptionEndsAt: true,
       autopayEnabled: true,
+      createdAt: true,
     },
   });
 
@@ -53,6 +54,7 @@ export default async function CustomerProfilePage({
         razorpayConfigured={isRazorpayConfigured()}
         payeeLabel={user.name}
         defaultOpen={sp?.subscription === "1"}
+        accountCreatedAt={user.createdAt}
       />
       <div className="mt-4 border-t border-brand-green/10 pt-4 pb-4">
         <ProfileLogout locale={locale} />

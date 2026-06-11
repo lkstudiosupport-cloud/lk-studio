@@ -23,7 +23,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
 
   const trialBypass =
     user != null &&
-    isInTrial(user.subscriptionStatus, user.subscriptionEndsAt);
+    isInTrial(user.subscriptionStatus, user.subscriptionEndsAt, user.createdAt);
 
   const navLinks = [
     { href: "/customer", label: t(locale, "dashboard") },

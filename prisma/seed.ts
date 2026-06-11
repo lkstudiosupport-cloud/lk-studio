@@ -1,17 +1,12 @@
 import { PrismaClient, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { internalEmailForUser } from "../src/lib/internal-email";
+import { trialEndDate } from "../src/lib/subscription";
 const prisma = new PrismaClient();
 
 function generateShopCode(name: string) {
   const base = name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase();
   return `${base || "SHOP"}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-}
-
-function trialEndDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 30);
-  return d;
 }
 
 function storedPhoneKey(input: string) {

@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { razorpayConfigError } from "@/lib/razorpay-config";
 import type { AutopayRole } from "@/lib/subscription-autopay";
+import { isInTrial, resolveSubscriptionEndsAt } from "@/lib/subscription";
 import {
   createRazorpayCustomer,
   createRazorpaySubscription,
@@ -30,6 +31,7 @@ async function payerForRole(role: AutopayRole, session: { id: string; email: str
       existingSubscriptionId: shop.razorpaySubscriptionId,
       subscriptionEndsAt: shop.subscriptionEndsAt,
       subscriptionStatus: shop.subscriptionStatus,
+      accountCreatedAt: shop.createdAt,
     };
   }
 
@@ -44,6 +46,7 @@ async function payerForRole(role: AutopayRole, session: { id: string; email: str
     existingSubscriptionId: user.razorpaySubscriptionId,
     subscriptionEndsAt: user.subscriptionEndsAt,
     subscriptionStatus: user.subscriptionStatus,
+    accountCreatedAt: user.createdAt,
   };
 }
 
@@ -112,11 +115,16 @@ export async function POST(req: Request) {
     }
 
     const planId = await ensureRazorpayPlan(role);
+    const trialEnd = resolveSubscriptionEndsAt(
+      payer.subscriptionStatus,
+      payer.subscriptionEndsAt,
+      payer.accountCreatedAt
+    );
     const trialBillingStart =
-      payer.subscriptionStatus === "TRIAL" &&
-      payer.subscriptionEndsAt &&
-      payer.subscriptionEndsAt > new Date()
-        ? payer.subscriptionEndsAt
+      isInTrial(payer.subscriptionStatus, payer.subscriptionEndsAt, payer.accountCreatedAt) &&
+      trialEnd &&
+      trialEnd > new Date()
+        ? trialEnd
         : null;
 
     if (!customerId) {

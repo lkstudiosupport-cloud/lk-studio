@@ -41,6 +41,7 @@ export default async function ShopProfilePage({
         razorpayConfigured={isRazorpayConfigured()}
         payeeLabel={profile.shopName}
         defaultOpen={sp?.subscription === "1"}
+        accountCreatedAt={profile.createdAt}
       />
       <div className="mt-4 border-t border-brand-green/10 pt-4 pb-4">
         <ProfileLogout locale={locale} />

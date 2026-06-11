@@ -23,12 +23,17 @@ export default async function RegisterAutopayPage() {
         autopayEnabled: true,
         subscriptionStatus: true,
         subscriptionEndsAt: true,
+        createdAt: true,
       },
     });
     if (!profile) redirect("/login/shop");
     if (profile.autopayEnabled) redirect("/shop");
 
-    const allowSkip = isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt);
+    const allowSkip = isInTrial(
+      profile.subscriptionStatus,
+      profile.subscriptionEndsAt,
+      profile.createdAt
+    );
 
     return (
       <AutopayOnboardingPage
@@ -50,11 +55,12 @@ export default async function RegisterAutopayPage() {
       autopayEnabled: true,
       subscriptionStatus: true,
       subscriptionEndsAt: true,
+      createdAt: true,
     },
   });
   if (user.autopayEnabled) redirect("/customer");
 
-  const allowSkip = isInTrial(user.subscriptionStatus, user.subscriptionEndsAt);
+  const allowSkip = isInTrial(user.subscriptionStatus, user.subscriptionEndsAt, user.createdAt);
 
   return (
     <AutopayOnboardingPage

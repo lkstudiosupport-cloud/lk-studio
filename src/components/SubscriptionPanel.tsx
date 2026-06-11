@@ -1,11 +1,11 @@
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import {
-  PLAN_PERIOD_DAYS,
   isSubscriptionActive,
   isSubscriptionBlocked,
   isInTrial,
   subscriptionDaysLeft,
+  resolveSubscriptionEndsAt,
 } from "@/lib/subscription";
 import { AutoPayPanel } from "@/components/AutoPayPanel";
 import type { SubscriptionStatus } from "@prisma/client";
@@ -23,6 +23,7 @@ export function SubscriptionPanel({
   razorpayConfigured,
   payeeLabel,
   inProfile = false,
+  accountCreatedAt = null,
 }: {
   locale: Locale;
   status: SubscriptionStatus;
@@ -34,11 +35,13 @@ export function SubscriptionPanel({
   razorpayConfigured: boolean;
   payeeLabel: string;
   inProfile?: boolean;
+  accountCreatedAt?: Date | null;
 }) {
-  const active = isSubscriptionActive(status, endsAt);
-  const blocked = isSubscriptionBlocked(status, endsAt);
-  const trial = isInTrial(status, endsAt);
-  const daysLeft = subscriptionDaysLeft(endsAt);
+  const effectiveEndsAt = resolveSubscriptionEndsAt(status, endsAt, accountCreatedAt);
+  const active = isSubscriptionActive(status, endsAt, accountCreatedAt);
+  const blocked = isSubscriptionBlocked(status, endsAt, accountCreatedAt);
+  const trial = isInTrial(status, endsAt, accountCreatedAt);
+  const daysLeft = subscriptionDaysLeft(endsAt, status, accountCreatedAt);
 
   const statusText = blocked
     ? t(locale, "subStatusExpired")
@@ -83,16 +86,16 @@ export function SubscriptionPanel({
             <div>
               <dt className="text-xs font-semibold uppercase text-zinc-500">{t(locale, "subPriceLabel")}</dt>
               <dd className="font-bold text-brand-green">
-                ₹{amountInr} / {PLAN_PERIOD_DAYS} {t(locale, "subDaysUnit")}
+                {t(locale, "subPricePerMonth", { amount: amountInr })}
               </dd>
             </div>
           </div>
-          {endsAt && (
+          {effectiveEndsAt && (
             <div className="flex items-start gap-3 rounded-xl bg-brand-cream/60 p-3">
               <Clock className="mt-0.5 h-4 w-4 shrink-0 text-brand-green" />
               <div>
                 <dt className="text-xs font-semibold uppercase text-zinc-500">{t(locale, "validUntil")}</dt>
-                <dd className="font-semibold text-zinc-800">{endsAt.toLocaleDateString()}</dd>
+                <dd className="font-semibold text-zinc-800">{effectiveEndsAt.toLocaleDateString()}</dd>
               </div>
             </div>
           )}

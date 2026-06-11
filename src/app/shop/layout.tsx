@@ -23,7 +23,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   const trialBypass =
     profile != null &&
-    isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt);
+    isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt, profile.createdAt);
 
   const navLinks = [
     { href: "/shop", label: t(locale, "dashboard") },
