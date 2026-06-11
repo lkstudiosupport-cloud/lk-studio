@@ -12,7 +12,9 @@ export async function persistShopDesign(
   if (uploadFiles.length > MAX_DESIGN_IMAGES) {
     throw new Error(`Maximum ${MAX_DESIGN_IMAGES} photos per design`);
   }
-  if (uploadFiles.length === 0) throw new Error("Add at least one design photo");
+  if (uploadFiles.length === 0) {
+    throw new Error("Add at least one design photo");
+  }
 
   const paths = await Promise.all(
     uploadFiles.map((file) =>

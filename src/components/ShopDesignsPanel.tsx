@@ -112,7 +112,6 @@ export function ShopDesignsPanel({
             name="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            required
             placeholder={t(locale, "designNamePlaceholder")}
             className="input-premium w-full"
           />
