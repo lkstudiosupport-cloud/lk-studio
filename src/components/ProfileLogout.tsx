@@ -36,7 +36,7 @@ export function ProfileLogout({ locale }: { locale: Locale }) {
   }
 
   return (
-    <div className="mt-4 border-t border-brand-green/10 pt-4 pb-4">
+    <div>
       {error && <p className="mb-2 text-center text-sm text-red-600">{error}</p>}
       <button
         type="button"

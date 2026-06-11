@@ -146,6 +146,12 @@ button {
   @apply bg-white/15 font-bold text-brand-gold;
 }
 
+.delete-account-edge-pin {
+  margin-left: calc(-1 * max(1rem, env(safe-area-inset-left, 0px)));
+  margin-top: 0.25rem;
+  padding-left: max(0.125rem, env(safe-area-inset-left, 0px));
+}
+
 .brand-nav-pill-active {
   @apply bg-brand-gold font-bold text-brand-green shadow-md ring-2 ring-brand-gold/80 ring-offset-1 ring-offset-brand-green;
 }

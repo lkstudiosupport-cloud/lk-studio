@@ -42,9 +42,11 @@ export default async function ShopProfilePage({
         payeeLabel={profile.shopName}
         defaultOpen={sp?.subscription === "1"}
       />
-      <DeleteAccountSection locale={locale} />
-      <ProfileLogout locale={locale} />
+      <div className="mt-4 border-t border-brand-green/10 pt-4 pb-4">
+        <ProfileLogout locale={locale} />
+      </div>
       <LegalFooter locale={locale} className="pt-2" />
+      <DeleteAccountSection locale={locale} />
     </div>
   );
 }
