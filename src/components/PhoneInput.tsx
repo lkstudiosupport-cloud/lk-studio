@@ -6,7 +6,6 @@ import { getCountryCallingCode } from "libphonenumber-js";
 import {
   buildPhoneInternational,
   dialCodeFor,
-  formatPhoneDisplay,
   parsePhone,
 } from "@/lib/phone";
 import { DEFAULT_PHONE_COUNTRY, PHONE_COUNTRIES } from "@/lib/phone-countries";
@@ -21,8 +20,6 @@ type PhoneInputProps = {
   required?: boolean;
   defaultCountry?: CountryCode;
   id?: string;
-  /** Hide formatted preview and hint (e.g. when wrapped by CustomerPhoneField). */
-  hideFooter?: boolean;
   /** Narrow country dial-code select so the national number field stays visible on mobile. */
   compactCountry?: boolean;
 };
@@ -35,7 +32,6 @@ export function PhoneInput({
   required,
   defaultCountry = DEFAULT_PHONE_COUNTRY,
   id: idProp,
-  hideFooter = false,
   compactCountry = false,
 }: PhoneInputProps) {
   const autoId = useId();
@@ -83,8 +79,6 @@ export function PhoneInput({
     emit(country, digits);
   }
 
-  const displayValue = value ? formatPhoneDisplay(value) : "";
-
   return (
     <div className="space-y-1">
       <label htmlFor={id} className="sr-only">
@@ -121,14 +115,6 @@ export function PhoneInput({
         />
       </div>
       <input type="hidden" name={`${name}E164`} value={value} readOnly />
-      {!hideFooter && displayValue && (
-        <p className="text-xs text-brand-green-soft">
-          {t(locale, "phoneFormatted")}: {displayValue}
-        </p>
-      )}
-      {!hideFooter && (
-        <p className="text-xs text-zinc-500">{t(locale, "mobileNumberHint")}</p>
-      )}
     </div>
   );
 }

@@ -99,7 +99,6 @@ export function CustomerPhoneField({
             value={value}
             onChange={onChange}
             name="customerPhone"
-            hideFooter
             compactCountry
           />
         </div>
