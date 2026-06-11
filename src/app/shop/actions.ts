@@ -11,7 +11,205 @@ import { MAX_DESIGN_IMAGES, parseDesignImages } from "@/lib/design-images";
 import { billItemsTotal, parseBillItems } from "@/lib/bill-items";
 import { billFullyPaid, billPending } from "@/lib/bill-payment";
 import { isShopActive, extendSubscriptionEnd, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
+import { findUserByPhone } from "@/lib/auth-user";
+import type { ActionState } from "@/lib/action-state";
 import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
+
+const MAX_ORDER_DESIGN_PICKS = 3;
+
+export type ShopOrderCustomerLookup = {
+  id: string;
+  name: string;
+  phone: string | null;
+  whatsapp: string | null;
+  persons: {
+    id: string;
+    name: string;
+    relation: string | null;
+    measurements: {
+      type: string;
+      shoulder: string | null;
+      armHole: string | null;
+      bust: string | null;
+      overBust: string | null;
+      underBust: string | null;
+      chest: string | null;
+      waist: string | null;
+      hip: string | null;
+      highHip: string | null;
+      backWaist: string | null;
+      frontWaist: string | null;
+      inseam: string | null;
+      trouserThreeQuarter: string | null;
+      blouseLen: string | null;
+      length: string | null;
+      neckToAboveKnee: string | null;
+      aboveKneeToAnkle: string | null;
+      armLength: string | null;
+      bicep: string | null;
+      foreArm: string | null;
+      wrist: string | null;
+      sleeve: string | null;
+      neck: string | null;
+      frontNeck: string | null;
+      backNeck: string | null;
+      slit: string | null;
+      custom: string | null;
+    }[];
+  }[];
+};
+
+export async function lookupShopOrderCustomer(input: {
+  phone?: string;
+  customerId?: string;
+}): Promise<{ ok: true; customer: ShopOrderCustomerLookup } | { ok: false; error: string }> {
+  await shopIdOnly();
+
+  const phone = input.phone?.trim();
+  const customerId = input.customerId?.trim();
+
+  let userId = customerId;
+  if (!userId && phone) {
+    const found = await findUserByPhone("CUSTOMER", phone);
+    if (!found) return { ok: false, error: "customerNotRegistered" };
+    userId = found.id;
+  }
+
+  if (!userId) return { ok: false, error: "customerNotRegistered" };
+
+  const customer = await prisma.user.findFirst({
+    where: { id: userId, role: "CUSTOMER" },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      whatsapp: true,
+      persons: {
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          relation: true,
+          measurements: true,
+        },
+      },
+    },
+  });
+
+  if (!customer) return { ok: false, error: "customerNotRegistered" };
+
+  return { ok: true, customer };
+}
+
+export async function createShopOrder(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const sid = await shopId();
+    const customerId = String(formData.get("customerId") ?? "").trim();
+    const personId = String(formData.get("personId") ?? "").trim();
+    const category = (String(formData.get("category") ?? "MAGGAM") as ServiceCategory);
+    const workType = (String(formData.get("workType") ?? "STITCHING") as WorkType);
+    const notes = String(formData.get("notes") ?? "").trim() || null;
+    const designIds = formData.getAll("designId").map(String).filter(Boolean);
+
+    if (!customerId || !personId) {
+      return { ok: false, error: "Select customer and person" };
+    }
+    if (designIds.length > MAX_ORDER_DESIGN_PICKS) {
+      return { ok: false, error: `Select up to ${MAX_ORDER_DESIGN_PICKS} designs` };
+    }
+
+    const person = await prisma.person.findFirst({
+      where: { id: personId, customerId },
+    });
+    if (!person) return { ok: false, error: "Select a person" };
+
+    const clothFile = formData.get("clothImage");
+    let clothImagePath: string | undefined;
+    if (clothFile instanceof File && clothFile.size > 0) {
+      clothImagePath = await saveUpload(clothFile, "cloth");
+    }
+
+    const orderNumber = `ORD-${Date.now()}`;
+    const orderCategory = category;
+
+    if (designIds.length > 0) {
+      const designRows = await prisma.design.findMany({
+        where: { id: { in: designIds }, shopId: sid, active: true },
+      });
+      const byId = new Map(designRows.map((d) => [d.id, d]));
+      const orderedDesigns = designIds
+        .map((id) => byId.get(id))
+        .filter((d): d is (typeof designRows)[number] => d != null);
+      if (orderedDesigns.length !== designIds.length) {
+        return { ok: false, error: "Some selected designs are not available" };
+      }
+      const primaryDesignId = orderedDesigns[0]!.id;
+      const designCategory = orderedDesigns[0]!.category;
+
+      const order = await prisma.order.create({
+        data: {
+          orderNumber,
+          customerId,
+          shopId: sid,
+          personId,
+          designId: primaryDesignId,
+          workType,
+          category: designCategory,
+          notes,
+          status: "PENDING",
+          ...(clothImagePath ? { clothImagePath } : {}),
+          orderFavorites: {
+            create: orderedDesigns.map((d) => ({
+              designId: d.id,
+              category: d.category,
+            })),
+          },
+        },
+      });
+
+      const uploaded = await appendOrderImagesFromForm(order.id, formData, "SHOP", "orderImg");
+      void uploaded;
+
+      revalidatePath("/shop/orders");
+      revalidatePath("/customer/orders");
+      return { ok: true, message: "orderPlaced" };
+    }
+
+    const order = await prisma.order.create({
+      data: {
+        orderNumber,
+        customerId,
+        shopId: sid,
+        personId,
+        designId: null,
+        workType,
+        category: orderCategory,
+        notes,
+        status: "PENDING",
+        ...(clothImagePath ? { clothImagePath } : {}),
+      },
+    });
+
+    const uploaded = await appendOrderImagesFromForm(order.id, formData, "SHOP", "orderImg");
+
+    if (!clothImagePath && uploaded.length === 0) {
+      await prisma.order.delete({ where: { id: order.id } });
+      return {
+        ok: false,
+        error: "Add cloth photo, pick shop designs, or upload photos from gallery",
+      };
+    }
+
+    revalidatePath("/shop/orders");
+    revalidatePath("/customer/orders");
+    return { ok: true, message: "orderPlaced" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
 
 async function shopIdOnly() {
   const session = await requireSession(["SHOP"]);
