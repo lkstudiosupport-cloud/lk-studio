@@ -60,58 +60,58 @@ export function DeleteAccountSection({
             setError(null);
           }}
           className="delete-account-edge-btn"
-          aria-label={t(locale, "deleteAccountButton")}
+          aria-label={t(locale, "deleteAccountButtonShort")}
         >
-          <Trash2 className="h-3 w-3" strokeWidth={1.5} />
+          <Trash2 className="h-2.5 w-2.5" strokeWidth={1.5} />
         </button>
       </div>
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-3 sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-label={t(locale, "deleteAccountConfirmTitle")}
           onClick={() => !pending && setOpen(false)}
         >
           <div
-            className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl"
+            className="w-full max-w-[16rem] overflow-hidden rounded-xl bg-white shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-              <p className="text-sm font-semibold text-red-800">
+            <div className="flex items-center justify-between border-b border-zinc-100 px-3 py-2">
+              <p className="text-xs font-semibold text-red-800">
                 {t(locale, "deleteAccountConfirmTitle")}
               </p>
               <button
                 type="button"
                 disabled={pending}
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 disabled:opacity-50"
+                className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 disabled:opacity-50"
                 aria-label={t(locale, "cancel")}
               >
-                <X className="h-5 w-5" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
-            <div className="space-y-4 p-4">
-              {error && <p className="text-sm text-red-600">{error}</p>}
+            <div className="space-y-2 p-3">
+              {error && <p className="text-xs text-red-600">{error}</p>}
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-zinc-600">
+                <span className="mb-0.5 block text-[10px] font-medium text-zinc-500">
                   {t(locale, "deleteAccountTypeConfirm", { word: confirmWord })}
                 </span>
                 <input
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
-                  className="input-premium w-full uppercase"
+                  className="input-premium w-full py-1.5 text-sm uppercase"
                   autoComplete="off"
                   disabled={pending}
                 />
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 <button
                   type="button"
                   disabled={pending}
                   onClick={() => setOpen(false)}
-                  className="btn-secondary flex-1 py-2.5 text-sm"
+                  className="btn-secondary flex-1 py-1.5 text-xs"
                 >
                   {t(locale, "cancel")}
                 </button>
@@ -119,9 +119,9 @@ export function DeleteAccountSection({
                   type="button"
                   disabled={pending || !canConfirm}
                   onClick={deleteAccount}
-                  className="flex-1 rounded-xl bg-red-700 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-red-700 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                 >
-                  {pending ? "..." : t(locale, "deleteAccountButton")}
+                  {pending ? "..." : t(locale, "deleteAccountButtonShort")}
                 </button>
               </div>
             </div>

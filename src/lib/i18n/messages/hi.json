@@ -525,11 +525,12 @@
   "legalLastUpdated": "अंतिम अपडेट",
   "legalEnglishFallback": "अनुभाग शीर्षक अनुवादित हैं; पूरा कानूनी पाठ अंग्रेज़ी में है।",
   "deleteAccountTitle": "खाता हटाएं",
-  "deleteAccountHint": "अपना खाता और संबंधित डेटा स्थायी रूप से हटाएं। यह वापस नहीं हो सकता।",
+  "deleteAccountHint": "",
   "deleteAccountButton": "मेरा खाता हटाएं",
-  "deleteAccountConfirmTitle": "खाता हटाने की पुष्टि",
-  "deleteAccountConfirmBody": "आपकी प्रोफ़ाइल, ऑर्डर, माप, पसंदीदा और अपलोड की गई तस्वीरें स्थायी रूप से हटा दी जाएंगी।",
+  "deleteAccountButtonShort": "हटाएं",
+  "deleteAccountConfirmTitle": "खाता हटाएं?",
+  "deleteAccountConfirmBody": "",
   "deleteAccountConfirmWord": "DELETE",
-  "deleteAccountTypeConfirm": "पुष्टि के लिए {word} टाइप करें",
+  "deleteAccountTypeConfirm": "{word} टाइप करें",
   "deleteAccountFailed": "खाता हट नहीं सका। कनेक्शन जांचें और फिर कोशिश करें।"
 }

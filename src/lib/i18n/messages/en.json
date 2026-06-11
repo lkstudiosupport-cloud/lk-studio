@@ -529,11 +529,12 @@
   "legalLastUpdated": "Last updated",
   "legalEnglishFallback": "Section titles are translated; full legal text is in English.",
   "deleteAccountTitle": "Delete account",
-  "deleteAccountHint": "Permanently delete your account and associated data. This cannot be undone. Orders and bills linked to other users may remain on their records.",
+  "deleteAccountHint": "",
   "deleteAccountButton": "Delete my account",
-  "deleteAccountConfirmTitle": "Confirm account deletion",
-  "deleteAccountConfirmBody": "All your profile data, orders, measurements, favorites, and uploaded photos tied to this account will be permanently deleted.",
+  "deleteAccountButtonShort": "Delete",
+  "deleteAccountConfirmTitle": "Delete account?",
+  "deleteAccountConfirmBody": "",
   "deleteAccountConfirmWord": "DELETE",
-  "deleteAccountTypeConfirm": "Type {word} to confirm",
+  "deleteAccountTypeConfirm": "Type {word}",
   "deleteAccountFailed": "Could not delete account. Check connection and try again."
 }
