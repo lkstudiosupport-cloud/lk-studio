@@ -280,6 +280,7 @@ export async function createBill(formData: FormData) {
       advancePaid,
       paidAmount,
       paid,
+      paidAt: paid ? new Date() : null,
       itemsJson,
       notes,
       voiceText,
@@ -318,6 +319,7 @@ export async function updateBill(formData: FormData) {
       advancePaid,
       paidAmount,
       paid,
+      paidAt: paid ? (existing.paidAt ?? new Date()) : null,
       itemsJson,
       ...(firstOrderId ? { order: { connect: { id: firstOrderId } } } : {}),
     },
@@ -346,7 +348,10 @@ export async function recordBillPayment(formData: FormData) {
   const pending = billPending(bill.amount, bill.advancePaid, bill.paidAmount);
   if (pending <= 0.01) {
     if (!bill.paid) {
-      await prisma.bill.update({ where: { id: billId }, data: { paid: true } });
+      await prisma.bill.update({
+        where: { id: billId },
+        data: { paid: true, paidAt: bill.paidAt ?? new Date() },
+      });
       revalidateBillPaths(billId);
     }
     return;
@@ -367,10 +372,15 @@ export async function recordBillPayment(formData: FormData) {
 
   await prisma.bill.update({
     where: { id: billId },
-    data: { paidAmount, paid },
+    data: {
+      paidAmount,
+      paid,
+      paidAt: paid ? (bill.paidAt ?? new Date()) : null,
+    },
   });
 
   revalidateBillPaths(billId);
+  return { paid };
 }
 
 export async function replyPriceRequest(formData: FormData) {

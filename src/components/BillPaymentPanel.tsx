@@ -9,6 +9,7 @@ import { t } from "@/lib/i18n";
 import { formatMoney } from "@/lib/bill-items";
 import { billPending } from "@/lib/bill-payment";
 import { recordBillPayment } from "@/app/shop/actions";
+import { currentMonthValue } from "@/lib/bill-list-filter";
 
 export function BillPaymentPanel({
   billId,
@@ -68,9 +69,15 @@ export function BillPaymentPanel({
 
     startTransition(async () => {
       try {
-        await recordBillPayment(fd);
+        const result = await recordBillPayment(fd);
         setPaymentAmount("");
-        router.refresh();
+        if (markFull || result?.paid) {
+          router.push(
+            `/shop/bills?tab=paid&mode=month&period=${encodeURIComponent(currentMonthValue())}`
+          );
+        } else {
+          router.refresh();
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : t(locale, "paymentRecordFailed"));
       }

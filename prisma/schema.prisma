@@ -369,6 +369,7 @@ model Bill {
   advancePaid   Float       @default(0)
   paidAmount    Float       @default(0)
   paid          Boolean     @default(false)
+  paidAt        DateTime?
   itemsJson     String
   notes         String?
   voiceNotePath String?
@@ -376,5 +377,6 @@ model Bill {
   createdAt     DateTime    @default(now())
 
   @@index([shopId, createdAt])
+  @@index([shopId, paid, paidAt])
   @@index([customerId, createdAt])
 }
