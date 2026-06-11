@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { razorpayConfigError } from "@/lib/razorpay-config";
 import type { AutopayRole } from "@/lib/subscription-autopay";
 import {
   createRazorpayCustomer,
   createRazorpaySubscription,
   ensureRazorpayPlan,
   isRazorpayConfigured,
+  razorpayErrorMessage,
   razorpayKeyId,
 } from "@/lib/razorpay-subscription";
 
@@ -46,91 +48,117 @@ async function payerForRole(role: AutopayRole, session: { id: string; email: str
 }
 
 export async function POST(req: Request) {
-  if (!isRazorpayConfigured()) {
-    return NextResponse.json({ error: "Autopay is not configured on the server" }, { status: 503 });
-  }
+  try {
+    if (!isRazorpayConfigured()) {
+      return NextResponse.json(
+        { ok: false, error: razorpayConfigError() ?? "Autopay is not configured on the server" },
+        { status: 503 }
+      );
+    }
 
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
 
-  const body = (await req.json()) as { role?: AutopayRole };
-  const role = body.role;
-  if (role !== "SHOP" && role !== "CUSTOMER") {
-    return NextResponse.json({ error: "Invalid role" }, { status: 400 });
-  }
-  if (session.role !== role) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    let body: { role?: AutopayRole };
+    try {
+      body = (await req.json()) as { role?: AutopayRole };
+    } catch {
+      return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+    }
 
-  const payer = await payerForRole(role, session);
-  if (!payer) return NextResponse.json({ error: "Account not found" }, { status: 404 });
+    const role = body.role;
+    if (role !== "SHOP" && role !== "CUSTOMER") {
+      return NextResponse.json({ ok: false, error: "Invalid role" }, { status: 400 });
+    }
+    if (session.role !== role) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
 
-  if (payer.existingSubscriptionId) {
-    return NextResponse.json({
-      keyId: razorpayKeyId(),
-      subscriptionId: payer.existingSubscriptionId,
-      alreadyActive: true,
-    });
-  }
+    const payer = await payerForRole(role, session);
+    if (!payer) {
+      return NextResponse.json({ ok: false, error: "Account not found" }, { status: 404 });
+    }
 
-  let customerId = payer.existingCustomerId;
-  if (!customerId) {
-    customerId = await createRazorpayCustomer({
-      name: payer.name,
-      email: payer.email,
-      contact: payer.contact,
+    if (payer.existingSubscriptionId) {
+      return NextResponse.json({
+        ok: true,
+        keyId: razorpayKeyId(),
+        subscriptionId: payer.existingSubscriptionId,
+        alreadyActive: true,
+      });
+    }
+
+    let customerId = payer.existingCustomerId;
+    if (!customerId) {
+      customerId = await createRazorpayCustomer({
+        name: payer.name,
+        email: payer.email,
+        contact: payer.contact,
+      });
+
+      if (role === "SHOP") {
+        await prisma.shopProfile.update({
+          where: { id: payer.entityId },
+          data: { razorpayCustomerId: customerId },
+        });
+      } else {
+        await prisma.user.update({
+          where: { id: payer.entityId },
+          data: { razorpayCustomerId: customerId },
+        });
+      }
+    }
+
+    const planId = await ensureRazorpayPlan(role);
+    const trialBillingStart =
+      payer.subscriptionStatus === "TRIAL" &&
+      payer.subscriptionEndsAt &&
+      payer.subscriptionEndsAt > new Date()
+        ? payer.subscriptionEndsAt
+        : null;
+
+    if (!customerId) {
+      return NextResponse.json(
+        { ok: false, error: "Could not create payment customer" },
+        { status: 500 }
+      );
+    }
+
+    const subscription = await createRazorpaySubscription({
+      role,
+      planId,
+      customerId,
+      notes: {
+        role,
+        entityId: payer.entityId,
+      },
+      startAt: trialBillingStart,
     });
 
     if (role === "SHOP") {
       await prisma.shopProfile.update({
         where: { id: payer.entityId },
-        data: { razorpayCustomerId: customerId },
+        data: { razorpaySubscriptionId: subscription.id },
       });
     } else {
       await prisma.user.update({
         where: { id: payer.entityId },
-        data: { razorpayCustomerId: customerId },
+        data: { razorpaySubscriptionId: subscription.id },
       });
     }
-  }
 
-  const planId = await ensureRazorpayPlan(role);
-  const trialBillingStart =
-    payer.subscriptionStatus === "TRIAL" &&
-    payer.subscriptionEndsAt &&
-    payer.subscriptionEndsAt > new Date()
-      ? payer.subscriptionEndsAt
-      : null;
-
-  if (!customerId) {
-    return NextResponse.json({ error: "Could not create payment customer" }, { status: 500 });
-  }
-
-  const subscription = await createRazorpaySubscription({
-    role,
-    planId,
-    customerId,
-    notes: {
-      role,
-      entityId: payer.entityId,
-    },
-    startAt: trialBillingStart,
-  });
-
-  if (role === "SHOP") {
-    await prisma.shopProfile.update({
-      where: { id: payer.entityId },
-      data: { razorpaySubscriptionId: subscription.id },
+    return NextResponse.json({
+      ok: true,
+      keyId: razorpayKeyId(),
+      subscriptionId: subscription.id,
     });
-  } else {
-    await prisma.user.update({
-      where: { id: payer.entityId },
-      data: { razorpaySubscriptionId: subscription.id },
-    });
+  } catch (err) {
+    console.error("Autopay start error:", err);
+    return NextResponse.json(
+      { ok: false, error: razorpayErrorMessage(err) },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({
-    keyId: razorpayKeyId(),
-    subscriptionId: subscription.id,
-  });
 }

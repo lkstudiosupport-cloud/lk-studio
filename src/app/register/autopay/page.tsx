@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import {
   CUSTOMER_MONTHLY_PRICE_INR,
   SHOP_MONTHLY_PRICE_INR,
+  isInTrial,
 } from "@/lib/subscription";
 import { isRazorpayConfigured } from "@/lib/razorpay-config";
 import { AutopayOnboardingPage } from "@/components/AutopayOnboardingPage";
@@ -17,10 +18,17 @@ export default async function RegisterAutopayPage() {
     if (!session!.shopId) redirect("/login/shop");
     const profile = await prisma.shopProfile.findUnique({
       where: { id: session!.shopId },
-      select: { shopName: true, autopayEnabled: true },
+      select: {
+        shopName: true,
+        autopayEnabled: true,
+        subscriptionStatus: true,
+        subscriptionEndsAt: true,
+      },
     });
     if (!profile) redirect("/login/shop");
     if (profile.autopayEnabled) redirect("/shop");
+
+    const allowSkip = isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt);
 
     return (
       <AutopayOnboardingPage
@@ -30,15 +38,23 @@ export default async function RegisterAutopayPage() {
         razorpayConfigured={isRazorpayConfigured()}
         payeeLabel={profile.shopName}
         homePath="/shop"
+        allowSkip={allowSkip}
       />
     );
   }
 
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: session!.id },
-    select: { name: true, autopayEnabled: true },
+    select: {
+      name: true,
+      autopayEnabled: true,
+      subscriptionStatus: true,
+      subscriptionEndsAt: true,
+    },
   });
   if (user.autopayEnabled) redirect("/customer");
+
+  const allowSkip = isInTrial(user.subscriptionStatus, user.subscriptionEndsAt);
 
   return (
     <AutopayOnboardingPage
@@ -48,6 +64,7 @@ export default async function RegisterAutopayPage() {
       razorpayConfigured={isRazorpayConfigured()}
       payeeLabel={user.name}
       homePath="/customer"
+      allowSkip={allowSkip}
     />
   );
 }

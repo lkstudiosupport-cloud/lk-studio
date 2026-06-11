@@ -7,6 +7,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { AutopayRole } from "@/lib/subscription-autopay";
 import { enableAutopayDemo } from "@/app/subscription-autopay-actions";
+import { readApiJson } from "@/lib/api-json";
 
 function loadRazorpayScript() {
   return new Promise<boolean>((resolve) => {
@@ -82,12 +83,16 @@ export function AutoPayPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role }),
       });
-      const data = (await res.json()) as {
+      const data = await readApiJson<{
+        ok?: boolean;
         error?: string;
         keyId?: string;
         subscriptionId?: string;
-      };
+      }>(res);
       if (!res.ok) throw new Error(data.error ?? "Could not start autopay");
+      if (!data.keyId || !data.subscriptionId) {
+        throw new Error(data.error ?? "Could not start autopay");
+      }
 
       const loaded = await loadRazorpayScript();
       if (!loaded || !window.Razorpay) throw new Error(t(locale, "autopayScriptFailed"));
@@ -116,7 +121,7 @@ export function AutoPayPanel({
                 razorpay_signature: r.razorpay_signature,
               }),
             });
-            const verifyData = (await verify.json()) as { error?: string };
+            const verifyData = await readApiJson<{ ok?: boolean; error?: string }>(verify);
             if (!verify.ok) throw new Error(verifyData.error ?? "Verification failed");
             resolve();
           },

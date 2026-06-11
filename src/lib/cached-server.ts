@@ -20,13 +20,25 @@ export const cachedCustomerSession = cache(() => requireSession(["CUSTOMER"]));
 export const cachedShopNavProfile = cache(async (shopId: string) => {
   return prisma.shopProfile.findUnique({
     where: { id: shopId },
-    select: { shopName: true, profilePhoto: true, autopayEnabled: true },
+    select: {
+      shopName: true,
+      profilePhoto: true,
+      autopayEnabled: true,
+      subscriptionStatus: true,
+      subscriptionEndsAt: true,
+    },
   });
 });
 
 export const cachedCustomerNavProfile = cache(async (userId: string) => {
   return prisma.user.findUnique({
     where: { id: userId },
-    select: { name: true, profilePhoto: true, autopayEnabled: true },
+    select: {
+      name: true,
+      profilePhoto: true,
+      autopayEnabled: true,
+      subscriptionStatus: true,
+      subscriptionEndsAt: true,
+    },
   });
 });

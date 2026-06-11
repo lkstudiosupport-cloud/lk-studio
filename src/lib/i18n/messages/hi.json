@@ -330,6 +330,8 @@
   "autopayDemoNote": "Razorpay keys नहीं — टेस्ट के लिए demo autopay।",
   "autopayOnboardingTitle": "मासिक ऑटोपे सेटअप करें",
   "autopayOnboardingHint": "LK Studio उपयोग के लिए ज़रूरी। UPI mandate एक बार approve — ट्रायल के बाद billing।",
+  "autopayOnboardingHintTrial": "मासिक ऑटोपे के लिए UPI mandate approve करें। मुफ्त ट्रायल में अभी छोड़ सकते हैं।",
+  "autopaySkipForNow": "अभी छोड़ें — डैशबोर्ड पर जाएं",
   "autopayOnboardingTrial": "{days} दिन मुफ्त ट्रायल — आज कोई charge नहीं",
   "autopayOnboardingAfterTrial": "ट्रायल के बाद ₹{amount} हर {days} दिन auto-debit",
   "autopayOnboardingNoCancel": "ऑटोपे चालू रहेगा — ऐप में cancel नहीं",

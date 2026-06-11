@@ -97,4 +97,19 @@ export function verifyWebhookSignature(rawBody: string, signature: string) {
   return expected === signature;
 }
 
+export function razorpayErrorMessage(err: unknown): string {
+  if (err && typeof err === "object") {
+    const e = err as {
+      error?: { description?: string };
+      description?: string;
+      message?: string;
+    };
+    if (e.error?.description) return e.error.description;
+    if (e.description) return e.description;
+    if (e.message) return e.message;
+  }
+  if (err instanceof Error) return err.message;
+  return "Payment provider error";
+}
+
 export { razorpayKeyId, isRazorpayConfigured };

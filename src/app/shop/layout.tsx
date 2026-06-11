@@ -5,6 +5,7 @@ import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { SessionRefresh } from "@/components/SessionRefresh";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
+import { isInTrial } from "@/lib/subscription";
 import {
   cachedLocale,
   cachedShopSession,
@@ -20,6 +21,10 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     cachedShopNavProfile(session.shopId!),
   ]);
 
+  const trialBypass =
+    profile != null &&
+    isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt);
+
   const navLinks = [
     { href: "/shop", label: t(locale, "dashboard") },
     { href: "/shop/designs", label: t(locale, "designs") },
@@ -31,7 +36,11 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   return (
     <SubscriptionGate>
       <SessionRefresh />
-      <AutopayGuard autopayEnabled={profile?.autopayEnabled ?? false} setupPath="/register/autopay">
+      <AutopayGuard
+        autopayEnabled={profile?.autopayEnabled ?? false}
+        trialBypass={trialBypass}
+        setupPath="/register/autopay"
+      >
         <div className="brand-page-bg min-h-dvh w-full min-w-0">
           <NavShell
             locale={locale}

@@ -1,12 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { AutopayRole } from "@/lib/subscription-autopay";
+import { PAID_PERIOD_DAYS, TRIAL_DAYS } from "@/lib/subscription";
 import { AutoPayPanel } from "@/components/AutoPayPanel";
 import { BrandLogo } from "@/components/BrandLogo";
+import { LocaleLocationBar } from "@/components/LocaleLocationBar";
+import { ProfileLogout } from "@/components/ProfileLogout";
 
 export function AutopayOnboardingPage({
   locale,
@@ -15,6 +19,7 @@ export function AutopayOnboardingPage({
   razorpayConfigured,
   payeeLabel,
   homePath,
+  allowSkip = false,
 }: {
   locale: Locale;
   role: AutopayRole;
@@ -22,12 +27,18 @@ export function AutopayOnboardingPage({
   razorpayConfigured: boolean;
   payeeLabel: string;
   homePath: string;
+  /** Free trial active — user may enter the app without mandate for now. */
+  allowSkip?: boolean;
 }) {
   const router = useRouter();
 
   return (
-    <main className="brand-page-bg app-page-shell min-h-dvh py-6 sm:py-8">
-      <div className="mx-auto w-full max-w-md space-y-6 sm:max-w-lg">
+    <main className="brand-page-bg app-page-shell mx-auto flex min-h-dvh w-full max-w-lg flex-col py-6 sm:max-w-xl sm:py-8 md:max-w-2xl">
+      <div className="mb-4 flex justify-end">
+        <LocaleLocationBar locale={locale} />
+      </div>
+
+      <div className="mx-auto w-full flex-1 space-y-6">
         <BrandLogo locale={locale} size="sm" className="mx-auto" />
         <div className="card-premium space-y-4 p-5">
           <div className="flex items-start gap-3">
@@ -36,11 +47,25 @@ export function AutopayOnboardingPage({
             </span>
             <div>
               <h1 className="text-xl font-bold text-brand-green">{t(locale, "autopayOnboardingTitle")}</h1>
-              <p className="mt-1 text-sm text-zinc-600">{t(locale, "autopayOnboardingHint")}</p>
+              <p className="mt-1 text-sm text-zinc-600">
+                {allowSkip ? t(locale, "autopayOnboardingHintTrial") : t(locale, "autopayOnboardingHint")}
+              </p>
             </div>
           </div>
 
           <ul className="space-y-2 rounded-xl bg-brand-cream/60 p-4 text-sm text-zinc-700">
+            {allowSkip && (
+              <>
+                <li>• {t(locale, "autopayOnboardingTrial", { days: TRIAL_DAYS })}</li>
+                <li>
+                  •{" "}
+                  {t(locale, "autopayOnboardingAfterTrial", {
+                    amount: amountInr,
+                    days: PAID_PERIOD_DAYS,
+                  })}
+                </li>
+              </>
+            )}
             <li>• {t(locale, "autopayOnboardingNoCancel")}</li>
           </ul>
 
@@ -57,6 +82,18 @@ export function AutopayOnboardingPage({
               router.refresh();
             }}
           />
+
+          <div className="space-y-3 border-t border-zinc-200 pt-4 text-center text-sm">
+            {allowSkip && (
+              <Link
+                href={homePath}
+                className="block font-semibold text-brand-green underline-offset-2 hover:underline"
+              >
+                {t(locale, "autopaySkipForNow")}
+              </Link>
+            )}
+            <ProfileLogout locale={locale} />
+          </div>
         </div>
       </div>
     </main>

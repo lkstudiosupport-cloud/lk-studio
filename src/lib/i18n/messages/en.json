@@ -331,6 +331,8 @@
   "autopayDemoNote": "Razorpay keys not set — demo autopay for testing only.",
   "autopayOnboardingTitle": "Set up monthly autopay",
   "autopayOnboardingHint": "Required to use LK Studio. Approve UPI mandate once for monthly autopay.",
+  "autopayOnboardingHintTrial": "Approve UPI mandate for monthly autopay. You can skip for now during your free trial.",
+  "autopaySkipForNow": "Skip for now — go to dashboard",
   "autopayOnboardingTrial": "{days} days free trial starts now — no charge today",
   "autopayOnboardingAfterTrial": "After trial, ₹{amount} auto-debits every {days} days",
   "autopayOnboardingNoCancel": "Autopay stays on — cancel is not available in the app",
