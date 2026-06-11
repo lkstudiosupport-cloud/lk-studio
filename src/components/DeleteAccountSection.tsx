@@ -7,7 +7,13 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { parseApiResponse } from "@/lib/parse-api-response";
 
-export function DeleteAccountSection({ locale }: { locale: Locale }) {
+export function DeleteAccountSection({
+  locale,
+  aboveBottomNav = false,
+}: {
+  locale: Locale;
+  aboveBottomNav?: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -43,7 +49,9 @@ export function DeleteAccountSection({ locale }: { locale: Locale }) {
 
   return (
     <>
-      <div className="delete-account-edge-pin">
+      <div
+        className={`delete-account-edge-pin${aboveBottomNav ? " delete-account-edge-pin--above-nav" : ""}`}
+      >
         <button
           type="button"
           onClick={() => {
@@ -51,11 +59,10 @@ export function DeleteAccountSection({ locale }: { locale: Locale }) {
             setConfirmText("");
             setError(null);
           }}
-          className="rounded-tr-lg p-2 text-red-500/70 transition hover:bg-red-50 hover:text-red-700 active:scale-95"
+          className="delete-account-edge-btn"
           aria-label={t(locale, "deleteAccountButton")}
-          title={t(locale, "deleteAccountButton")}
         >
-          <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+          <Trash2 className="h-3 w-3" strokeWidth={1.5} />
         </button>
       </div>
 
