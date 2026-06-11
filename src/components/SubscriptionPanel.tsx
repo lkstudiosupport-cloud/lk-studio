@@ -10,7 +10,7 @@ import {
 import { AutoPayPanel } from "@/components/AutoPayPanel";
 import type { SubscriptionStatus } from "@prisma/client";
 import type { AutopayRole } from "@/lib/subscription-autopay";
-import { CheckCircle2, Clock, IndianRupee } from "lucide-react";
+import { Clock, IndianRupee } from "lucide-react";
 
 export function SubscriptionPanel({
   locale,
@@ -98,36 +98,22 @@ export function SubscriptionPanel({
           )}
         </dl>
 
-        <ul className="space-y-1.5 border-t border-zinc-100 pt-3 text-xs text-zinc-600">
-          <li>• {t(locale, "subRuleAutopay", { days: PLAN_PERIOD_DAYS })}</li>
-        </ul>
-
-        {active && !blocked && autopayEnabled && (
-          <p className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            {t(locale, "subAllGoodAutopay")}
-          </p>
-        )}
-
-        <div className="border-t border-zinc-100 pt-4">
-          {!autopayEnabled && (
+        {!autopayEnabled && (
+          <div className="border-t border-zinc-100 pt-4">
             <p className="mb-3 text-sm font-semibold text-red-700">
               {blocked ? t(locale, "subEnableAutopayNow") : t(locale, "subAutopayRequired")}
             </p>
-          )}
-          {autopayEnabled && !blocked && (
-            <p className="mb-3 text-sm font-semibold text-brand-green">{t(locale, "subAutopayLinked")}</p>
-          )}
-          <AutoPayPanel
-            locale={locale}
-            role={role}
-            amountInr={amountInr}
-            autopayEnabled={autopayEnabled}
-            razorpayConfigured={razorpayConfigured}
-            payeeLabel={payeeLabel}
-            embedded
-          />
-        </div>
+            <AutoPayPanel
+              locale={locale}
+              role={role}
+              amountInr={amountInr}
+              autopayEnabled={autopayEnabled}
+              razorpayConfigured={razorpayConfigured}
+              payeeLabel={payeeLabel}
+              embedded
+            />
+          </div>
+        )}
       </div>
     </div>
   );

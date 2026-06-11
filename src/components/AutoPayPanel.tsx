@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CreditCard, RefreshCw, ShieldCheck } from "lucide-react";
+import { CreditCard, ShieldCheck } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { AutopayRole } from "@/lib/subscription-autopay";
@@ -142,26 +142,12 @@ export function AutoPayPanel({
   }
 
   if (autopayEnabled) {
-    return (
-      <div
-        className={`rounded-xl border border-emerald-200 bg-emerald-50 p-4 ${
-          embedded ? "" : "mt-4"
-        }`}
-      >
-        <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
-          <RefreshCw className="h-4 w-4" />
-          {t(locale, "autopayActive")}
-        </p>
-        <p className="mt-1 text-xs text-emerald-900">
-          {t(locale, "autopayActiveHint", { amount: amountInr })}
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className={embedded ? "space-y-4" : "mt-4 space-y-4 border-t border-zinc-200 pt-4"}>
-      {!onboarding && (
+    <div className={embedded ? "space-y-3" : "mt-4 space-y-4 border-t border-zinc-200 pt-4"}>
+      {!onboarding && !embedded && (
         <>
           <div>
             <p className="flex items-center gap-2 text-sm font-semibold text-brand-green">
@@ -193,9 +179,11 @@ export function AutoPayPanel({
         </>
       )}
 
-      <div className="rounded-xl border border-dashed border-brand-green/30 bg-brand-cream/40 p-4">
+      <div className={embedded ? "" : "rounded-xl border border-dashed border-brand-green/30 bg-brand-cream/40 p-4"}>
         {!razorpayConfigured && (
-          <p className="mb-3 text-xs text-amber-800">{t(locale, "autopayDemoNote")}</p>
+          <p className={`text-xs text-amber-800 ${embedded ? "mb-2" : "mb-3"}`}>
+            {t(locale, "autopayDemoNote")}
+          </p>
         )}
         <button
           type="button"
