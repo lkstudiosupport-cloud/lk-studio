@@ -5,6 +5,7 @@ import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { SessionRefresh } from "@/components/SessionRefresh";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
+import { isDemoPhone } from "@/lib/demo-accounts";
 import { isInTrial } from "@/lib/subscription";
 import {
   cachedLocale,
@@ -22,8 +23,9 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   ]);
 
   const trialBypass =
-    profile != null &&
-    isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt, profile.createdAt);
+    (profile != null &&
+      isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt, profile.createdAt)) ||
+    (profile?.phone != null && isDemoPhone(profile.phone));
 
   const navLinks = [
     { href: "/shop", label: t(locale, "dashboard") },

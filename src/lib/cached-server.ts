@@ -22,6 +22,7 @@ export const cachedShopNavProfile = cache(async (shopId: string) => {
     where: { id: shopId },
     select: {
       shopName: true,
+      phone: true,
       profilePhoto: true,
       autopayEnabled: true,
       subscriptionStatus: true,
@@ -36,6 +37,7 @@ export const cachedCustomerNavProfile = cache(async (userId: string) => {
     where: { id: userId },
     select: {
       name: true,
+      phone: true,
       profilePhoto: true,
       autopayEnabled: true,
       subscriptionStatus: true,

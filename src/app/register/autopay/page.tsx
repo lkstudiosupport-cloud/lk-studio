@@ -7,6 +7,7 @@ import {
   SHOP_MONTHLY_PRICE_INR,
   isInTrial,
 } from "@/lib/subscription";
+import { isDemoPhone } from "@/lib/demo-accounts";
 import { isRazorpayConfigured } from "@/lib/razorpay-config";
 import { AutopayOnboardingPage } from "@/components/AutopayOnboardingPage";
 
@@ -20,6 +21,7 @@ export default async function RegisterAutopayPage() {
       where: { id: session!.shopId },
       select: {
         shopName: true,
+        phone: true,
         autopayEnabled: true,
         subscriptionStatus: true,
         subscriptionEndsAt: true,
@@ -27,6 +29,7 @@ export default async function RegisterAutopayPage() {
       },
     });
     if (!profile) redirect("/login/shop");
+    if (profile.phone && isDemoPhone(profile.phone)) redirect("/shop");
     if (profile.autopayEnabled) redirect("/shop");
 
     const allowSkip = isInTrial(
@@ -52,12 +55,14 @@ export default async function RegisterAutopayPage() {
     where: { id: session!.id },
     select: {
       name: true,
+      phone: true,
       autopayEnabled: true,
       subscriptionStatus: true,
       subscriptionEndsAt: true,
       createdAt: true,
     },
   });
+  if (user.phone && isDemoPhone(user.phone)) redirect("/customer");
   if (user.autopayEnabled) redirect("/customer");
 
   const allowSkip = isInTrial(user.subscriptionStatus, user.subscriptionEndsAt, user.createdAt);
