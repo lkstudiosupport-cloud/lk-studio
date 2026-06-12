@@ -54,7 +54,7 @@ async function upsertShop(name: string, shopName: string, phone: string) {
   const subscriptionReset = {
     subscriptionStatus: "ACTIVE" as const,
     subscriptionEndsAt: trialEndDate(),
-    autopayEnabled: false,
+    autopayEnabled: true,
     razorpayCustomerId: null,
     razorpaySubscriptionId: null,
   };
@@ -70,7 +70,7 @@ async function upsertShop(name: string, shopName: string, phone: string) {
         phoneNormalized: normalized,
         whatsapp,
         sessionVersion: { increment: 1 },
-        autopayEnabled: false,
+        autopayEnabled: true,
         razorpayCustomerId: null,
         razorpaySubscriptionId: null,
         shopProfile: existing.shopProfile
@@ -136,7 +136,7 @@ async function upsertCustomer() {
     whatsapp: "919123456789",
     subscriptionStatus: "ACTIVE" as const,
     subscriptionEndsAt: trialEndDate(),
-    autopayEnabled: false,
+    autopayEnabled: true,
     razorpayCustomerId: null,
     razorpaySubscriptionId: null,
     sessionVersion: existing ? { increment: 1 } : 0,

@@ -5,7 +5,7 @@ import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { SessionRefresh } from "@/components/SessionRefresh";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
-import { isDemoPhone } from "@/lib/demo-accounts";
+import { isDemoAccountUser } from "@/lib/demo-accounts";
 import { isInTrial } from "@/lib/subscription";
 import {
   cachedLocale,
@@ -25,7 +25,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   const trialBypass =
     (user != null &&
       isInTrial(user.subscriptionStatus, user.subscriptionEndsAt, user.createdAt)) ||
-    (user?.phone != null && isDemoPhone(user.phone));
+    isDemoAccountUser(user);
 
   const navLinks = [
     { href: "/customer", label: t(locale, "dashboard") },

@@ -7,7 +7,7 @@ import {
   SHOP_MONTHLY_PRICE_INR,
   isInTrial,
 } from "@/lib/subscription";
-import { isDemoPhone } from "@/lib/demo-accounts";
+import { isDemoAccountUser } from "@/lib/demo-accounts";
 import { isRazorpayConfigured } from "@/lib/razorpay-config";
 import { AutopayOnboardingPage } from "@/components/AutopayOnboardingPage";
 
@@ -17,19 +17,25 @@ export default async function RegisterAutopayPage() {
 
   if (session!.role === "SHOP") {
     if (!session!.shopId) redirect("/login/shop");
-    const profile = await prisma.shopProfile.findUnique({
-      where: { id: session!.shopId },
-      select: {
-        shopName: true,
-        phone: true,
-        autopayEnabled: true,
-        subscriptionStatus: true,
-        subscriptionEndsAt: true,
-        createdAt: true,
-      },
-    });
+    const [profile, user] = await Promise.all([
+      prisma.shopProfile.findUnique({
+        where: { id: session!.shopId },
+        select: {
+          shopName: true,
+          phone: true,
+          autopayEnabled: true,
+          subscriptionStatus: true,
+          subscriptionEndsAt: true,
+          createdAt: true,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: session!.id },
+        select: { phone: true, phoneNormalized: true },
+      }),
+    ]);
     if (!profile) redirect("/login/shop");
-    if (profile.phone && isDemoPhone(profile.phone)) redirect("/shop");
+    if (isDemoAccountUser(user) || isDemoAccountUser({ phone: profile.phone })) redirect("/shop");
     if (profile.autopayEnabled) redirect("/shop");
 
     const allowSkip = isInTrial(
@@ -56,13 +62,14 @@ export default async function RegisterAutopayPage() {
     select: {
       name: true,
       phone: true,
+      phoneNormalized: true,
       autopayEnabled: true,
       subscriptionStatus: true,
       subscriptionEndsAt: true,
       createdAt: true,
     },
   });
-  if (user.phone && isDemoPhone(user.phone)) redirect("/customer");
+  if (isDemoAccountUser(user)) redirect("/customer");
   if (user.autopayEnabled) redirect("/customer");
 
   const allowSkip = isInTrial(user.subscriptionStatus, user.subscriptionEndsAt, user.createdAt);

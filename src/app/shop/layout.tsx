@@ -5,27 +5,30 @@ import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { SessionRefresh } from "@/components/SessionRefresh";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
-import { isDemoPhone } from "@/lib/demo-accounts";
+import { isDemoAccountUser } from "@/lib/demo-accounts";
 import { isInTrial } from "@/lib/subscription";
 import {
   cachedLocale,
   cachedShopSession,
   cachedShopNavProfile,
+  cachedUserDemoFields,
 } from "@/lib/cached-server";
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const session = await cachedShopSession();
   if (!session?.shopId) redirect("/login/shop");
 
-  const [locale, profile] = await Promise.all([
+  const [locale, profile, user] = await Promise.all([
     cachedLocale(),
     cachedShopNavProfile(session.shopId!),
+    cachedUserDemoFields(session.id),
   ]);
 
   const trialBypass =
     (profile != null &&
       isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt, profile.createdAt)) ||
-    (profile?.phone != null && isDemoPhone(profile.phone));
+    isDemoAccountUser(user) ||
+    isDemoAccountUser({ phone: profile?.phone });
 
   const navLinks = [
     { href: "/shop", label: t(locale, "dashboard") },

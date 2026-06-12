@@ -40,8 +40,18 @@ async function upsertShop(
         phone,
         phoneNormalized: normalized,
         whatsapp,
+        autopayEnabled: true,
         shopProfile: existing.shopProfile
-          ? { update: { shopName, phone, whatsapp } }
+          ? {
+              update: {
+                shopName,
+                phone,
+                whatsapp,
+                subscriptionStatus: "ACTIVE",
+                subscriptionEndsAt: trialEndDate(),
+                autopayEnabled: true,
+              },
+            }
           : {
               create: {
                 shopName,
@@ -52,6 +62,7 @@ async function upsertShop(
                 upiId: `${shopName.replace(/\s/g, "").toLowerCase()}@upi`,
                 subscriptionStatus: "ACTIVE",
                 subscriptionEndsAt: trialEndDate(),
+                autopayEnabled: true,
                 address: "Main Road, Your City",
               },
             },
@@ -79,6 +90,7 @@ async function upsertShop(
           upiId: `${shopName.replace(/\s/g, "").toLowerCase()}@upi`,
           subscriptionStatus: "ACTIVE",
           subscriptionEndsAt: trialEndDate(),
+          autopayEnabled: true,
           address: "Main Road, Your City",
         },
       },
@@ -125,6 +137,7 @@ async function main() {
         passwordHash: await bcrypt.hash("demo123", 10),
         subscriptionStatus: "ACTIVE",
         subscriptionEndsAt: trialEndDate(),
+        autopayEnabled: true,
         phoneNormalized: customerNormalized,
         whatsapp: "919123456789",
       },
@@ -141,6 +154,7 @@ async function main() {
         role: UserRole.CUSTOMER,
         subscriptionStatus: "ACTIVE",
         subscriptionEndsAt: trialEndDate(),
+        autopayEnabled: true,
       },
     });
   }

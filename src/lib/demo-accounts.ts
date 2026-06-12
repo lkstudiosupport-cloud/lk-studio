@@ -23,3 +23,13 @@ export function isDemoPhone(rawPhone: string): boolean {
 export function isDemoPhoneE164(e164Digits: string): boolean {
   return isDemoPhone(e164Digits);
 }
+
+/** Match demo account from stored user fields (phone or phoneNormalized). */
+export function isDemoAccountUser(
+  user: { phone?: string | null; phoneNormalized?: string | null } | null | undefined
+): boolean {
+  if (!user) return false;
+  if (user.phoneNormalized && DEMO_PHONES.has(user.phoneNormalized)) return true;
+  if (user.phone && isDemoPhone(user.phone)) return true;
+  return false;
+}

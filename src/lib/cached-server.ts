@@ -38,11 +38,19 @@ export const cachedCustomerNavProfile = cache(async (userId: string) => {
     select: {
       name: true,
       phone: true,
+      phoneNormalized: true,
       profilePhoto: true,
       autopayEnabled: true,
       subscriptionStatus: true,
       subscriptionEndsAt: true,
       createdAt: true,
     },
+  });
+});
+
+export const cachedUserDemoFields = cache(async (userId: string) => {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { phone: true, phoneNormalized: true },
   });
 });
