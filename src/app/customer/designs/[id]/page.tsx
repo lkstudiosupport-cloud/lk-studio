@@ -10,8 +10,6 @@ import { AskPriceForm } from "@/components/AskPriceForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { isShopActive } from "@/lib/subscription";
 import { parseDesignImages } from "@/lib/design-images";
-import { CustomerDesignPaywall } from "@/components/CustomerDesignPaywall";
-import { customerDesignAccessForUser } from "@/lib/customer-design-access-server";
 
 export default async function CustomerDesignDetailPage({
   params,
@@ -22,11 +20,6 @@ export default async function CustomerDesignDetailPage({
 }) {
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
-  const { allowed: designAccess } = await customerDesignAccessForUser(session!.id);
-  if (!designAccess) {
-    return <CustomerDesignPaywall locale={locale} />;
-  }
-
   const { id } = await params;
   const { shopId } = await searchParams;
 

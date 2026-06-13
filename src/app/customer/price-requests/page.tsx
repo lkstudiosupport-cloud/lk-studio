@@ -3,16 +3,10 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { CustomerPriceRequestsPanel } from "@/components/CustomerPriceRequestsPanel";
-import { CustomerDesignPaywall } from "@/components/CustomerDesignPaywall";
-import { customerDesignAccessForUser } from "@/lib/customer-design-access-server";
 
 export default async function CustomerPriceRequestsPage() {
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
-  const { allowed: designAccess } = await customerDesignAccessForUser(session!.id);
-  if (!designAccess) {
-    return <CustomerDesignPaywall locale={locale} />;
-  }
 
   const requests = await prisma.priceRequest.findMany({
     where: { customerId: session!.id },

@@ -11,8 +11,6 @@ import Link from "next/link";
 import { shopRatingSummaries } from "@/lib/shop-rating";
 import { ShopRatingBadge } from "@/components/ShopRatingBadge";
 import { SaveShopButton } from "@/components/SaveShopButton";
-import { CustomerDesignPaywall } from "@/components/CustomerDesignPaywall";
-import { customerDesignAccessForUser } from "@/lib/customer-design-access-server";
 
 export default async function CustomerDesignsPage({
   searchParams,
@@ -21,11 +19,6 @@ export default async function CustomerDesignsPage({
 }) {
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
-  const { allowed: designAccess } = await customerDesignAccessForUser(session!.id);
-  if (!designAccess) {
-    return <CustomerDesignPaywall locale={locale} />;
-  }
-
   const params = await searchParams;
   const category = params.category as ServiceCategory | undefined;
   const shopIdParam = params.shopId;

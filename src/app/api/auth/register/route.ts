@@ -80,8 +80,8 @@ export async function POST(req: Request) {
         role,
         ...(role === "CUSTOMER"
           ? {
-              subscriptionStatus: "TRIAL",
-              subscriptionEndsAt: trialEndDate(),
+              subscriptionStatus: "ACTIVE",
+              subscriptionEndsAt: null,
               ...(latitude != null && longitude != null
                 ? {
                     latitude,

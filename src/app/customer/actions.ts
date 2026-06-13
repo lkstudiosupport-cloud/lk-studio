@@ -10,7 +10,6 @@ import { appendOrderImagesFromForm } from "@/lib/save-order-images";
 import { saveUpload, deleteStoredUpload } from "@/lib/storage";
 import { MAX_PERSON_PHOTOS, parsePersonPhotos } from "@/lib/person-photos";
 import { isShopActive } from "@/lib/subscription";
-import { assertCustomerSubscription } from "@/app/customer/subscription-actions";
 
 function revalidateMeasurementPaths() {
   revalidatePath("/customer/persons");
@@ -314,7 +313,6 @@ export async function toggleSavedShop(shopId: string): Promise<boolean> {
 
 export async function toggleFavorite(designId: string, shopId: string): Promise<boolean> {
   const cid = await customerId();
-  await assertCustomerSubscription(cid);
 
   const design = await prisma.design.findFirst({
     where: { id: designId, shopId, active: true },
@@ -350,7 +348,6 @@ export async function toggleFavorite(designId: string, shopId: string): Promise<
 export async function askPrice(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
     const cid = await customerId();
-    await assertCustomerSubscription(cid);
 
     const shopId = String(formData.get("shopId") ?? "").trim();
     const designIdRaw = String(formData.get("designId") ?? "").trim();

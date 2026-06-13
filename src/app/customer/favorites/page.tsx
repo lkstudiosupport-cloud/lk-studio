@@ -5,8 +5,6 @@ import { isShopActive } from "@/lib/subscription";
 import { CustomerFavoritesPanel } from "@/components/CustomerFavoritesPanel";
 import Link from "next/link";
 import { t } from "@/lib/i18n";
-import { CustomerDesignPaywall } from "@/components/CustomerDesignPaywall";
-import { customerDesignAccessForUser } from "@/lib/customer-design-access-server";
 
 export default async function CustomerFavoritesPage({
   searchParams,
@@ -15,11 +13,6 @@ export default async function CustomerFavoritesPage({
 }) {
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
-  const { allowed: designAccess } = await customerDesignAccessForUser(session!.id);
-  if (!designAccess) {
-    return <CustomerDesignPaywall locale={locale} />;
-  }
-
   const { shopId: shopIdParam } = await searchParams;
 
   if (!shopIdParam) {

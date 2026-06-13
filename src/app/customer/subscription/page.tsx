@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function CustomerSubscriptionPage() {
-  redirect("/customer/profile#subscription");
+  redirect("/customer/profile");
 }

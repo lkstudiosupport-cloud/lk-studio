@@ -136,8 +136,8 @@ async function main() {
         email: customerEmail,
         passwordHash: await bcrypt.hash("demo123", 10),
         subscriptionStatus: "ACTIVE",
-        subscriptionEndsAt: trialEndDate(),
-        autopayEnabled: true,
+        subscriptionEndsAt: null,
+        autopayEnabled: false,
         phoneNormalized: customerNormalized,
         whatsapp: "919123456789",
       },
@@ -153,8 +153,8 @@ async function main() {
         whatsapp: "919123456789",
         role: UserRole.CUSTOMER,
         subscriptionStatus: "ACTIVE",
-        subscriptionEndsAt: trialEndDate(),
-        autopayEnabled: true,
+        subscriptionEndsAt: null,
+        autopayEnabled: false,
       },
     });
   }
