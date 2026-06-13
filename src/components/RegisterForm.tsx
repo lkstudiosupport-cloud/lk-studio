@@ -10,7 +10,6 @@ import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import {
   SHOP_MONTHLY_PRICE_INR,
-  CUSTOMER_MONTHLY_PRICE_INR,
 } from "@/lib/subscription";
 
 function formVal(fd: FormData, key: string): string {
@@ -66,7 +65,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
             role === "CUSTOMER" ? "bg-brand-gold text-brand-green" : "bg-brand-green/10 text-brand-green"
           }`}
         >
-          Customer — ₹{CUSTOMER_MONTHLY_PRICE_INR}/mo
+          Customer — {t(locale, "registerCustomerFree")}
         </button>
         <button
           type="button"

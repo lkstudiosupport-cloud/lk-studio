@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
-  isCustomerActive,
   extendSubscriptionEnd,
 } from "@/lib/subscription";
+import { hasCustomerDesignAccess } from "@/lib/customer-design-access";
 
 async function customerSession() {
   const session = await requireSession(["CUSTOMER"]);
@@ -17,10 +17,16 @@ async function customerSession() {
 export async function assertCustomerSubscription(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { subscriptionStatus: true, subscriptionEndsAt: true },
+    select: {
+      phone: true,
+      phoneNormalized: true,
+      subscriptionStatus: true,
+      subscriptionEndsAt: true,
+      createdAt: true,
+    },
   });
-  if (!user || !isCustomerActive(user.subscriptionStatus, user.subscriptionEndsAt)) {
-    throw new Error("Your subscription expired — renew in Profile (₹100/month)");
+  if (!user || !hasCustomerDesignAccess(user)) {
+    throw new Error("Subscribe in Profile to browse designs and ask prices");
   }
 }
 

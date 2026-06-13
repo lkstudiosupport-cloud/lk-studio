@@ -3,7 +3,6 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { prisma } from "@/lib/prisma";
 import {
-  CUSTOMER_MONTHLY_PRICE_INR,
   SHOP_MONTHLY_PRICE_INR,
   isInTrial,
 } from "@/lib/subscription";
@@ -57,32 +56,5 @@ export default async function RegisterAutopayPage() {
     );
   }
 
-  const user = await prisma.user.findUniqueOrThrow({
-    where: { id: session!.id },
-    select: {
-      name: true,
-      phone: true,
-      phoneNormalized: true,
-      autopayEnabled: true,
-      subscriptionStatus: true,
-      subscriptionEndsAt: true,
-      createdAt: true,
-    },
-  });
-  if (isDemoAccountUser(user)) redirect("/customer");
-  if (user.autopayEnabled) redirect("/customer");
-
-  const allowSkip = isInTrial(user.subscriptionStatus, user.subscriptionEndsAt, user.createdAt);
-
-  return (
-    <AutopayOnboardingPage
-      locale={locale}
-      role="CUSTOMER"
-      amountInr={CUSTOMER_MONTHLY_PRICE_INR}
-      razorpayConfigured={isRazorpayConfigured()}
-      payeeLabel={user.name}
-      homePath="/customer"
-      allowSkip={allowSkip}
-    />
-  );
+  redirect("/customer");
 }

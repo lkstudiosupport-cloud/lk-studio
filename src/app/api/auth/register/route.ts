@@ -131,7 +131,7 @@ export async function POST(req: Request) {
       sessionVersion,
     });
 
-    const redirectTo = role === "SHOP" ? "/register/autopay" : "/register/autopay";
+    const redirectTo = role === "SHOP" ? "/register/autopay" : "/customer";
     return NextResponse.json({ ok: true, redirect: redirectTo });
   } catch (err) {
     console.error("Register error:", err);

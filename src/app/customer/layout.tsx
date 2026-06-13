@@ -1,12 +1,8 @@
 import { redirect } from "next/navigation";
 import { NavShell } from "@/components/NavShell";
 import { SwipeNavContent } from "@/components/SwipeNavContent";
-import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { SessionRefresh } from "@/components/SessionRefresh";
-import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
-import { isDemoAccountUser } from "@/lib/demo-accounts";
-import { isInTrial } from "@/lib/subscription";
 import {
   cachedLocale,
   cachedCustomerSession,
@@ -22,11 +18,6 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     cachedCustomerNavProfile(session.id),
   ]);
 
-  const trialBypass =
-    (user != null &&
-      isInTrial(user.subscriptionStatus, user.subscriptionEndsAt, user.createdAt)) ||
-    isDemoAccountUser(user);
-
   const navLinks = [
     { href: "/customer", label: t(locale, "dashboard") },
     { href: "/customer/shops", label: t(locale, "browseShops") },
@@ -36,27 +27,21 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   ];
 
   return (
-    <SubscriptionGate>
+    <>
       <SessionRefresh />
-      <AutopayGuard
-        autopayEnabled={user?.autopayEnabled ?? false}
-        trialBypass={trialBypass}
-        setupPath="/register/autopay"
-      >
-        <div className="brand-page-bg min-h-dvh w-full min-w-0">
-          <NavShell
-            locale={locale}
-            title={t(locale, "appName")}
-            profileHref="/customer/profile"
-            profileLabel={t(locale, "customerProfileTitle")}
-            profilePhoto={user?.profilePhoto}
-            links={navLinks}
-          />
-          <SwipeNavContent navHrefs={navLinks.map((l) => l.href)}>
-            <div className="app-main-content mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">{children}</div>
-          </SwipeNavContent>
-        </div>
-      </AutopayGuard>
-    </SubscriptionGate>
+      <div className="brand-page-bg min-h-dvh w-full min-w-0">
+        <NavShell
+          locale={locale}
+          title={t(locale, "appName")}
+          profileHref="/customer/profile"
+          profileLabel={t(locale, "customerProfileTitle")}
+          profilePhoto={user?.profilePhoto}
+          links={navLinks}
+        />
+        <SwipeNavContent navHrefs={navLinks.map((l) => l.href)}>
+          <div className="app-main-content mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">{children}</div>
+        </SwipeNavContent>
+      </div>
+    </>
   );
 }

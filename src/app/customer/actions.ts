@@ -226,7 +226,6 @@ export async function placeOrder(
 ): Promise<ActionState> {
   try {
     const cid = await customerId();
-    await assertCustomerSubscription(cid);
     const personId = String(formData.get("personId"));
     const designIdRaw = String(formData.get("designId") ?? "").trim();
     const shopIdRaw = String(formData.get("shopId") ?? "").trim();
@@ -412,7 +411,6 @@ export async function placeOrderFromFavorites(
 ): Promise<ActionState> {
   try {
     const cid = await customerId();
-    await assertCustomerSubscription(cid);
 
     const shopId = String(formData.get("shopId") ?? "").trim();
     const personId = String(formData.get("personId"));
@@ -481,7 +479,6 @@ export async function uploadCustomerOrderImages(
 ): Promise<ActionState> {
   try {
     const cid = await customerId();
-    await assertCustomerSubscription(cid);
     const orderId = String(formData.get("orderId"));
     const order = await prisma.order.findFirst({
       where: { id: orderId, customerId: cid },
