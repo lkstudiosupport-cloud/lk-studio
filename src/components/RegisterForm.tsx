@@ -65,7 +65,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
             role === "CUSTOMER" ? "bg-brand-gold text-brand-green" : "bg-brand-green/10 text-brand-green"
           }`}
         >
-          Customer — {t(locale, "registerCustomerFree")}
+          {t(locale, "customer")}
         </button>
         <button
           type="button"
@@ -74,7 +74,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
             role === "SHOP" ? "bg-brand-green text-brand-gold" : "bg-brand-green/10 text-brand-green"
           }`}
         >
-          Shop — ₹{SHOP_MONTHLY_PRICE_INR}/mo
+          {t(locale, "registerRoleBusiness", { amount: SHOP_MONTHLY_PRICE_INR })}
         </button>
       </div>
       <input name="name" required placeholder={t(locale, "name")} className="input-premium w-full" />
@@ -97,7 +97,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button type="submit" className="btn-primary w-full py-3">
-        Continue — set up autopay next
+        {role === "SHOP" ? t(locale, "registerContinueAutopay") : t(locale, "registerContinue")}
       </button>
       <div className="pt-2 text-center text-sm">
         <Link href="/" className="block text-brand-green-soft">
