@@ -20,6 +20,7 @@
     "db:fix-trial": "tsx scripts/fix-trial-ends.ts",
     "db:reset-demo": "tsx scripts/reset-demo-accounts.ts",
     "measurement-icons:generate": "node scripts/crop-reference-measurement-icons.mjs",
+    "measurement-icons:import-hd": "node scripts/import-hd-measurement-icons.mjs",
     "postinstall": "prisma generate",
     "cap:sync": "powershell -ExecutionPolicy Bypass -File scripts/sync-capacitor.ps1",
     "cap:open": "npx cap open android",
