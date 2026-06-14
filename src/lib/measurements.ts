@@ -45,17 +45,16 @@ export type MeasurementTypeConfig = {
 };
 
 const BLOUSE_FIELDS: MeasurementFieldDef[] = [
-  { key: "bust", letter: "1" },
-  { key: "underBust", letter: "2" },
-  { key: "waist", letter: "3" },
-  { key: "shoulder", letter: "4" },
-  { key: "frontNeck", letter: "5" },
-  { key: "backNeck", letter: "6" },
+  { key: "length", letter: "1" },
+  { key: "bust", letter: "2" },
+  { key: "underBust", letter: "3" },
+  { key: "waist", letter: "4" },
+  { key: "armLength", letter: "5" },
+  { key: "bicep", letter: "6" },
   { key: "armHole", letter: "7" },
-  { key: "armLength", letter: "8" },
-  { key: "bicep", letter: "9" },
-  { key: "sleeve", letter: "10" },
-  { key: "custom" },
+  { key: "frontNeck", letter: "8" },
+  { key: "backNeck", letter: "9" },
+  { key: "shoulder", letter: "10" },
 ];
 
 /** Dress / kurti — matches reference tailoring app chart */

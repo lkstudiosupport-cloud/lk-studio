@@ -75,14 +75,16 @@ const h = (y: number, x1: number, x2: number): GuideLine => ({ x1, y1: y, x2, y2
 const v = (x: number, y1: number, y2: number): GuideLine => ({ x1: x, y1, x2: x, y2 });
 
 const BLOUSE_GUIDES: Partial<Record<MeasurementFieldKey, GuideOverlay>> = {
-  shoulder: { view: "front", line: h(22, 14, 58) },
-  armHole: { view: "front", line: h(28, 16, 56) },
-  chest: { view: "front", line: h(34, 20, 52) },
+  length: { view: "front", line: v(36, 14, 90) },
+  bust: { view: "front", line: h(34, 18, 54) },
+  underBust: { view: "front", line: h(40, 20, 52) },
   waist: { view: "front", line: h(48, 22, 50) },
-  blouseLen: { view: "front", line: v(36, 22, 78) },
   armLength: { view: "front", line: v(10, 24, 68) },
-  sleeve: { view: "front", line: h(56, 6, 14) },
-  custom: { view: "front" },
+  bicep: { view: "front", line: h(38, 6, 12) },
+  armHole: { view: "front", line: h(28, 16, 56) },
+  frontNeck: { view: "front", line: { x1: 38, y1: 18, x2: 36, y2: 28 } },
+  backNeck: { view: "back", line: h(18, 30, 42) },
+  shoulder: { view: "front", line: h(22, 14, 58) },
 };
 
 const DRESS_GUIDES: Partial<Record<MeasurementFieldKey, GuideOverlay>> = {

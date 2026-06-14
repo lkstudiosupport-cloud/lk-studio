@@ -13,18 +13,18 @@ const HD_WIDTH = 552;
 const CONFIG = {
   blouse: {
     fields: [
+      "length",
       "bust",
       "underBust",
       "waist",
-      "shoulder",
-      "frontNeck",
-      "backNeck",
-      "armHole",
       "armLength",
       "bicep",
-      "sleeve",
+      "armHole",
+      "frontNeck",
+      "backNeck",
+      "shoulder",
     ],
-    customFrom: "bust",
+    optional: ["length"],
   },
   dress: {
     fields: [
@@ -77,9 +77,9 @@ async function importType(type) {
     count += 1;
   }
 
-  const customSrc = join(sourceDir, `${cfg.customFrom}.png`);
+  const customSrc = cfg.customFrom ? join(sourceDir, `${cfg.customFrom}.png`) : null;
   const customOut = join(outDir, "custom.png");
-  if (existsSync(customSrc)) {
+  if (customSrc && existsSync(customSrc)) {
     await toHdPng(customSrc, customOut);
     console.log(`  ${type}/custom.png`);
     count += 1;
