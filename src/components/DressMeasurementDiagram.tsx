@@ -131,8 +131,9 @@ export function DressMeasurementDiagram({
 
       <p className="mb-3 text-[11px] leading-snug text-zinc-600">{t(locale, "dressMeasurementHint")}</p>
 
-      <div className="rounded-xl border border-pink-200 bg-gradient-to-br from-pink-50 via-white to-pink-50/30 p-3 shadow-sm">
-        <div className="flex justify-center">
+      <div className="measurement-showroom-panel measurement-showroom-grid relative overflow-hidden rounded-2xl border border-pink-200/80 p-3 shadow-lg">
+        <div className="measurement-showroom-spotlight pointer-events-none absolute inset-0 z-0" aria-hidden />
+        <div className="relative z-10 flex justify-center">
           <div className="relative w-full max-w-[320px]">
             <svg
               viewBox={`0 0 ${DRESS_CHART_VIEWBOX.w} ${DRESS_CHART_VIEWBOX.h}`}
@@ -140,7 +141,6 @@ export function DressMeasurementDiagram({
               aria-hidden
             >
               <DressChartDefs uid={uid} />
-              <rect width={DRESS_CHART_VIEWBOX.w} height={DRESS_CHART_VIEWBOX.h} fill="#fffafb" rx="8" />
               <DressMannequinFigure uid={uid} />
               <g className="dress-measure-lines">
                 {DRESS_CHART_LINES.map((line) => (

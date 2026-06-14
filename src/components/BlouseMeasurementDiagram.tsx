@@ -123,8 +123,6 @@ function BlouseSvgPanel({
           <path d="M7,0 L0,3.5 L7,7 Z" fill="#0f172a" />
         </marker>
       </defs>
-      <rect width={BLOUSE_CHART_VIEWBOX.w} height={BLOUSE_CHART_VIEWBOX.h} fill={`url(#studioLight-${uid})`} />
-      <rect width={BLOUSE_CHART_VIEWBOX.w} height={BLOUSE_CHART_VIEWBOX.h} fill="#f5f5f4" opacity="0.45" />
       {side === "front" && <BlouseMannequinFront uid={uid} />}
       {side === "back" && <BlouseMannequinBack uid={uid} />}
       {side === "left" && <BlouseMannequinSideLeft uid={uid} />}
@@ -217,7 +215,9 @@ export function BlouseMeasurementDiagram({
 
       <p className="mb-2 text-[11px] leading-snug text-zinc-600">{t(locale, "blouseMeasurementHint3d")}</p>
 
-      <div className="rounded-xl border border-zinc-200 bg-gradient-to-b from-stone-100 via-white to-stone-50 p-3 shadow-md">
+      <div className="measurement-showroom-panel measurement-showroom-grid relative overflow-hidden rounded-2xl border border-stone-200/80 p-3 shadow-lg">
+        <div className="measurement-showroom-spotlight pointer-events-none absolute inset-0 z-0" aria-hidden />
+        <div className="relative z-10">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 flex-wrap gap-1">
             <button
@@ -258,7 +258,7 @@ export function BlouseMeasurementDiagram({
 
         <div className="flex justify-center">
           <div
-            className="mannequin-3d-stage relative aspect-[13/17] w-full max-w-full cursor-grab touch-none active:cursor-grabbing sm:max-w-[340px]"
+            className="mannequin-3d-stage relative aspect-[13/17] w-full max-w-full cursor-grab touch-none active:cursor-grabbing sm:max-w-[360px]"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -295,6 +295,7 @@ export function BlouseMeasurementDiagram({
               {t(locale, "dragToRotate")} · {t(locale, "measurementsInInches")}
             </p>
           </div>
+        </div>
         </div>
       </div>
     </div>

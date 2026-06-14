@@ -35,55 +35,84 @@ export const BLOUSE_CHART_LINES_BACK: BlouseDiagramLine[] = [
 export function BlouseChartDefs({ uid }: { uid: string }) {
   return (
     <defs>
-      <radialGradient id={`studioLight-${uid}`} cx="50%" cy="22%" r="72%">
-        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.98" />
-        <stop offset="55%" stopColor="#f5f5f4" stopOpacity="0.6" />
-        <stop offset="100%" stopColor="#d6d3d1" stopOpacity="0.15" />
+      <radialGradient id={`studioLight-${uid}`} cx="50%" cy="18%" r="78%">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+        <stop offset="45%" stopColor="#fafaf9" stopOpacity="0.92" />
+        <stop offset="100%" stopColor="#e7e5e4" stopOpacity="0.55" />
       </radialGradient>
-      <linearGradient id={`mannequinSkin-${uid}`} x1="18%" y1="0%" x2="88%" y2="100%">
-        <stop offset="0%" stopColor="#fdf8f4" />
-        <stop offset="35%" stopColor="#edd9cc" />
-        <stop offset="72%" stopColor="#d4b8a8" />
-        <stop offset="100%" stopColor="#b89a88" />
+      <linearGradient id={`studioFloor-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#f5f5f4" />
+        <stop offset="100%" stopColor="#d6d3d1" />
       </linearGradient>
-      <linearGradient id={`mannequinSkinSide-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#e8d4c8" />
-        <stop offset="45%" stopColor="#f7ebe3" />
-        <stop offset="100%" stopColor="#c4a494" />
+      <linearGradient id={`mannequinSkin-${uid}`} x1="22%" y1="0%" x2="82%" y2="100%">
+        <stop offset="0%" stopColor="#fff7f0" />
+        <stop offset="28%" stopColor="#f0ddd0" />
+        <stop offset="55%" stopColor="#ddbda8" />
+        <stop offset="82%" stopColor="#c9a088" />
+        <stop offset="100%" stopColor="#a88472" />
       </linearGradient>
-      <linearGradient id={`blouseRed-${uid}`} x1="12%" y1="0%" x2="92%" y2="100%">
-        <stop offset="0%" stopColor="#fda4af" />
-        <stop offset="28%" stopColor="#f43f5e" />
-        <stop offset="58%" stopColor="#be123c" />
-        <stop offset="100%" stopColor="#7f1d1d" />
+      <linearGradient id={`mannequinSkinSide-${uid}`} x1="0%" y1="8%" x2="100%" y2="92%">
+        <stop offset="0%" stopColor="#dcc4b4" />
+        <stop offset="35%" stopColor="#f5ebe3" />
+        <stop offset="68%" stopColor="#e8d0c0" />
+        <stop offset="100%" stopColor="#b8927e" />
       </linearGradient>
-      <linearGradient id={`blouseRedBack-${uid}`} x1="88%" y1="0%" x2="12%" y2="100%">
-        <stop offset="0%" stopColor="#881337" />
-        <stop offset="45%" stopColor="#be123c" />
-        <stop offset="100%" stopColor="#701a35" />
+      <linearGradient id={`mannequinSkinShadow-${uid}`} x1="50%" y1="0%" x2="50%" y2="100%">
+        <stop offset="0%" stopColor="#000" stopOpacity="0" />
+        <stop offset="100%" stopColor="#000" stopOpacity="0.18" />
+      </linearGradient>
+      <linearGradient id={`blouseRed-${uid}`} x1="8%" y1="0%" x2="94%" y2="100%">
+        <stop offset="0%" stopColor="#fecdd3" />
+        <stop offset="22%" stopColor="#fb7185" />
+        <stop offset="48%" stopColor="#e11d48" />
+        <stop offset="72%" stopColor="#9f1239" />
+        <stop offset="100%" stopColor="#4c0519" />
+      </linearGradient>
+      <linearGradient id={`blouseRedBack-${uid}`} x1="92%" y1="0%" x2="8%" y2="100%">
+        <stop offset="0%" stopColor="#701a35" />
+        <stop offset="40%" stopColor="#9f1239" />
+        <stop offset="100%" stopColor="#450a0a" />
       </linearGradient>
       <linearGradient id={`blouseRedSide-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#9f1239" />
-        <stop offset="40%" stopColor="#e11d48" />
-        <stop offset="100%" stopColor="#881337" />
+        <stop offset="0%" stopColor="#881337" />
+        <stop offset="38%" stopColor="#f43f5e" />
+        <stop offset="100%" stopColor="#500724" />
       </linearGradient>
       <linearGradient id={`chromeStand-${uid}`} x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#64748b" />
+        <stop offset="0%" stopColor="#334155" />
+        <stop offset="18%" stopColor="#64748b" />
         <stop offset="42%" stopColor="#f8fafc" />
-        <stop offset="58%" stopColor="#e2e8f0" />
-        <stop offset="100%" stopColor="#475569" />
+        <stop offset="58%" stopColor="#cbd5e1" />
+        <stop offset="82%" stopColor="#475569" />
+        <stop offset="100%" stopColor="#1e293b" />
       </linearGradient>
-      <filter id={`mannequinShadow-${uid}`} x="-25%" y="-12%" width="150%" height="125%">
-        <feDropShadow dx="0" dy="10" stdDeviation="12" floodColor="#57534e" floodOpacity="0.32" />
+      <linearGradient id={`chromeCollar-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#f1f5f9" />
+        <stop offset="50%" stopColor="#94a3b8" />
+        <stop offset="100%" stopColor="#64748b" />
+      </linearGradient>
+      <pattern id={`fabricWeave-${uid}`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(24)">
+        <line x1="0" y1="0" x2="0" y2="6" stroke="#fff" strokeWidth="0.35" opacity="0.08" />
+        <line x1="3" y1="0" x2="3" y2="6" stroke="#000" strokeWidth="0.25" opacity="0.06" />
+      </pattern>
+      <filter id={`mannequinShadow-${uid}`} x="-30%" y="-15%" width="160%" height="130%">
+        <feDropShadow dx="0" dy="14" stdDeviation="14" floodColor="#44403c" floodOpacity="0.35" />
       </filter>
-      <filter id={`fabricDepth-${uid}`} x="-12%" y="-12%" width="124%" height="124%">
-        <feGaussianBlur in="SourceAlpha" stdDeviation="2.5" result="blur" />
-        <feOffset dy="3" result="offsetBlur" />
+      <filter id={`fabricDepth-${uid}`} x="-15%" y="-15%" width="130%" height="130%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+        <feOffset dy="4" result="offsetBlur" />
         <feComponentTransfer>
-          <feFuncA type="linear" slope="0.22" />
+          <feFuncA type="linear" slope="0.25" />
         </feComponentTransfer>
         <feMerge>
           <feMergeNode />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter id={`skinSoft-${uid}`} x="-8%" y="-8%" width="116%" height="116%">
+        <feGaussianBlur stdDeviation="0.6" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
           <feMergeNode in="SourceGraphic" />
         </feMerge>
       </filter>
@@ -91,188 +120,225 @@ export function BlouseChartDefs({ uid }: { uid: string }) {
         <path d="M0,0 L7,3.5 L0,7 Z" fill="#0f172a" />
       </marker>
       <filter id={`blouseLineGlow-${uid}`} x="-40%" y="-40%" width="180%" height="180%">
-        <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#e11d48" floodOpacity="0.85" />
+        <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#e11d48" floodOpacity="0.9" />
       </filter>
+      <clipPath id={`blouseClip-${uid}`}>
+        <path d="M 56 82 C 38 88 28 104 24 122 C 20 140 22 158 28 176 C 34 194 42 210 52 224 C 62 238 74 250 88 260 L 106 268 L 130 270 L 154 268 L 172 260 C 186 250 198 238 208 224 C 218 210 226 194 232 176 C 238 158 240 140 236 122 C 232 104 222 88 204 82 C 180 76 154 74 130 74 C 106 74 80 76 56 82 Z" />
+      </clipPath>
     </defs>
+  );
+}
+
+function ShowroomBackdrop({ uid }: { uid: string }) {
+  return (
+    <>
+      <rect width={260} height={340} fill={`url(#studioLight-${uid})`} />
+      <rect y="248" width={260} height={92} fill={`url(#studioFloor-${uid})`} opacity="0.55" />
+      <ellipse cx="130" cy="52" rx="95" ry="55" fill="#fff" opacity="0.35" />
+      <ellipse cx="130" cy="318" rx="100" ry="18" fill="#78716c" opacity="0.08" />
+    </>
   );
 }
 
 function StudioFloor({ uid }: { uid: string }) {
   return (
-    <>
-      <ellipse cx="130" cy="322" rx="78" ry="11" fill="#78716c" opacity="0.1" />
-      <rect x="122" y="268" width="16" height="56" fill={`url(#chromeStand-${uid})`} rx="4" />
-      <ellipse cx="130" cy="268" rx="18" ry="5" fill={`url(#chromeStand-${uid})`} />
-      <ellipse cx="130" cy="322" rx="42" ry="8" fill="#64748b" opacity="0.22" />
-    </>
+    <g>
+      <ellipse cx="130" cy="324" rx="88" ry="12" fill="#292524" opacity="0.12" />
+      <ellipse cx="130" cy="322" rx="62" ry="8" fill="#57534e" opacity="0.18" />
+      <rect x="119" y="262" width="22" height="62" fill={`url(#chromeStand-${uid})`} rx="5" />
+      <rect x="121" y="268" width="18" height="4" fill="#f8fafc" opacity="0.55" rx="1" />
+      <ellipse cx="130" cy="262" rx="24" ry="6" fill={`url(#chromeCollar-${uid})`} stroke="#64748b" strokeWidth="0.5" />
+      <ellipse cx="130" cy="262" rx="14" ry="3.5" fill="#e2e8f0" opacity="0.7" />
+      <ellipse cx="130" cy="324" rx="48" ry="9" fill="#64748b" opacity="0.2" />
+    </g>
   );
 }
 
-/** Feminine dress-form torso — front */
+/** Professional lady dress-form — front */
 function LadyTorsoFront({ uid, blouseFill }: { uid: string; blouseFill: string }) {
   const skin = `url(#mannequinSkin-${uid})`;
 
   return (
-    <g filter={`url(#mannequinShadow-${uid})`}>
+    <g filter={`url(#mannequinShadow-${uid})`} className="measurement-figure-wrap">
+      <ShowroomBackdrop uid={uid} />
       <StudioFloor uid={uid} />
 
-      {/* Head — smooth cap, no facial features */}
-      <ellipse cx="130" cy="38" rx="17" ry="21" fill={skin} stroke="#c4a494" strokeWidth="0.6" />
-      <ellipse cx="123" cy="32" rx="7" ry="9" fill="#fff" opacity="0.28" />
+      {/* Dress-form head cap */}
+      <ellipse cx="130" cy="36" rx="16" ry="20" fill={skin} stroke="#b8927e" strokeWidth="0.55" filter={`url(#skinSoft-${uid})`} />
+      <ellipse cx="122" cy="28" rx="8" ry="10" fill="#fff" opacity="0.32" />
+      <path d="M 118 44 Q 130 48 142 44" fill="none" stroke="#c4a494" strokeWidth="0.4" opacity="0.5" />
 
       {/* Neck */}
       <path
-        d="M 118 56 Q 130 62 142 56 L 140 74 Q 130 78 120 74 Z"
+        d="M 119 54 Q 130 60 141 54 L 139 74 Q 130 79 121 74 Z"
         fill={skin}
-        stroke="#c4a494"
-        strokeWidth="0.5"
+        stroke="#b8927e"
+        strokeWidth="0.45"
       />
 
-      {/* Neck ring */}
-      <ellipse cx="130" cy="76" rx="20" ry="4.5" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.45" opacity="0.92" />
+      {/* Metal neck ring — dress-form collar */}
+      <ellipse cx="130" cy="76" rx="22" ry="5" fill={`url(#chromeCollar-${uid})`} stroke="#64748b" strokeWidth="0.5" />
+      <ellipse cx="130" cy="75" rx="18" ry="3" fill="#f8fafc" opacity="0.45" />
 
-      {/* Skin body under blouse — hourglass */}
+      {/* Shoulder domes — characteristic dress-form caps */}
+      <ellipse cx="58" cy="84" rx="14" ry="8" fill={skin} stroke="#c4a494" strokeWidth="0.35" opacity="0.85" />
+      <ellipse cx="202" cy="84" rx="14" ry="8" fill={skin} stroke="#c4a494" strokeWidth="0.35" opacity="0.85" />
+
+      {/* Torso shell under fabric */}
       <path
-        d="M 62 82
-           C 48 84 40 96 36 112
-           C 32 128 34 148 38 168
-           C 42 188 48 206 56 222
-           C 64 238 74 252 88 262
-           L 108 272 L 130 274 L 152 272
-           L 172 262 C 186 252 196 238 204 222
-           C 212 206 218 188 222 168
-           C 226 148 228 128 224 112
-           C 220 96 212 84 198 82
-           C 178 76 154 74 130 74
-           C 106 74 82 76 62 82 Z"
+        d="M 64 82
+           C 48 86 38 98 34 114
+           C 30 130 32 150 38 170
+           C 44 190 52 208 62 224
+           C 72 240 84 254 98 264
+           L 114 272 L 130 274 L 146 272
+           L 162 264 C 176 254 188 240 198 224
+           C 208 208 216 190 222 170
+           C 228 150 230 130 226 114
+           C 222 98 212 86 196 82
+           C 174 76 156 74 130 74
+           C 104 74 86 76 64 82 Z"
         fill={skin}
         stroke="#c4a494"
-        strokeWidth="0.4"
-        opacity="0.55"
+        strokeWidth="0.35"
+        opacity="0.48"
       />
 
-      {/* Red blouse — fitted lady bodice with bust & waist shaping */}
+      {/* Fitted blouse bodice */}
       <path
-        d="M 58 82
-           C 42 86 34 100 30 118
-           C 26 136 28 154 32 172
-           C 36 190 42 206 50 220
-           C 58 234 68 246 80 256
-           L 98 266 L 130 268 L 162 266
-           L 180 256 C 192 246 202 234 210 220
-           C 218 206 224 190 228 172
-           C 232 154 234 136 230 118
-           C 226 100 218 86 202 82
-           C 182 76 156 74 130 74
-           C 104 74 78 76 58 82 Z"
+        d="M 56 82
+           C 38 88 28 104 24 122
+           C 20 140 22 158 28 176
+           C 34 194 42 210 52 224
+           C 62 238 74 250 88 260
+           L 106 268 L 130 270 L 154 268
+           L 172 260 C 186 250 198 238 208 224
+           C 218 210 226 194 232 176
+           C 238 158 240 140 236 122
+           C 232 104 222 88 204 82
+           C 180 76 154 74 130 74
+           C 106 74 80 76 56 82 Z"
         fill={blouseFill}
-        stroke="#701a35"
-        strokeWidth="0.9"
+        stroke="#500724"
+        strokeWidth="0.85"
         filter={`url(#fabricDepth-${uid})`}
       />
+      <path d="M 56 82 L 204 82" fill={`url(#fabricWeave-${uid})`} opacity="0.65" clipPath={`url(#blouseClip-${uid})`} />
 
-      {/* Bust contour — left */}
+      {/* Bust cups — dress-form shaping */}
       <path
-        d="M 88 98 C 78 108 72 118 70 128 C 82 132 96 128 102 118 C 98 108 94 102 88 98"
+        d="M 86 96 C 74 106 68 118 66 128 C 78 134 94 130 102 118 C 98 106 92 100 86 96"
         fill="#fff"
-        opacity="0.14"
+        opacity="0.16"
       />
-      {/* Bust contour — right */}
       <path
-        d="M 172 98 C 182 108 188 118 190 128 C 178 132 164 128 158 118 C 162 108 166 102 172 98"
+        d="M 174 96 C 186 106 192 118 194 128 C 182 134 166 130 158 118 C 162 106 168 100 174 96"
         fill="#fff"
-        opacity="0.14"
+        opacity="0.16"
+      />
+      <path
+        d="M 86 96 C 74 106 68 118 66 128 C 78 134 94 130 102 118 C 98 106 92 100 86 96"
+        fill="none"
+        stroke="#881337"
+        strokeWidth="0.35"
+        opacity="0.35"
+      />
+      <path
+        d="M 174 96 C 186 106 192 118 194 128 C 182 134 166 130 158 118 C 162 106 168 100 174 96"
+        fill="none"
+        stroke="#881337"
+        strokeWidth="0.35"
+        opacity="0.35"
       />
 
-      {/* Waist shadow */}
-      <path
-        d="M 72 198 Q 130 188 188 198 Q 130 210 72 198"
-        fill="#000"
-        opacity="0.06"
-      />
+      {/* Waist cinch shadow */}
+      <path d="M 70 200 Q 130 188 190 200 Q 130 214 70 200" fill="#000" opacity="0.08" />
 
       {/* Square neckline */}
-      <path d="M 106 82 L 106 96 L 154 96 L 154 82 Z" fill={skin} stroke="#701a35" strokeWidth="0.7" />
+      <path d="M 104 82 L 104 98 L 156 98 L 156 82 Z" fill={skin} stroke="#881337" strokeWidth="0.65" />
+      <path d="M 108 82 L 108 94 L 152 94 L 152 82 Z" fill="#fff" opacity="0.12" />
 
-      {/* Fabric sheen */}
+      {/* Fabric sheen & fold lines */}
       <path
-        d="M 130 92 Q 92 104 76 122 Q 84 168 94 210 Q 130 224 166 210 Q 176 168 184 122 Q 168 104 130 92"
+        d="M 130 94 Q 88 108 72 128 Q 80 172 92 212 Q 130 228 168 212 Q 180 172 188 128 Q 172 108 130 94"
         fill="#fff"
-        opacity="0.1"
+        opacity="0.11"
       />
+      <path d="M 130 108 L 130 248" fill="none" stroke="#fff" strokeWidth="0.4" opacity="0.08" />
 
-      {/* Short puffed sleeves — arms slightly away from body */}
+      {/* Structured sleeves */}
       <path
-        d="M 30 118 C 22 128 14 148 8 172 L 4 192 L 12 196 L 18 172 C 24 150 30 132 36 120 Z"
+        d="M 24 122 C 16 134 10 152 6 172 L 2 192 L 10 198 L 16 176 C 22 154 28 136 34 124 Z"
         fill={blouseFill}
-        stroke="#701a35"
-        strokeWidth="0.7"
+        stroke="#500724"
+        strokeWidth="0.65"
       />
       <path
-        d="M 230 118 C 238 128 246 148 252 172 L 256 192 L 248 196 L 242 172 C 236 150 230 132 224 120 Z"
+        d="M 236 122 C 244 134 250 152 254 172 L 258 192 L 250 198 L 244 176 C 238 154 232 136 226 124 Z"
         fill={blouseFill}
-        stroke="#701a35"
-        strokeWidth="0.7"
+        stroke="#500724"
+        strokeWidth="0.65"
       />
-      <ellipse cx="12" cy="194" rx="11" ry="6.5" fill={blouseFill} stroke="#701a35" strokeWidth="0.5" />
-      <ellipse cx="248" cy="194" rx="11" ry="6.5" fill={blouseFill} stroke="#701a35" strokeWidth="0.5" />
+      <ellipse cx="8" cy="194" rx="12" ry="7" fill={blouseFill} stroke="#500724" strokeWidth="0.45" />
+      <ellipse cx="252" cy="194" rx="12" ry="7" fill={blouseFill} stroke="#500724" strokeWidth="0.45" />
+      <path d="M 4 190 Q 8 186 12 190" fill="none" stroke="#fff" strokeWidth="0.35" opacity="0.25" />
+      <path d="M 256 190 Q 252 186 248 190" fill="none" stroke="#fff" strokeWidth="0.35" opacity="0.25" />
 
-      {/* Hip hint below blouse hem */}
+      {/* Hip base */}
       <path
-        d="M 88 268 Q 130 276 172 268 L 168 282 Q 130 288 92 282 Z"
+        d="M 90 268 Q 130 278 170 268 L 166 284 Q 130 290 94 284 Z"
         fill={skin}
         stroke="#c4a494"
-        strokeWidth="0.4"
-        opacity="0.45"
+        strokeWidth="0.35"
+        opacity="0.42"
       />
     </g>
   );
 }
 
-/** Feminine dress-form — back */
+/** Dress-form — back view */
 function LadyTorsoBack({ uid, blouseFill }: { uid: string; blouseFill: string }) {
   const skin = `url(#mannequinSkinSide-${uid})`;
 
   return (
     <g filter={`url(#mannequinShadow-${uid})`}>
+      <ShowroomBackdrop uid={uid} />
       <StudioFloor uid={uid} />
-      <ellipse cx="130" cy="38" rx="17" ry="21" fill={skin} stroke="#c4a494" strokeWidth="0.6" />
-      <path d="M 118 56 Q 130 62 142 56 L 142 74 Q 130 78 118 74 Z" fill={skin} stroke="#c4a494" strokeWidth="0.5" />
-      <ellipse cx="130" cy="76" rx="20" ry="4.5" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.45" opacity="0.92" />
+      <ellipse cx="130" cy="36" rx="16" ry="20" fill={skin} stroke="#b8927e" strokeWidth="0.55" />
+      <path d="M 119 54 Q 130 60 141 54 L 141 74 Q 130 79 119 74 Z" fill={skin} stroke="#b8927e" strokeWidth="0.45" />
+      <ellipse cx="130" cy="76" rx="22" ry="5" fill={`url(#chromeCollar-${uid})`} stroke="#64748b" strokeWidth="0.5" />
 
       <path
-        d="M 58 82
-           C 42 86 34 100 30 118
-           C 26 136 28 154 32 172
-           C 36 190 42 206 50 220
-           C 58 234 68 246 80 256
-           L 98 266 L 130 268 L 162 266
-           L 180 256 C 192 246 202 234 210 220
-           C 218 206 224 190 228 172
-           C 232 154 234 136 230 118
-           C 226 100 218 86 202 82
-           C 182 76 156 74 130 74
-           C 104 74 78 76 58 82 Z"
+        d="M 56 82
+           C 38 88 28 104 24 122
+           C 20 140 22 158 28 176
+           C 34 194 42 210 52 224
+           C 62 238 74 250 88 260
+           L 106 268 L 130 270 L 154 268
+           L 172 260 C 186 250 198 238 208 224
+           C 218 210 226 194 232 176
+           C 238 158 240 140 236 122
+           C 232 104 222 88 204 82
+           C 180 76 154 74 130 74
+           C 106 74 80 76 56 82 Z"
         fill={blouseFill}
-        stroke="#701a35"
-        strokeWidth="0.9"
+        stroke="#500724"
+        strokeWidth="0.85"
         filter={`url(#fabricDepth-${uid})`}
       />
 
-      {/* Shoulder blade shading */}
-      <path d="M 88 98 Q 98 112 96 128 Q 88 118 88 98" fill="#000" opacity="0.07" />
-      <path d="M 172 98 Q 162 112 164 128 Q 172 118 172 98" fill="#000" opacity="0.07" />
+      <path d="M 86 98 Q 96 114 94 132 Q 86 120 86 98" fill="#000" opacity="0.09" />
+      <path d="M 174 98 Q 164 114 166 132 Q 174 120 174 98" fill="#000" opacity="0.09" />
+      <line x1="130" y1="82" x2="130" y2="262" stroke="#881337" strokeWidth="0.75" opacity="0.45" />
+      <path d="M 108 82 Q 130 92 152 82" fill="none" stroke="#881337" strokeWidth="0.55" opacity="0.4" />
 
-      <line x1="130" y1="82" x2="130" y2="262" stroke="#701a35" strokeWidth="0.7" opacity="0.4" strokeDasharray="4 3" />
-      <path d="M 112 82 Q 130 90 148 82" fill="none" stroke="#701a35" strokeWidth="0.6" opacity="0.45" />
-
-      <path d="M 30 118 C 22 128 14 148 8 172 L 4 192 L 12 196 L 18 172 C 24 150 30 132 36 120 Z" fill={blouseFill} stroke="#701a35" strokeWidth="0.7" />
-      <path d="M 230 118 C 238 128 246 148 252 172 L 256 192 L 248 196 L 242 172 C 236 150 230 132 224 120 Z" fill={blouseFill} stroke="#701a35" strokeWidth="0.7" />
+      <path d="M 24 122 C 16 134 10 152 6 172 L 2 192 L 10 198 L 16 176 C 22 154 28 136 34 124 Z" fill={blouseFill} stroke="#500724" strokeWidth="0.65" />
+      <path d="M 236 122 C 244 134 250 152 254 172 L 258 192 L 250 198 L 244 176 C 238 154 232 136 226 124 Z" fill={blouseFill} stroke="#500724" strokeWidth="0.65" />
     </g>
   );
 }
 
-/** Side profile — shows bust projection & waist curve for 3D depth */
+/** Side profile — bust projection & waist curve */
 function LadyTorsoSide({ uid, facing }: { uid: string; facing: "left" | "right" }) {
   const skin = `url(#mannequinSkinSide-${uid})`;
   const blouse = `url(#blouseRedSide-${uid})`;
@@ -280,64 +346,60 @@ function LadyTorsoSide({ uid, facing }: { uid: string; facing: "left" | "right" 
 
   return (
     <g transform={mirror} filter={`url(#mannequinShadow-${uid})`}>
+      <ShowroomBackdrop uid={uid} />
       <StudioFloor uid={uid} />
 
-      {/* Profile head */}
-      <ellipse cx="118" cy="38" rx="14" ry="21" fill={skin} stroke="#c4a494" strokeWidth="0.6" />
-      <path d="M 108 32 Q 118 28 128 34 Q 122 42 108 38 Z" fill="#fff" opacity="0.22" />
+      <ellipse cx="116" cy="36" rx="13" ry="20" fill={skin} stroke="#b8927e" strokeWidth="0.55" />
+      <path d="M 106 30 Q 116 26 126 32 Q 120 40 106 36 Z" fill="#fff" opacity="0.24" />
+      <path d="M 110 54 Q 118 62 124 72 L 120 78 Q 110 68 106 60 Z" fill={skin} stroke="#b8927e" strokeWidth="0.45" />
+      <ellipse cx="118" cy="76" rx="16" ry="4" fill={`url(#chromeCollar-${uid})`} stroke="#64748b" strokeWidth="0.45" opacity="0.9" />
 
-      {/* Neck — forward curve */}
-      <path d="M 112 56 Q 118 64 124 72 L 120 78 Q 112 70 108 62 Z" fill={skin} stroke="#c4a494" strokeWidth="0.5" />
-
-      {/* Torso profile — bust forward, waist in, slight hip */}
       <path
-        d="M 148 82
-           C 156 88 160 98 162 112
-           C 164 128 162 142 158 158
-           C 152 178 142 198 128 218
-           C 118 232 108 246 98 258
-           L 88 268 L 82 274
-           C 78 260 76 244 78 228
-           C 82 208 88 188 94 168
-           C 98 148 100 128 104 112
-           C 108 96 114 86 124 82
-           C 132 78 140 78 148 82 Z"
+        d="M 146 82
+           C 154 88 158 98 160 112
+           C 162 128 160 142 156 158
+           C 150 178 138 198 124 218
+           C 112 232 100 246 88 258
+           L 80 266 L 74 272
+           C 70 256 68 238 70 220
+           C 74 200 80 180 86 160
+           C 90 140 92 120 96 104
+           C 100 90 108 82 118 78
+           C 128 74 138 76 146 82 Z"
         fill={skin}
         stroke="#c4a494"
-        strokeWidth="0.45"
-        opacity="0.5"
+        strokeWidth="0.4"
+        opacity="0.46"
       />
 
-      {/* Blouse on profile */}
       <path
-        d="M 152 82
-           C 162 90 168 102 170 118
-           C 172 134 170 150 164 166
-           C 156 186 142 206 126 224
-           C 114 238 102 252 90 264
-           L 84 268
-           C 80 252 78 234 80 216
-           C 84 196 90 176 96 156
-           C 100 136 102 116 106 100
-           C 110 88 118 80 128 78
-           C 138 76 146 78 152 82 Z"
+        d="M 154 82
+           C 164 90 170 104 172 120
+           C 174 136 172 152 166 168
+           C 158 188 144 208 128 226
+           C 114 240 100 254 86 266
+           L 80 270
+           C 76 252 74 232 76 212
+           C 80 192 86 172 92 152
+           C 96 132 98 112 102 96
+           C 106 86 114 78 124 76
+           C 134 74 144 76 154 82 Z"
         fill={blouse}
-        stroke="#701a35"
-        strokeWidth="0.8"
+        stroke="#500724"
+        strokeWidth="0.75"
         filter={`url(#fabricDepth-${uid})`}
       />
 
-      {/* Bust highlight */}
-      <ellipse cx="158" cy="118" rx="10" ry="14" fill="#fff" opacity="0.12" />
+      <ellipse cx="162" cy="118" rx="11" ry="15" fill="#fff" opacity="0.14" />
+      <path d="M 168 108 Q 174 118 172 132" fill="none" stroke="#881337" strokeWidth="0.4" opacity="0.3" />
 
-      {/* Arm at side */}
       <path
-        d="M 104 112 C 96 132 88 158 82 182 L 78 198 L 84 200 L 90 182 C 96 158 100 136 108 118 Z"
+        d="M 98 112 C 90 132 82 158 76 182 L 72 198 L 78 202 L 84 182 C 90 158 96 134 104 116 Z"
         fill={blouse}
-        stroke="#701a35"
-        strokeWidth="0.6"
+        stroke="#500724"
+        strokeWidth="0.55"
       />
-      <ellipse cx="80" cy="198" rx="8" ry="5" fill={blouse} stroke="#701a35" strokeWidth="0.45" />
+      <ellipse cx="74" cy="200" rx="9" ry="5.5" fill={blouse} stroke="#500724" strokeWidth="0.4" />
     </g>
   );
 }

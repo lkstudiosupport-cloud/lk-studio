@@ -12,7 +12,6 @@ export type DressDiagramLine = {
   y2: number;
   lx: number;
   ly: number;
-  /** horizontal body rings vs vertical lengths */
   kind: "horizontal" | "vertical" | "diagonal";
 };
 
@@ -40,10 +39,31 @@ export const DRESS_CHART_LINES: DressDiagramLine[] = [
 export function DressChartDefs({ uid }: { uid: string }) {
   return (
     <defs>
-      <linearGradient id={`dressMannequin-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#fce7f3" />
-        <stop offset="100%" stopColor="#fbcfe8" />
+      <radialGradient id={`dressStudio-${uid}`} cx="50%" cy="16%" r="80%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="50%" stopColor="#fafaf9" />
+        <stop offset="100%" stopColor="#e7e5e4" />
+      </radialGradient>
+      <linearGradient id={`dressMannequin-${uid}`} x1="18%" y1="0%" x2="82%" y2="100%">
+        <stop offset="0%" stopColor="#fdf2f8" />
+        <stop offset="30%" stopColor="#f9a8d4" />
+        <stop offset="58%" stopColor="#ec4899" />
+        <stop offset="82%" stopColor="#be185d" />
+        <stop offset="100%" stopColor="#831843" />
       </linearGradient>
+      <linearGradient id={`dressSkin-${uid}`} x1="22%" y1="0%" x2="78%" y2="100%">
+        <stop offset="0%" stopColor="#fff7f0" />
+        <stop offset="45%" stopColor="#edd9cc" />
+        <stop offset="100%" stopColor="#c4a494" />
+      </linearGradient>
+      <linearGradient id={`dressChrome-${uid}`} x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#475569" />
+        <stop offset="45%" stopColor="#f8fafc" />
+        <stop offset="100%" stopColor="#334155" />
+      </linearGradient>
+      <filter id={`dressShadow-${uid}`} x="-20%" y="-10%" width="140%" height="120%">
+        <feDropShadow dx="0" dy="12" stdDeviation="12" floodColor="#44403c" floodOpacity="0.28" />
+      </filter>
       <marker id={`dressArrow-${uid}`} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
         <path d="M0,0 L6,3 L0,6 Z" fill="#db2777" />
       </marker>
@@ -51,71 +71,99 @@ export function DressChartDefs({ uid }: { uid: string }) {
         <path d="M6,0 L0,3 L6,6 Z" fill="#db2777" />
       </marker>
       <filter id={`dressGlow-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#ec4899" floodOpacity="0.7" />
+        <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#ec4899" floodOpacity="0.75" />
       </filter>
     </defs>
   );
 }
 
-/** Front mannequin outline — dress measurement chart */
+/** Full-length dress-form mannequin — front */
 export function DressMannequinFigure({ uid }: { uid: string }) {
   const fill = `url(#dressMannequin-${uid})`;
+  const skin = `url(#dressSkin-${uid})`;
   const outline = "#831843";
 
   return (
-    <g className="dress-mannequin-figure" opacity="0.95">
-      {/* Head */}
-      <ellipse cx="140" cy="32" rx="20" ry="24" fill={fill} stroke={outline} strokeWidth="1" />
+    <g className="dress-mannequin-figure measurement-figure-wrap" filter={`url(#dressShadow-${uid})`}>
+      <rect width={280} height={460} fill={`url(#dressStudio-${uid})`} />
+      <ellipse cx="140" cy="48" rx="100" ry="50" fill="#fff" opacity="0.3" />
+      <ellipse cx="140" cy="448" rx="90" ry="14" fill="#78716c" opacity="0.1" />
+      <rect x="131" y="388" width="18" height="58" fill={`url(#dressChrome-${uid})`} rx="4" />
+      <ellipse cx="140" cy="388" rx="22" ry="5" fill={`url(#dressChrome-${uid})`} />
+
+      {/* Head cap */}
+      <ellipse cx="140" cy="30" rx="18" ry="22" fill={skin} stroke="#c4a494" strokeWidth="0.6" />
+      <ellipse cx="132" cy="22" rx="7" ry="9" fill="#fff" opacity="0.28" />
+
       {/* Neck */}
-      <path d="M 124 52 L 124 68 L 156 68 L 156 52 Q 140 58 124 52" fill={fill} stroke={outline} strokeWidth="0.8" />
-      {/* Torso */}
+      <path d="M 124 50 L 124 66 L 156 66 L 156 50 Q 140 56 124 50" fill={skin} stroke="#c4a494" strokeWidth="0.5" />
+      <ellipse cx="140" cy="66" rx="20" ry="4" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.4" />
+
+      {/* Full torso & dress form */}
       <path
-        d="M 58 68
-           C 42 72 36 88 34 108
-           L 30 148 C 28 168 30 188 36 208
-           L 44 248 C 48 272 54 292 62 312
-           L 72 328 L 88 338 L 140 340 L 192 338
-           L 208 328 L 218 312 C 226 292 232 272 236 248
-           L 244 208 C 250 188 252 168 250 148
-           L 246 108 C 244 88 238 72 222 68
-           C 200 62 180 60 140 60 C 100 60 80 62 58 68 Z"
-        fill={fill}
-        stroke={outline}
-        strokeWidth="1.2"
-      />
-      {/* Left arm */}
-      <path
-        d="M 34 108 L 24 138 L 18 178 L 14 218 L 12 248
-           L 18 252 L 24 218 L 32 178 L 40 138 Z"
+        d="M 56 68
+           C 40 72 32 86 30 106
+           L 26 148 C 24 168 26 188 32 208
+           L 40 248 C 44 272 50 292 58 312
+           L 68 328 L 84 338 L 140 340 L 196 338
+           L 212 328 L 222 312 C 230 292 236 272 240 248
+           L 248 208 C 254 188 256 168 254 148
+           L 250 106 C 248 86 240 72 224 68
+           C 198 62 170 60 140 60 C 110 60 82 62 56 68 Z"
         fill={fill}
         stroke={outline}
         strokeWidth="1"
       />
-      {/* Right arm */}
+
+      {/* Bust shaping */}
+      <path d="M 88 88 C 76 98 70 108 68 118 C 82 124 98 118 106 106 C 100 94 94 88 88 88" fill="#fff" opacity="0.14" />
+      <path d="M 192 88 C 204 98 210 108 212 118 C 198 124 182 118 174 106 C 180 94 186 88 192 88" fill="#fff" opacity="0.14" />
+
+      {/* Waist shadow */}
+      <path d="M 78 152 Q 140 142 202 152 Q 140 164 78 152" fill="#000" opacity="0.07" />
+
+      {/* Fabric sheen */}
       <path
-        d="M 246 108 L 256 138 L 262 178 L 266 218 L 268 248
-           L 262 252 L 256 218 L 248 178 L 240 138 Z"
+        d="M 140 72 Q 96 88 78 112 Q 86 168 96 228 Q 140 248 184 228 Q 194 168 202 112 Q 184 88 140 72"
+        fill="#fff"
+        opacity="0.1"
+      />
+
+      {/* Arms */}
+      <path
+        d="M 30 106 L 20 136 L 14 176 L 10 216 L 8 246
+           L 14 250 L 20 216 L 28 176 L 36 136 Z"
         fill={fill}
         stroke={outline}
-        strokeWidth="1"
+        strokeWidth="0.85"
       />
+      <path
+        d="M 250 106 L 260 136 L 266 176 L 270 216 L 272 246
+           L 266 250 L 260 216 L 252 176 L 244 136 Z"
+        fill={fill}
+        stroke={outline}
+        strokeWidth="0.85"
+      />
+
       {/* Legs */}
       <path
-        d="M 108 340 L 100 380 L 96 420 L 98 432 L 108 434
+        d="M 108 340 L 98 380 L 94 420 L 96 434 L 108 436
            L 112 420 L 116 380 L 120 340"
         fill={fill}
         stroke={outline}
-        strokeWidth="0.9"
+        strokeWidth="0.75"
       />
       <path
-        d="M 172 340 L 180 380 L 184 420 L 182 432 L 172 434
+        d="M 172 340 L 182 380 L 186 420 L 184 434 L 172 436
            L 168 420 L 164 380 L 160 340"
         fill={fill}
         stroke={outline}
-        strokeWidth="0.9"
+        strokeWidth="0.75"
       />
-      {/* V-neck guide hint */}
-      <path d="M 124 68 L 132 82 L 140 88 L 148 82 L 156 68" fill="none" stroke="#be185d" strokeWidth="0.6" opacity="0.4" strokeDasharray="3 2" />
+
+      {/* V-neck guide */}
+      <path d="M 124 66 L 132 80 L 140 86 L 148 80 L 156 66" fill="none" stroke="#fce7f3" strokeWidth="0.7" opacity="0.55" />
+      <path d="M 128 66 L 134 76 L 140 80 L 146 76 L 152 66" fill="none" stroke="#fff" strokeWidth="0.35" opacity="0.35" />
     </g>
   );
 }
