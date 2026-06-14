@@ -24,8 +24,6 @@ import {
   SewingChartBackgroundDefs,
   SewingChartDefs,
 } from "./SewingBodyFigureSvg";
-import { BlouseMeasurementDiagram } from "./BlouseMeasurementDiagram";
-import { DressMeasurementDiagram } from "./DressMeasurementDiagram";
 
 function viewLabel(locale: Locale, view: DiagramView) {
   if (view === "side") return t(locale, "measurementSide");
@@ -63,8 +61,8 @@ function MeasureLine({
   const visible = emphasized || !dimmed;
   if (!visible) return null;
 
-  const color = emphasized ? (MEASUREMENT_ACTIVE_COLORS[line.key] ?? "#fbbf24") : "#ffffff";
-  const opacity = !emphasized && !dimmed ? 0.5 : 1;
+  const color = emphasized ? (MEASUREMENT_ACTIVE_COLORS[line.key] ?? "#e11d48") : "#64748b";
+  const opacity = !emphasized && !dimmed ? 0.45 : 1;
 
   return (
     <g className={isActive ? "measure-line-active" : hasValue ? "measure-line-filled" : "measure-line-idle"} opacity={opacity}>
@@ -84,7 +82,7 @@ function MeasureLine({
       {hasValue && value && (
         <g className="measure-value-badge">
           <rect x={line.lx - 14} y={line.ly + 10} width="28" height="11" rx="3" fill={color} />
-          <text x={line.lx} y={line.ly + 18.5} textAnchor="middle" fontSize="7" fontWeight="700" fill="#0f172a">
+          <text x={line.lx} y={line.ly + 18.5} textAnchor="middle" fontSize="7" fontWeight="700" fill="#fff">
             {value}&quot;
           </text>
         </g>
@@ -110,7 +108,7 @@ function ViewPanel({
   const box = viewBoxForType(measurementType);
 
   return (
-    <div className="sewing-chart-panel relative mx-auto h-full w-full overflow-hidden rounded-lg ring-1 ring-white/10">
+    <div className="line-art-mannequin-card relative mx-auto h-full w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
       <svg viewBox={`0 0 ${box.w} ${box.h}`} className="h-full w-full" aria-hidden>
         <SewingChartBackgroundDefs />
         <SewingChartDefs uid={uid} />
@@ -145,15 +143,15 @@ function ChartLegend({
 }) {
   const keys = legendKeysForType(measurementType);
   return (
-    <div className="sewing-chart-legend mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 rounded-lg bg-zinc-900 px-3 py-2.5 text-xs text-white sm:grid-cols-3">
+    <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs sm:grid-cols-3">
       {keys.map((key) => {
         const letter = letterForField(measurementType, key);
         const active = activeField === key;
         return (
-          <div key={key} className={`flex items-center gap-1.5 ${active ? "text-amber-300" : "text-zinc-300"}`}>
+          <div key={key} className={`flex items-center gap-1.5 ${active ? "text-brand-green" : "text-zinc-600"}`}>
             <span
               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold ${
-                active ? "bg-amber-400 text-zinc-900" : "bg-white text-zinc-900"
+                active ? "bg-brand-gold text-brand-green" : "bg-white text-zinc-800 ring-1 ring-zinc-200"
               }`}
             >
               {letter}
@@ -189,31 +187,8 @@ export function MeasurementDiagram({
     [measurement, typeFields]
   );
 
-  if (measurementType === "blouse") {
-    return (
-      <BlouseMeasurementDiagram
-        locale={locale}
-        measurement={measurement}
-        activeField={activeField}
-        filledCount={filledCount}
-        totalFields={typeFields.filter((f) => f.letter).length}
-      />
-    );
-  }
-
-  if (measurementType === "dress") {
-    return (
-      <DressMeasurementDiagram
-        locale={locale}
-        measurement={measurement}
-        activeField={activeField}
-        filledCount={filledCount}
-        totalFields={typeFields.filter((f) => f.letter).length}
-      />
-    );
-  }
-
-  const aspectClass = "aspect-[10/21] max-h-[400px]";
+  const aspectClass =
+    measurementType === "blouse" ? "aspect-[2/3] max-h-[360px]" : "aspect-[10/21] max-h-[400px]";
 
   if (!advanced) {
     return (
@@ -243,10 +218,10 @@ export function MeasurementDiagram({
               key={v}
               type="button"
               onClick={() => setMobileView(v)}
-              className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold ${
+              className={`flex-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
                 mobileView === v
-                  ? "bg-brand-green text-brand-gold"
-                  : "bg-brand-cream text-brand-green ring-1 ring-brand-green/15"
+                  ? "bg-brand-green text-white shadow-sm"
+                  : "bg-white text-zinc-700 ring-1 ring-zinc-200"
               }`}
             >
               {viewLabel(locale, v)}
@@ -255,7 +230,7 @@ export function MeasurementDiagram({
         </div>
       )}
 
-      <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
         <div className={`grid gap-3 ${views.length > 1 ? "sm:grid-cols-2" : ""}`}>
           {views.map((v) => (
             <div key={v} className={`${mobileView === v ? "block" : "hidden"} ${views.length > 1 ? "sm:block" : ""}`}>
@@ -264,7 +239,7 @@ export function MeasurementDiagram({
                   {viewLabel(locale, v)}
                 </p>
               )}
-              <div className={`mx-auto w-full max-w-[200px] ${aspectClass}`}>
+              <div className={`mx-auto w-full max-w-[240px] ${aspectClass}`}>
                 <ViewPanel view={v} measurementType={measurementType} activeField={activeField} measurement={measurement} />
               </div>
             </div>

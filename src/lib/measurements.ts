@@ -96,7 +96,7 @@ export const MEASUREMENT_TYPE_CONFIG: Record<MeasurementTypeId, MeasurementTypeC
   blouse: {
     id: "blouse",
     prismaType: "BLOUSE",
-    views: ["front"],
+    views: ["front", "back"],
     fields: BLOUSE_FIELDS,
     legendKeys: BLOUSE_FIELDS.filter((f) => f.letter).map((f) => f.key),
     diagramTitleKey: "blouseMeasurementChart",
