@@ -3,14 +3,14 @@
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  fieldsForType,
   MEASUREMENT_TYPES,
   pickMeasurementForType,
   type MeasurementFieldKey,
   type MeasurementTypeId,
   type SavedMeasurement,
 } from "@/lib/measurements";
-import { MeasurementDiagram } from "./MeasurementDiagram";
+import { MEASUREMENT_TYPE_THEMES } from "@/lib/measurement-field-guide";
+import { MeasurementFieldsList } from "./MeasurementFieldsList";
 import { saveMeasurements, updatePerson } from "@/app/customer/actions";
 import { initialActionState } from "@/lib/action-state";
 import type { Locale } from "@/lib/i18n/locales";
@@ -48,7 +48,7 @@ export function MeasurementForm({
     [measurements, measureType]
   );
 
-  const typeFields = fieldsForType(measureType);
+  const typeTheme = MEASUREMENT_TYPE_THEMES[measureType];
 
   const savedTypes = useMemo(
     () =>
@@ -180,43 +180,18 @@ export function MeasurementForm({
             <input type="hidden" name="personId" value={personId} />
             <input type="hidden" name="measurementType" value={measureType} />
 
-            <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-              <MeasurementDiagram
+            <div className={`rounded-xl border p-3 ${typeTheme.rowBorder} ${typeTheme.rowBg}`}>
+              <p className={`mb-3 text-xs font-bold uppercase tracking-wide ${typeTheme.accent}`}>
+                {t(locale, "measurementFieldsFor")} {t(locale, `measurementType_${measureType}`)}
+              </p>
+              <MeasurementFieldsList
                 measurementType={measureType}
-                activeField={active}
                 locale={locale}
                 measurement={currentMeasurement}
-                advanced
+                activeField={active}
+                onActiveFieldChange={setActive}
+                inputKeyPrefix={personId}
               />
-
-              <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-brand-green">
-                  {t(locale, "measurementFieldsFor")} {t(locale, `measurementType_${measureType}`)}
-                </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {typeFields.map((f) => (
-                    <label key={f.key} className="block">
-                      <span className="mb-1 block text-xs font-semibold text-brand-green">
-                        {f.letter && (
-                          <span className="mr-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-zinc-800 text-[9px] font-bold text-white">
-                            {f.letter}
-                          </span>
-                        )}
-                        {t(locale, f.key)}
-                      </span>
-                      <input
-                        name={f.key}
-                        defaultValue={currentMeasurement?.[f.key] ?? ""}
-                        key={`${personId}-${measureType}-${f.key}-${currentMeasurement?.[f.key] ?? ""}`}
-                        placeholder='e.g. 14"'
-                        onFocus={() => setActive(f.key)}
-                        onBlur={() => setActive(null)}
-                        className="input-premium w-full"
-                      />
-                    </label>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <button type="submit" disabled={measurePending} className="btn-primary w-full sm:w-auto">

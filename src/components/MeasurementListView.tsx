@@ -3,17 +3,18 @@ import {
   type MeasurementRecord,
   type MeasurementTypeId,
 } from "@/lib/measurements";
+import { MEASUREMENT_TYPE_THEMES } from "@/lib/measurement-field-guide";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { Ruler } from "lucide-react";
-import { MeasurementDiagram } from "./MeasurementDiagram";
+import { MeasurementFieldsList } from "./MeasurementFieldsList";
 
 export function MeasurementListView({
   measurement,
   measurementType = "blouse",
   locale,
   compact,
-  showDiagram = true,
+  /** @deprecated Diagram removed; prop kept for backward compatibility. */
+  showDiagram: _showDiagram,
 }: {
   measurement: MeasurementRecord | null | undefined;
   measurementType?: MeasurementTypeId;
@@ -21,11 +22,8 @@ export function MeasurementListView({
   compact?: boolean;
   showDiagram?: boolean;
 }) {
-  const rows = measurementEntries(measurement, measurementType).map((e) => ({
-    key: e.key,
-    label: t(locale, e.key),
-    value: e.value,
-  }));
+  const theme = MEASUREMENT_TYPE_THEMES[measurementType];
+  const rows = measurementEntries(measurement, measurementType);
 
   if (rows.length === 0) {
     return (
@@ -36,36 +34,18 @@ export function MeasurementListView({
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-brand-green">
+    <div className="space-y-3">
+      <p className={`text-xs font-semibold uppercase tracking-wide ${theme.accent}`}>
         {t(locale, `measurementType_${measurementType}`)} {t(locale, "measurements")}
       </p>
 
-      {showDiagram && !compact && (
-        <MeasurementDiagram
-          measurementType={measurementType}
-          locale={locale}
-          measurement={measurement}
-          advanced
-        />
-      )}
-
-      <ul
-        className={`grid gap-2 ${compact ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}
-      >
-        {rows.map((r) => (
-          <li
-            key={r.key}
-            className="flex items-center gap-2 rounded-xl border border-brand-green/10 bg-brand-cream/60 px-3 py-2"
-          >
-            <Ruler className="h-4 w-4 shrink-0 text-brand-green" />
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-brand-green">{r.label}</p>
-              <p className="text-sm font-bold text-zinc-900">{r.value}&quot;</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <MeasurementFieldsList
+        measurementType={measurementType}
+        locale={locale}
+        measurement={measurement}
+        readOnly
+        compact={compact}
+      />
     </div>
   );
 }
