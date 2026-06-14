@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import type { MeasurementFieldKey, MeasurementTypeId } from "@/lib/measurements";
 import { isCircumferenceField } from "@/lib/measurement-field-guide";
 

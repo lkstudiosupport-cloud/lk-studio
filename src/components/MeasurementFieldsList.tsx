@@ -11,8 +11,10 @@ import { t } from "@/lib/i18n";
 import { isCircumferenceField, MEASUREMENT_TYPE_THEMES } from "@/lib/measurement-field-guide";
 import { MeasurementFieldGuide } from "./MeasurementFieldGuide";
 
-function fieldLabel(locale: Locale, key: MeasurementFieldKey): string {
-  const base = t(locale, key);
+function fieldLabel(locale: Locale, type: MeasurementTypeId, key: MeasurementFieldKey): string {
+  const typedKey = `measureLabel_${type}_${key}` as const;
+  const typed = t(locale, typedKey);
+  const base = typed !== typedKey ? typed : t(locale, key);
   if (isCircumferenceField(key)) {
     return `${base} (${t(locale, "allAround")})`;
   }
@@ -77,7 +79,7 @@ export function MeasurementFieldsList({
 
             <div className="min-w-0 flex-1">
               <p className={`text-xs font-semibold leading-tight ${theme.accent} ${compact ? "text-[11px]" : ""}`}>
-                {fieldLabel(locale, f.key)}
+                {fieldLabel(locale, measurementType, f.key)}
               </p>
               {readOnly && (
                 <p className="text-sm font-bold text-zinc-900">

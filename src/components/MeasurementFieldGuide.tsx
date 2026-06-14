@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import type { MeasurementFieldKey, MeasurementTypeId } from "@/lib/measurements";
-import { GUIDE_VIEWBOX, MEASUREMENT_TYPE_THEMES } from "@/lib/measurement-field-guide";
-import { renderMeasurementFieldScene } from "@/lib/measurement-field-scenes";
+import { measurementIconPath } from "@/lib/measurement-icon-paths";
 
 type Props = {
   measurementType: MeasurementTypeId;
@@ -12,26 +12,20 @@ type Props = {
 };
 
 export function MeasurementFieldGuide({ measurementType, fieldKey, active, className }: Props) {
-  const theme = MEASUREMENT_TYPE_THEMES[measurementType];
+  const src = measurementIconPath(measurementType, fieldKey);
+  const sizeClass = className ?? "h-20 w-16 shrink-0";
 
   return (
-    <svg
-      viewBox={`0 0 ${GUIDE_VIEWBOX.w} ${GUIDE_VIEWBOX.h}`}
-      className={className ?? "h-20 w-16 shrink-0"}
+    <Image
+      src={src}
+      alt=""
+      width={156}
+      height={104}
+      className={`${sizeClass} rounded-md border border-zinc-200/80 bg-white object-contain shadow-sm ${
+        active ? "ring-2 ring-zinc-800/30 ring-offset-1" : ""
+      }`}
       aria-hidden
-    >
-      <rect
-        width={GUIDE_VIEWBOX.w}
-        height={GUIDE_VIEWBOX.h}
-        rx="6"
-        fill={theme.figureFill}
-        stroke={theme.figureStroke}
-        strokeWidth="0.6"
-        opacity="0.95"
-      />
-      <g strokeLinecap="round" strokeLinejoin="round">
-        {renderMeasurementFieldScene(measurementType, fieldKey, active)}
-      </g>
-    </svg>
+      unoptimized
+    />
   );
 }
