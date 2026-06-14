@@ -9,22 +9,25 @@ import sharp from "sharp";
 const REFERENCE = join(process.cwd(), "public", "assets", "measurement-reference-screens.jpg");
 const OUT_DIR = join(process.cwd(), "public", "measurement-icons");
 
-const ROW_TOP = 130;
-const ROW_STEP = 52;
-const ICON_W = 78;
-const ICON_H = 52;
+/** Full white icon card from each list row in the reference screenshot (1024×682). */
+const ROW_TOP = 125;
+const ROW_STEP = 54;
+const ICON_W = 92;
+const ICON_H = 58;
+const OUT_W = 276;
+const OUT_H = 174;
 
 const PANELS = {
-  blouse: { left: 30, fields: ["bust", "underBust", "waist", "shoulder", "frontNeck", "backNeck", "armHole", "armLength", "bicep", "sleeve"] },
-  dress: { left: 368, fields: ["length", "shoulder", "overBust", "bust", "waist", "hip", "armHole", "armLength", "bicep", "wrist"] },
-  child: { left: 708, fields: ["length", "chest", "waist", "hip", "shoulder", "armHole", "armLength", "neck", "blouseLen", "trouserThreeQuarter"] },
+  blouse: { left: 22, fields: ["bust", "underBust", "waist", "shoulder", "frontNeck", "backNeck", "armHole", "armLength", "bicep", "sleeve"] },
+  dress: { left: 360, fields: ["length", "shoulder", "overBust", "bust", "waist", "hip", "armHole", "armLength", "bicep", "wrist"] },
+  child: { left: 700, fields: ["length", "chest", "waist", "hip", "shoulder", "armHole", "armLength", "neck", "blouseLen", "trouserThreeQuarter"] },
 };
 
 async function cropIcon(top, left, outPath) {
   await sharp(REFERENCE)
     .extract({ left, top, width: ICON_W, height: ICON_H })
-    .resize(156, 104, { fit: "contain", background: { r: 255, g: 255, b: 255, alpha: 1 } })
-    .png()
+    .resize(OUT_W, OUT_H, { fit: "fill" })
+    .png({ compressionLevel: 9 })
     .toFile(outPath);
 }
 

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import {
   fieldsForType,
   MEASUREMENT_TYPES,
@@ -8,6 +7,7 @@ import {
 import { measurementIconPath } from "@/lib/measurement-icon-paths";
 import { MEASUREMENT_TYPE_THEMES, isCircumferenceField } from "@/lib/measurement-field-guide";
 import { t } from "@/lib/i18n";
+import { MeasurementAppPreview } from "./MeasurementAppPreview";
 
 export const metadata = {
   title: "Measurement icons preview",
@@ -40,15 +40,15 @@ function TypeSection({ type }: { type: MeasurementTypeId }) {
         {fields.map((f) => (
           <li
             key={f.key}
-            className="flex items-center gap-3 rounded-xl border border-white/80 bg-white px-3 py-3 shadow-sm"
+            className="flex items-center gap-3 rounded-xl border border-zinc-200/90 bg-white px-3 py-3 shadow-sm"
           >
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={measurementIconPath(type, f.key)}
               alt=""
-              width={64}
-              height={85}
-              className="h-20 w-16 shrink-0 rounded-md object-contain"
-              unoptimized
+              width={92}
+              height={58}
+              className="h-[58px] w-[92px] shrink-0 rounded-lg border border-zinc-200/90 object-cover"
             />
             <div className="min-w-0">
               <p className={`text-sm font-semibold ${theme.accent}`}>{fieldTitle(type, f.key)}</p>
@@ -70,14 +70,12 @@ export default function MeasurementIconsPreviewPage() {
         <header className="rounded-2xl bg-white p-6 shadow-sm">
           <h1 className="text-2xl font-bold text-zinc-900">Measurement field icons</h1>
           <p className="mt-2 text-sm text-zinc-600">
-            Icons cropped from your reference tailoring-app screenshot — same pink blouse, teal kurti,
-            and blue children figures with measurement guides.
-          </p>
-          <p className="mt-1 text-xs text-zinc-400">
-            Regenerate:{" "}
-            <code className="rounded bg-zinc-100 px-1.5 py-0.5">npm run measurement-icons:generate</code>
+            Icons cropped from your reference screenshot — full white card + figure + measurement line,
+            exactly as in the tailoring app.
           </p>
         </header>
+
+        <MeasurementAppPreview />
 
         {MEASUREMENT_TYPES.map((type) => (
           <TypeSection key={type} type={type} />

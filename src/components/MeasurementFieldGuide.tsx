@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import type { MeasurementFieldKey, MeasurementTypeId } from "@/lib/measurements";
 import { measurementIconPath } from "@/lib/measurement-icon-paths";
 
@@ -11,21 +10,25 @@ type Props = {
   className?: string;
 };
 
+/** Reference screenshot icons — 92×58 aspect white cards with figure + measurement line. */
 export function MeasurementFieldGuide({ measurementType, fieldKey, active, className }: Props) {
   const src = measurementIconPath(measurementType, fieldKey);
-  const sizeClass = className ?? "h-20 w-16 shrink-0";
 
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={src}
       alt=""
-      width={156}
-      height={104}
-      className={`${sizeClass} rounded-md border border-zinc-200/80 bg-white object-contain shadow-sm ${
-        active ? "ring-2 ring-zinc-800/30 ring-offset-1" : ""
-      }`}
+      width={92}
+      height={58}
+      className={
+        className ??
+        "h-[58px] w-[92px] shrink-0 rounded-lg border border-zinc-200/90 bg-white object-cover shadow-sm"
+      }
+      style={active ? { outline: "2px solid rgba(24,24,27,0.35)", outlineOffset: 2 } : undefined}
       aria-hidden
-      unoptimized
+      loading="lazy"
+      decoding="async"
     />
   );
 }

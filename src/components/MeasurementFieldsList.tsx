@@ -66,15 +66,15 @@ export function MeasurementFieldsList({
         return (
           <li
             key={f.key}
-            className={`flex items-center gap-2 rounded-xl border px-2 py-2 transition sm:gap-3 sm:px-3 ${
-              theme.rowBorder
-            } ${isActive ? theme.rowActiveBg : theme.rowBg} ${compact ? "py-1.5" : ""}`}
+            className={`flex items-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-2 py-2 shadow-sm transition sm:gap-3 sm:px-3 ${
+              isActive ? "ring-2 ring-zinc-300" : ""
+            } ${compact ? "py-1.5" : ""}`}
           >
             <MeasurementFieldGuide
               measurementType={measurementType}
               fieldKey={f.key}
               active={isActive}
-              className={compact ? "h-14 w-11 shrink-0" : "h-20 w-16 shrink-0"}
+              className={compact ? "h-[46px] w-[72px] shrink-0 rounded-md object-cover" : undefined}
             />
 
             <div className="min-w-0 flex-1">
