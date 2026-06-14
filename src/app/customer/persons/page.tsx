@@ -17,7 +17,7 @@ export default async function PersonsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="page-title">{t(locale, "persons")}</h1>
+      <h1 className="page-title">{t(locale, "measurements")}</h1>
       <p className="text-sm text-zinc-600">{t(locale, "personsHint")}</p>
 
       <AddPersonForm locale={locale} />

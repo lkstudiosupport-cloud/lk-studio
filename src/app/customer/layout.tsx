@@ -22,7 +22,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     { href: "/customer", label: t(locale, "dashboard") },
     { href: "/customer/shops", label: t(locale, "browseShops") },
     { href: "/customer/price-requests", label: t(locale, "myPriceQuotes") },
-    { href: "/customer/persons", label: t(locale, "persons") },
+    { href: "/customer/persons", label: t(locale, "measurements") },
     { href: "/customer/bills", label: t(locale, "myBills") },
   ];
 
