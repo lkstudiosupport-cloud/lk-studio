@@ -72,7 +72,7 @@ export function MeasurementFieldsList({
               measurementType={measurementType}
               fieldKey={f.key}
               active={isActive}
-              className={compact ? "h-12 w-9 shrink-0" : "h-16 w-12 shrink-0"}
+              className={compact ? "h-14 w-11 shrink-0" : "h-20 w-16 shrink-0"}
             />
 
             <div className="min-w-0 flex-1">
