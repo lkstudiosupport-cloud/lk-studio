@@ -1,29 +1,49 @@
 /**
- * Import user-provided HD blouse measurement icons into public/measurement-icons/blouse/
+ * Import user-provided HD measurement icons into public/measurement-icons/{type}/
  * Run: npm run measurement-icons:import-hd
+ *      npm run measurement-icons:import-hd:dress
  */
-import { copyFileSync, mkdirSync, readdirSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 import sharp from "sharp";
-
-const SOURCE_DIR = join(process.cwd(), "public", "assets", "measurement-icons-hd", "blouse");
-const OUT_DIR = join(process.cwd(), "public", "measurement-icons", "blouse");
 
 /** HD output width (retina); height scales to preserve aspect. */
 const HD_WIDTH = 552;
 
-const FIELDS = [
-  "bust",
-  "underBust",
-  "waist",
-  "shoulder",
-  "frontNeck",
-  "backNeck",
-  "armHole",
-  "armLength",
-  "bicep",
-  "sleeve",
-];
+const CONFIG = {
+  blouse: {
+    fields: [
+      "bust",
+      "underBust",
+      "waist",
+      "shoulder",
+      "frontNeck",
+      "backNeck",
+      "armHole",
+      "armLength",
+      "bicep",
+      "sleeve",
+    ],
+    customFrom: "bust",
+  },
+  dress: {
+    fields: [
+      "length",
+      "shoulder",
+      "overBust",
+      "bust",
+      "waist",
+      "hip",
+      "armHole",
+      "armLength",
+      "bicep",
+      "wrist",
+    ],
+    customFrom: "length",
+    /** Fields with no HD source yet — keep existing output file. */
+    optional: ["waist"],
+  },
+};
 
 async function toHdPng(input, output) {
   const meta = await sharp(input).metadata();
@@ -35,22 +55,50 @@ async function toHdPng(input, output) {
     .toFile(output);
 }
 
-async function main() {
-  mkdirSync(OUT_DIR, { recursive: true });
+async function importType(type) {
+  const cfg = CONFIG[type];
+  const sourceDir = join(process.cwd(), "public", "assets", "measurement-icons-hd", type);
+  const outDir = join(process.cwd(), "public", "measurement-icons", type);
+  mkdirSync(outDir, { recursive: true });
 
-  for (const field of FIELDS) {
-    const src = join(SOURCE_DIR, `${field}.png`);
-    const out = join(OUT_DIR, `${field}.png`);
+  let count = 0;
+  for (const field of cfg.fields) {
+    const src = join(sourceDir, `${field}.png`);
+    const out = join(outDir, `${field}.png`);
+    if (!existsSync(src)) {
+      if (cfg.optional?.includes(field) && existsSync(out)) {
+        console.log(`  ${type}/${field}.png (kept existing — no HD source)`);
+        continue;
+      }
+      throw new Error(`Missing source: ${src}`);
+    }
     await toHdPng(src, out);
-    console.log(`  blouse/${field}.png`);
+    console.log(`  ${type}/${field}.png`);
+    count += 1;
   }
 
-  copyFileSync(join(SOURCE_DIR, "bust.png"), join(OUT_DIR, "custom.png"));
-  await toHdPng(join(SOURCE_DIR, "bust.png"), join(OUT_DIR, "custom.png"));
-  console.log(`  blouse/custom.png`);
+  const customSrc = join(sourceDir, `${cfg.customFrom}.png`);
+  const customOut = join(outDir, "custom.png");
+  if (existsSync(customSrc)) {
+    await toHdPng(customSrc, customOut);
+    console.log(`  ${type}/custom.png`);
+    count += 1;
+  }
 
-  console.log(`\nImported ${FIELDS.length + 1} HD blouse icons at ${HD_WIDTH}px width.`);
-  console.log(`Source files: ${readdirSync(SOURCE_DIR).join(", ")}`);
+  console.log(
+    `\nImported ${count} HD ${type} icons at ${HD_WIDTH}px width. Sources: ${readdirSync(sourceDir).join(", ")}`
+  );
+}
+
+async function main() {
+  const arg = process.argv[2];
+  const types = arg ? [arg] : Object.keys(CONFIG);
+  for (const type of types) {
+    if (!CONFIG[type]) {
+      throw new Error(`Unknown type: ${type}. Use: ${Object.keys(CONFIG).join(", ")}`);
+    }
+    await importType(type);
+  }
 }
 
 main().catch((err) => {
