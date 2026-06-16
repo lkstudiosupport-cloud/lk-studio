@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { CreateShopOrderFlow } from "@/components/CreateShopOrderFlow";
 import { DESIGN_LIST_LIMIT } from "@/lib/limits";
+import { visibleDesignsWhere } from "@/lib/design-access";
 
 export default async function ShopNewOrderPage() {
   const session = await requireSession(["SHOP"]);
@@ -17,8 +18,8 @@ export default async function ShopNewOrderPage() {
       take: 500,
     }),
     prisma.design.findMany({
-      where: { shopId, active: true },
-      select: { id: true, title: true, category: true, imagePath: true, imagesJson: true },
+      where: visibleDesignsWhere(shopId),
+      select: { id: true, title: true, category: true, imagePath: true, imagesJson: true, isCatalog: true },
       orderBy: { createdAt: "desc" },
       take: DESIGN_LIST_LIMIT,
     }),

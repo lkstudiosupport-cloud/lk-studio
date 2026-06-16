@@ -288,8 +288,9 @@ model Measurement {
 
 model Design {
   id          String          @id @default(cuid())
-  shopId      String
-  shop        ShopProfile     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId      String?
+  shop        ShopProfile?    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  isCatalog   Boolean         @default(false)
   title       String
   description String?
   category    ServiceCategory

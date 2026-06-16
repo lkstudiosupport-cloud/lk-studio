@@ -6,6 +6,7 @@ import { CategoryButtons } from "@/components/CategoryButtons";
 import { AskPriceForm, AskPriceOwnDesignCard } from "@/components/AskPriceForm";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { isShopActive } from "@/lib/subscription";
+import { visibleDesignsWhere, visibleDesignCountWhere } from "@/lib/design-access";
 import type { ServiceCategory } from "@prisma/client";
 import Link from "next/link";
 import { shopRatingSummaries } from "@/lib/shop-rating";
@@ -40,14 +41,10 @@ export default async function CustomerDesignsPage({
 
   const [designs, totalDesigns, ratingMap, customerFavorites, savedShop] = await Promise.all([
     prisma.design.findMany({
-      where: {
-        shopId: shop.id,
-        active: true,
-        ...(category ? { category } : {}),
-      },
+      where: visibleDesignsWhere(shop.id, category),
       orderBy: { createdAt: "desc" },
     }),
-    prisma.design.count({ where: { shopId: shop.id, active: true } }),
+    prisma.design.count({ where: visibleDesignCountWhere(shop.id) }),
     shopRatingSummaries([shop.id]),
     prisma.customerFavorite.findMany({
       where: { customerId: session!.id, shopId: shop.id },

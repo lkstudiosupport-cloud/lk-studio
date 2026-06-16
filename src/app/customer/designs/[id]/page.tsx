@@ -21,18 +21,27 @@ export default async function CustomerDesignDetailPage({
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
   const { id } = await params;
-  const { shopId } = await searchParams;
+  const { shopId: shopIdParam } = await searchParams;
 
   const design = await prisma.design.findFirst({
     where: { id, active: true },
     include: { shop: true },
   });
 
-  if (!design || !isShopActive(design.shop.subscriptionStatus, design.shop.subscriptionEndsAt)) {
+  if (!design) notFound();
+
+  const contextShopId = shopIdParam ?? design.shopId ?? null;
+  if (!contextShopId) notFound();
+
+  const shop =
+    design.shop ??
+    (await prisma.shopProfile.findUnique({ where: { id: contextShopId } }));
+
+  if (!shop || !isShopActive(shop.subscriptionStatus, shop.subscriptionEndsAt)) {
     notFound();
   }
 
-  if (shopId && design.shopId !== shopId) notFound();
+  if (!design.isCatalog && design.shopId !== contextShopId) notFound();
 
   const favorite = await prisma.customerFavorite.findUnique({
     where: {
@@ -41,9 +50,7 @@ export default async function CustomerDesignDetailPage({
   });
 
   const images = parseDesignImages(design.imagesJson, design.imagePath);
-  const backHref = shopId
-    ? `/customer/designs?shopId=${shopId}`
-    : `/customer/designs?shopId=${design.shopId}`;
+  const backHref = `/customer/designs?shopId=${contextShopId}`;
 
   return (
     <div className="space-y-6 pb-8">
@@ -53,12 +60,12 @@ export default async function CustomerDesignDetailPage({
         </Link>
         <h1 className="page-title mt-2">{design.title}</h1>
         <p className="text-sm text-zinc-600">
-          {design.shop.shopName} · {t(locale, categoryLabelKey(design.category))}
+          {shop.shopName} · {t(locale, categoryLabelKey(design.category))}
         </p>
         <div className="mt-2">
           <FavoriteButton
             designId={design.id}
-            shopId={design.shopId}
+            shopId={contextShopId}
             isFavorite={!!favorite}
             locale={locale}
           />
@@ -78,7 +85,7 @@ export default async function CustomerDesignDetailPage({
       </section>
 
       <section className="card-premium p-4">
-        <AskPriceForm locale={locale} shopId={design.shopId} design={design} />
+        <AskPriceForm locale={locale} shopId={contextShopId} design={design} />
       </section>
     </div>
   );

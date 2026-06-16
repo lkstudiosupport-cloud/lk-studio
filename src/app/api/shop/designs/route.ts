@@ -7,6 +7,7 @@ import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { persistShopDesign } from "@/lib/shop-design-upload";
 import { isShopActive } from "@/lib/subscription";
 import type { ServiceCategory } from "@prisma/client";
+import { isShopUploadCategory } from "@/lib/design-access";
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
@@ -53,6 +54,12 @@ export async function POST(req: Request) {
   }
 
   const category = form.get("category") as ServiceCategory;
+  if (!isShopUploadCategory(category)) {
+    return NextResponse.json(
+      { error: "Upload is only allowed for Stitched designs" },
+      { status: 400 }
+    );
+  }
   const title = String(form.get("title") ?? "").trim();
 
   const files: File[] = [];

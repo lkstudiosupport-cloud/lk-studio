@@ -8,15 +8,29 @@ import { shopRatingSummaries } from "@/lib/shop-rating";
 import { cachedLocale, cachedCustomerSession } from "@/lib/cached-server";
 import { ShopCodeSearch } from "@/components/ShopCodeSearch";
 import { ShopBrowseCard } from "@/components/ShopBrowseCard";
+import { SHOP_UPLOAD_CATEGORY, CATALOG_CATEGORIES } from "@/lib/design-access";
 
 function firstPreviewByShop(
-  designs: { shopId: string; imagePath: string }[],
+  designs: { shopId: string | null; imagePath: string; isCatalog: boolean }[],
   shopIds: string[]
 ) {
   const map = new Map<string, string>();
   for (const id of shopIds) map.set(id, "");
+  let catalogFallback = "";
   for (const d of designs) {
-    if (!map.get(d.shopId)) map.set(d.shopId, d.imagePath);
+    if (d.isCatalog) {
+      if (!catalogFallback) catalogFallback = d.imagePath;
+      for (const id of shopIds) {
+        if (!map.get(id)) map.set(id, d.imagePath);
+      }
+    } else if (d.shopId && !map.get(d.shopId)) {
+      map.set(d.shopId, d.imagePath);
+    }
+  }
+  if (catalogFallback) {
+    for (const id of shopIds) {
+      if (!map.get(id)) map.set(id, catalogFallback);
+    }
   }
   return map;
 }
@@ -143,29 +157,45 @@ export default async function CustomerShopsPage({
     shopIdsForMeta.push(codeMatchActive.id);
   }
 
-  const [countRows, previewDesigns, ratingMap] =
+  const [catalogDesignCount, stitchedCountRows, previewDesigns, ratingMap] =
     shopIdsForMeta.length === 0
-      ? [[], [], new Map()]
+      ? [0, [], [], new Map()]
       : await Promise.all([
+          prisma.design.count({
+            where: { isCatalog: true, active: true, category: { in: CATALOG_CATEGORIES } },
+          }),
           prisma.design.groupBy({
             by: ["shopId"],
-            where: { shopId: { in: shopIdsForMeta }, active: true },
+            where: {
+              shopId: { in: shopIdsForMeta },
+              category: SHOP_UPLOAD_CATEGORY,
+              active: true,
+              isCatalog: false,
+            },
             _count: { _all: true },
           }),
           prisma.design.findMany({
-            where: { shopId: { in: shopIdsForMeta }, active: true },
+            where: {
+              active: true,
+              OR: [
+                { isCatalog: true, category: { in: CATALOG_CATEGORIES } },
+                { shopId: { in: shopIdsForMeta }, category: SHOP_UPLOAD_CATEGORY, isCatalog: false },
+              ],
+            },
             orderBy: { createdAt: "desc" },
-            select: { shopId: true, imagePath: true },
+            select: { shopId: true, imagePath: true, isCatalog: true },
             take: Math.min(shopIdsForMeta.length * 3, 150),
           }),
           shopRatingSummaries(shopIdsForMeta),
         ]);
 
-  const countMap = new Map(countRows.map((r) => [r.shopId, r._count._all]));
+  const stitchedCountMap = new Map(
+    stitchedCountRows.map((r) => [r.shopId!, r._count._all])
+  );
   const thumbMap = firstPreviewByShop(previewDesigns, shopIdsForMeta);
 
   function renderShop(shop: ShopWithDistance, showNearestBadge = false) {
-    const designCount = countMap.get(shop.id) ?? 0;
+    const designCount = catalogDesignCount + (stitchedCountMap.get(shop.id) ?? 0);
     const thumb = shop.profilePhoto || thumbMap.get(shop.id) || null;
     const rating = ratingMap.get(shop.id);
 

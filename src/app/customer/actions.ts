@@ -243,7 +243,7 @@ export async function placeOrder(
     if (designIdRaw) {
       const design = await prisma.design.findUnique({ where: { id: designIdRaw } });
       if (!design) return { ok: false, error: "Design not found" };
-      shopId = design.shopId;
+      if (!shopId && design.shopId) shopId = design.shopId;
     }
 
     if (!shopId) return { ok: false, error: "Select a shop" };

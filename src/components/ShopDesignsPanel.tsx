@@ -2,10 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Design } from "@prisma/client";
+import type { Design, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, isCategoryShopUpload } from "@/lib/categories";
+import { SHOP_UPLOAD_CATEGORY } from "@/lib/design-access";
 import { MAX_DESIGN_IMAGES } from "@/lib/limits";
 import { ShopDesignItem } from "@/components/ShopDesignItem";
 import { compressImageFile } from "@/lib/compress-image";
@@ -20,9 +21,11 @@ export function ShopDesignsPanel({
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [category, setCategory] = useState(CATEGORIES[0].key);
+  const [category, setCategory] = useState<ServiceCategory>(SHOP_UPLOAD_CATEGORY);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+
+  const canUpload = isCategoryShopUpload(category);
 
   const counts = useMemo(() => {
     const map = {} as Record<string, number>;
@@ -39,7 +42,7 @@ export function ShopDesignsPanel({
   );
 
   async function uploadFiles(raw: FileList | null) {
-    if (!raw?.length) return;
+    if (!raw?.length || !canUpload) return;
     setError("");
     setPending(true);
     try {
@@ -101,29 +104,50 @@ export function ShopDesignsPanel({
           </span>
         </div>
 
+        <p className="text-sm text-zinc-600">
+          {canUpload ? t(locale, "shopStitchedHint") : t(locale, "catalogDesignsHint")}
+        </p>
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => fileRef.current?.click()}
-            className="flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-green/35 bg-brand-cream/40 text-brand-green transition hover:border-brand-green/60 hover:bg-brand-cream/70 disabled:opacity-60"
-          >
-            {pending ? (
-              <Loader2 className="h-8 w-8 animate-spin text-brand-gold" />
-            ) : (
-              <>
-                <Plus className="h-8 w-8 text-brand-gold" />
-                <span className="px-2 text-center text-xs font-semibold">{t(locale, "addDesignPhoto")}</span>
-              </>
-            )}
-          </button>
+          {canUpload && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => fileRef.current?.click()}
+              className="flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-green/35 bg-brand-cream/40 text-brand-green transition hover:border-brand-green/60 hover:bg-brand-cream/70 disabled:opacity-60"
+            >
+              {pending ? (
+                <Loader2 className="h-8 w-8 animate-spin text-brand-gold" />
+              ) : (
+                <>
+                  <Plus className="h-8 w-8 text-brand-gold" />
+                  <span className="px-2 text-center text-xs font-semibold">{t(locale, "addDesignPhoto")}</span>
+                </>
+              )}
+            </button>
+          )}
 
           {categoryDesigns.map((d) => (
-            <ShopDesignItem key={d.id} design={d} locale={locale} />
+            <ShopDesignItem
+              key={d.id}
+              design={d}
+              locale={locale}
+              manageable={canUpload && !d.isCatalog}
+            />
           ))}
         </div>
+
+        {categoryDesigns.length === 0 && !canUpload && (
+          <p className="card-premium py-10 text-center text-sm text-zinc-500">
+            {t(locale, "noCatalogDesignsYet")}
+          </p>
+        )}
+
+        {categoryDesigns.length === 0 && canUpload && (
+          <p className="text-center text-sm text-zinc-500">{t(locale, "noStitchedDesignsYet")}</p>
+        )}
 
         <input
           ref={fileRef}

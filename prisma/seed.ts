@@ -2,6 +2,7 @@ import { PrismaClient, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { internalEmailForUser } from "../src/lib/internal-email";
 import { trialEndDate } from "../src/lib/subscription";
+import { seedCatalogDesigns } from "./seed-catalog-designs";
 const prisma = new PrismaClient();
 
 function generateShopCode(name: string) {
@@ -100,6 +101,8 @@ async function upsertShop(
 }
 
 async function main() {
+  await seedCatalogDesigns(prisma);
+
   if (process.env.SKIP_DEMO_SEED === "true") {
     console.log("SKIP_DEMO_SEED=true — demo accounts not created.");
     return;
@@ -109,7 +112,7 @@ async function main() {
     return;
   }
 
-  const shop1 = await upsertShop(
+  const _shop1 = await upsertShop(
     "LK Studio Owner",
     "LK Studio",
     "9876543210"
@@ -157,31 +160,6 @@ async function main() {
         autopayEnabled: false,
       },
     });
-  }
-
-  const shopId = shop1.shopProfile!.id;
-  const samples = [
-    { title: "Maggam border blouse", category: "MAGGAM" as const, workType: "STITCHING" as const },
-    { title: "Saree fall repair", category: "BLOUSE_DESIGN" as const, workType: "REPAIR" as const },
-    { title: "Peacock embroidery", category: "COMPUTER_EMBROIDERY" as const, workType: "STITCHING" as const },
-  ];
-
-  for (const s of samples) {
-    const exists = await prisma.design.findFirst({
-      where: { shopId, title: s.title },
-    });
-    if (!exists) {
-      await prisma.design.create({
-        data: {
-          shopId,
-          title: s.title,
-          category: s.category,
-          workType: s.workType,
-          imagePath: "/placeholder-design.svg",
-          description: "Sample — upload your own from shop dashboard.",
-        },
-      });
-    }
   }
 
   console.log("Seed OK. Shop mobile: 9876543210 | Customer mobile: 9123456789 | password: demo123");
