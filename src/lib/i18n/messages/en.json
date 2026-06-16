@@ -252,6 +252,8 @@
   "tapToViewAllPhotos": "photos — tap to view all",
   "saveDesign": "Save design",
   "yourDesigns": "Your designs",
+  "shopDesignsHint": "Pick a category below — upload photos here. Customers see the same categories in their app.",
+  "allDesigns": "All designs",
   "designPhoto": "Design photo",
   "designPhotoRequired": "Add at least one photo",
   "completeOrderDesignHint": "Finished photo saves to your Designs gallery under this name.",
@@ -492,7 +494,8 @@
     "embroidery": "Computer & machine embroidery",
     "blouse": "Model blouse",
     "dress": "Dress model",
-    "children": "Children wear model"
+    "children": "Children wear model",
+    "stitched": "Stitched designs"
   },
   "status": {
     "pending": "Pending",

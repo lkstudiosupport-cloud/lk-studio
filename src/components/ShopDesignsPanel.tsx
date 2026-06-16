@@ -9,7 +9,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { MAX_DESIGN_IMAGES } from "@/lib/limits";
 import { DesignImageUpload } from "@/components/DesignImageUpload";
 import { ShopDesignItem } from "@/components/ShopDesignItem";
-import { ChevronDown, FolderClosed } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 
 export function ShopDesignsPanel({
   locale,
@@ -25,7 +25,6 @@ export function ShopDesignsPanel({
   const [pending, setPending] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState("");
-  const [openFolder, setOpenFolder] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     const map = {} as Record<string, number>;
@@ -34,6 +33,12 @@ export function ShopDesignsPanel({
     }
     return map;
   }, [designs]);
+
+  const activeCategory = CATEGORIES.find((c) => c.key === category)!;
+  const categoryDesigns = useMemo(
+    () => designs.filter((d) => d.category === category),
+    [designs, category]
+  );
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -71,17 +76,17 @@ export function ShopDesignsPanel({
 
   return (
     <div className="space-y-6">
-      <h1 className="page-title">{t(locale, "designs")}</h1>
+      <div>
+        <h1 className="page-title">{t(locale, "designs")}</h1>
+        <p className="mt-1 text-sm text-zinc-600">{t(locale, "shopDesignsHint")}</p>
+      </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {CATEGORIES.map((c) => (
           <button
             key={c.key}
             type="button"
-            onClick={() => {
-              setCategory(c.key);
-              setOpenFolder(c.key);
-            }}
+            onClick={() => setCategory(c.key)}
             className={`min-h-[4.5rem] rounded-2xl p-3 text-center text-sm font-semibold shadow-md transition active:scale-[0.98] ${
               c.color
             } ${category === c.key ? "ring-4 ring-brand-gold ring-offset-2" : "opacity-90 hover:opacity-100"}`}
@@ -92,86 +97,61 @@ export function ShopDesignsPanel({
         ))}
       </div>
 
-      <form onSubmit={onSubmit} encType="multipart/form-data" className="card-premium space-y-4 p-5">
-        <h2 className="font-bold text-brand-green">
-          {t(locale, "uploadDesign")} — {t(locale, CATEGORIES.find((c) => c.key === category)!.labelKey)}
-        </h2>
-        <input type="hidden" name="category" value={category} />
-        <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "designPhoto")}</span>
-          <DesignImageUpload
-            locale={locale}
-            files={imageFiles}
-            onFilesChange={setImageFiles}
-            onCompressingChange={setCompressing}
-          />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "designName")}</span>
-          <input
-            name="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t(locale, "designNamePlaceholder")}
-            className="input-premium w-full"
-          />
-        </label>
-        {compressing && (
-          <p className="text-center text-sm text-brand-green">{t(locale, "compressingPhotos")}</p>
-        )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={pending || compressing} className="btn-primary w-full py-3">
-          {pending ? "..." : compressing ? t(locale, "compressingPhotos") : t(locale, "saveDesign")}
-        </button>
-      </form>
-
-      <section>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-brand-green">
-          {t(locale, "yourDesigns")}
-        </h2>
-        <div className="space-y-2">
-          {CATEGORIES.map((c) => {
-            const items = designs.filter((d) => d.category === c.key);
-            const isOpen = openFolder === c.key;
-            return (
-              <details
-                key={c.key}
-                open={isOpen}
-                className="group overflow-hidden rounded-xl border border-brand-green/15 bg-white shadow-sm"
-              >
-                <summary
-                  className={`flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-semibold [&::-webkit-details-marker]:hidden ${c.color}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const next = isOpen ? null : c.key;
-                    setOpenFolder(next);
-                    if (next) setCategory(c.key);
-                  }}
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <FolderClosed className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{t(locale, c.labelKey)}</span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">{items.length}</span>
-                    <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
-                  </span>
-                </summary>
-                <div className="border-t border-brand-green/10 p-3">
-                  {items.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                      {items.map((d) => (
-                        <ShopDesignItem key={d.id} design={d} locale={locale} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="py-4 text-center text-sm text-zinc-500">{t(locale, "noDesignsInCategory")}</p>
-                  )}
-                </div>
-              </details>
-            );
-          })}
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-bold text-brand-green">
+            {t(locale, activeCategory.labelKey)}
+          </h2>
+          <span className="rounded-full bg-brand-cream px-3 py-1 text-xs font-semibold text-brand-green">
+            {categoryDesigns.length} {t(locale, "collectionItems")}
+          </span>
         </div>
+
+        <form onSubmit={onSubmit} encType="multipart/form-data" className="card-premium space-y-4 p-5">
+          <h3 className="flex items-center gap-2 font-bold text-brand-green">
+            <ImagePlus className="h-5 w-5 shrink-0" />
+            {t(locale, "uploadDesign")}
+          </h3>
+          <input type="hidden" name="category" value={category} />
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "designPhoto")}</span>
+            <DesignImageUpload
+              locale={locale}
+              files={imageFiles}
+              onFilesChange={setImageFiles}
+              onCompressingChange={setCompressing}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "designName")}</span>
+            <input
+              name="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t(locale, "designNamePlaceholder")}
+              className="input-premium w-full"
+            />
+          </label>
+          {compressing && (
+            <p className="text-center text-sm text-brand-green">{t(locale, "compressingPhotos")}</p>
+          )}
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button type="submit" disabled={pending || compressing} className="btn-primary w-full py-3">
+            {pending ? "..." : compressing ? t(locale, "compressingPhotos") : t(locale, "saveDesign")}
+          </button>
+        </form>
+
+        {categoryDesigns.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {categoryDesigns.map((d) => (
+              <ShopDesignItem key={d.id} design={d} locale={locale} />
+            ))}
+          </div>
+        ) : (
+          <p className="card-premium py-10 text-center text-sm text-zinc-500">
+            {t(locale, "noDesignsInCategory")}
+          </p>
+        )}
       </section>
     </div>
   );

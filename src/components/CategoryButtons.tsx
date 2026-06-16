@@ -15,18 +15,30 @@ export function CategoryButtons({
   active?: ServiceCategory;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-      {CATEGORIES.map((c) => (
-        <Link
-          key={c.key}
-          href={withQueryParam(basePath, "category", c.key)}
-          className={`rounded-2xl p-4 text-center shadow-md transition hover:opacity-90 ${
-            c.color
-          } ${active === c.key ? "ring-4 ring-brand-gold ring-offset-2" : ""}`}
-        >
-          <span className="text-base font-semibold">{t(locale, c.labelKey)}</span>
-        </Link>
-      ))}
+    <div className="space-y-2">
+      <Link
+        href={basePath}
+        className={`inline-flex rounded-full px-4 py-2 text-sm font-semibold transition ${
+          !active
+            ? "bg-brand-green text-brand-gold ring-2 ring-brand-gold ring-offset-2"
+            : "bg-brand-cream text-brand-green ring-1 ring-brand-green/15 hover:bg-brand-green/10"
+        }`}
+      >
+        {t(locale, "allDesigns")}
+      </Link>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {CATEGORIES.map((c) => (
+          <Link
+            key={c.key}
+            href={withQueryParam(basePath, "category", c.key)}
+            className={`min-h-[4.5rem] rounded-2xl p-3 text-center text-sm font-semibold shadow-md transition hover:opacity-90 ${
+              c.color
+            } ${active === c.key ? "ring-4 ring-brand-gold ring-offset-2" : ""}`}
+          >
+            <span className="block leading-tight">{t(locale, c.labelKey)}</span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

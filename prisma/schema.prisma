@@ -36,6 +36,7 @@ enum ServiceCategory {
   BLOUSE_DESIGN
   DRESS_MODEL
   CHILDREN_WEAR
+  STITCHED_DESIGNS
 }
 
 enum OrderStatus {

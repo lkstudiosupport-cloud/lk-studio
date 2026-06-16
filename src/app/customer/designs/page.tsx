@@ -109,6 +109,7 @@ export default async function CustomerDesignsPage({
           locale={locale}
           designs={designs}
           shopId={shop.id}
+          activeCategory={category}
           favoriteDesignIds={favoriteDesignIds}
           renderAction={(d) => (
             <AskPriceForm locale={locale} shopId={shop.id} design={d} compact />

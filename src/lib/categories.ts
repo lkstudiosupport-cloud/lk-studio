@@ -13,6 +13,7 @@ export const CATEGORIES: {
   { key: "BLOUSE_DESIGN", labelKey: "categories.blouse", color: CATEGORY_BUTTON_CLASS },
   { key: "DRESS_MODEL", labelKey: "categories.dress", color: CATEGORY_BUTTON_CLASS },
   { key: "CHILDREN_WEAR", labelKey: "categories.children", color: CATEGORY_BUTTON_CLASS },
+  { key: "STITCHED_DESIGNS", labelKey: "categories.stitched", color: CATEGORY_BUTTON_CLASS },
 ];
 
 export function categoryLabelKey(cat: ServiceCategory) {

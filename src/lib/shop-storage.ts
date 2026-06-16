@@ -8,6 +8,7 @@ export const CATEGORY_STORAGE_FOLDERS: Record<ServiceCategory, string> = {
   BLOUSE_DESIGN: "blouse-models",
   DRESS_MODEL: "dress-models",
   CHILDREN_WEAR: "children-wear",
+  STITCHED_DESIGNS: "stitched-designs",
 };
 
 export function shopStorageSlug(shopName: string, shopCode: string) {
