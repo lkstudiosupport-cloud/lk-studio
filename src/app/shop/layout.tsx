@@ -32,7 +32,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   const navLinks = [
     { href: "/shop", label: t(locale, "dashboard") },
-    { href: "/shop/designs", label: t(locale, "categories.stitched") },
+    { href: "/shop/designs", label: t(locale, "designs") },
     { href: "/shop/orders", label: t(locale, "orders") },
     { href: "/shop/bills", label: t(locale, "payments") },
     { href: "/shop/workers", label: t(locale, "workers") },
