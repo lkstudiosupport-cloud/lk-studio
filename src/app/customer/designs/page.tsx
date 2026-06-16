@@ -101,21 +101,15 @@ export default async function CustomerDesignsPage({
 
       <AskPriceOwnDesignCard locale={locale} shopId={shop.id} />
 
-      <div>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-brand-green">
-          {t(locale, "shopCollections")}
-        </h2>
-        <ShopDesignCollections
-          locale={locale}
-          designs={designs}
-          shopId={shop.id}
-          activeCategory={category}
-          favoriteDesignIds={favoriteDesignIds}
-          renderAction={(d) => (
-            <AskPriceForm locale={locale} shopId={shop.id} design={d} compact />
-          )}
-        />
-      </div>
+      <ShopDesignCollections
+        locale={locale}
+        designs={designs}
+        shopId={shop.id}
+        favoriteDesignIds={favoriteDesignIds}
+        renderAction={(d) => (
+          <AskPriceForm locale={locale} shopId={shop.id} design={d} compact />
+        )}
+      />
     </div>
   );
 }
