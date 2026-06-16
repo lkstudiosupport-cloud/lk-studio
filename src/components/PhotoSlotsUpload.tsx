@@ -1,7 +1,6 @@
 "use client";
 
 import { Camera, ImageIcon, Plus, X } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -43,11 +42,14 @@ export function PhotoSlotsUpload({
   const formRefs = useRef<(HTMLInputElement | null)[]>([]);
   const compressingRef = useRef(0);
 
+  const previewsRef = useRef(previews);
+  previewsRef.current = previews;
+
   useEffect(() => {
     return () => {
-      previews.forEach((p) => URL.revokeObjectURL(p.url));
+      previewsRef.current.forEach((p) => URL.revokeObjectURL(p.url));
     };
-  }, [previews]);
+  }, []);
 
   useEffect(() => {
     if (files.length === 0 && previews.length > 0) {
@@ -123,21 +125,29 @@ export function PhotoSlotsUpload({
         {previews.map((slot, index) => (
           <div
             key={slot.url}
-            className={`relative ${slotSize} shrink-0 overflow-hidden rounded-xl border-2 border-brand-gold bg-white shadow-sm`}
-          >
-            <Image src={slot.url} alt="" fill className="object-cover" unoptimized />
-            <button
-              type="button"
-              onClick={() => {
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              setPreviewIndex(index);
+              setPreviewOpen(true);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
                 setPreviewIndex(index);
                 setPreviewOpen(true);
-              }}
-              className="absolute inset-0 z-0"
-              aria-label={t(locale, "previewPhoto")}
-            />
+              }
+            }}
+            className={`relative ${slotSize} shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 border-brand-gold bg-zinc-100 shadow-sm`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={slot.url} alt="" className="h-full w-full object-cover" />
             <button
               type="button"
-              onClick={() => removeAt(index)}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeAt(index);
+              }}
               className="absolute right-1 top-1 z-10 rounded-full bg-red-600 p-1 text-white shadow"
               aria-label={t(locale, "removePhoto")}
             >

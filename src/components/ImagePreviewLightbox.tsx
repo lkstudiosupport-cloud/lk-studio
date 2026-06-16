@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
@@ -70,27 +69,27 @@ export function ImagePreviewLightbox({
         </button>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 pb-6" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="relative flex min-h-0 flex-1 items-stretch justify-center px-4 pb-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         {images.length > 1 && (
           <button
             type="button"
             onClick={goPrev}
-            className="absolute left-2 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:left-4"
+            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:left-4"
             aria-label="Previous"
           >
             <ChevronLeft className="h-8 w-8" />
           </button>
         )}
 
-        <div className="relative h-full max-h-[80vh] w-full max-w-4xl">
-          <Image
+        <div className="relative flex min-h-[50vh] w-full max-w-4xl flex-1 items-center justify-center self-stretch">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={src}
             alt={`${alt} ${index + 1}`}
-            fill
-            className="object-contain"
-            sizes="100vw"
-            unoptimized={src.startsWith("blob:") || src.endsWith(".svg")}
-            priority
+            className="max-h-[calc(100vh-8rem)] max-w-full object-contain"
           />
         </div>
 
@@ -98,7 +97,7 @@ export function ImagePreviewLightbox({
           <button
             type="button"
             onClick={goNext}
-            className="absolute right-2 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:right-4"
+            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:right-4"
             aria-label="Next"
           >
             <ChevronRight className="h-8 w-8" />

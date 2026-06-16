@@ -7,6 +7,17 @@ import { Expand } from "lucide-react";
 import { parseDesignImages } from "@/lib/design-images";
 import { ImagePreviewLightbox } from "@/components/ImagePreviewLightbox";
 
+function isUnoptimizedSrc(src: string) {
+  return (
+    src.startsWith("blob:") ||
+    src.startsWith("data:") ||
+    src.startsWith("/") ||
+    src.startsWith("http://") ||
+    src.startsWith("https://") ||
+    src.endsWith(".svg")
+  );
+}
+
 export function DesignImagesView({
   imagePath,
   imagesJson,
@@ -41,11 +52,29 @@ export function DesignImagesView({
   }
 
   const previewBtn = (
-    <span className="pointer-events-none absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-semibold text-white">
+    <span className="pointer-events-none absolute bottom-2 left-2 z-[1] flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-semibold text-white">
       <Expand className="h-3 w-3" />
       {previewLabel}
     </span>
   );
+
+  const tapClass =
+    "block w-full overflow-hidden border-0 bg-zinc-100 p-0 text-left appearance-none ring-offset-2 transition hover:ring-2 hover:ring-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold";
+
+  function ImageTile({ src, altText, sizes }: { src: string; altText: string; sizes: string }) {
+    return (
+      <span className="relative block h-full w-full">
+        <Image
+          src={src}
+          alt={altText}
+          fill
+          className="object-cover"
+          sizes={sizes}
+          unoptimized={isUnoptimizedSrc(src)}
+        />
+      </span>
+    );
+  }
 
   if (layout === "grid") {
     return (
@@ -56,16 +85,9 @@ export function DesignImagesView({
               key={`${src}-${i}`}
               type="button"
               onClick={() => openPreview(i)}
-              className="relative aspect-square overflow-hidden rounded-xl bg-zinc-100 ring-offset-2 transition hover:ring-2 hover:ring-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold"
+              className={`${tapClass} relative aspect-square rounded-xl`}
             >
-              <Image
-                src={src}
-                alt={`${alt} ${i + 1}`}
-                fill
-                className="object-cover"
-                sizes="(max-width: 640px) 50vw, 25vw"
-                unoptimized={src.endsWith(".svg")}
-              />
+              <ImageTile src={src} altText={`${alt} ${i + 1}`} sizes="(max-width: 640px) 50vw, 25vw" />
               {previewBtn}
             </button>
           ))}
@@ -88,16 +110,9 @@ export function DesignImagesView({
       <button
         type="button"
         onClick={() => openPreview(0)}
-        className={`relative block w-full ${aspectClass} bg-zinc-100 ring-offset-2 transition hover:ring-2 hover:ring-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold`}
+        className={`${tapClass} relative ${aspectClass}`}
       >
-        <Image
-          src={cover}
-          alt={alt}
-          fill
-          className="object-cover"
-          sizes="(max-width: 640px) 100vw, 33vw"
-          unoptimized={cover.endsWith(".svg")}
-        />
+        <ImageTile src={cover} altText={alt} sizes="(max-width: 640px) 100vw, 33vw" />
         {previewBtn}
         {images.length > 1 && (
           <span className="absolute bottom-2 right-2 rounded-full bg-brand-green/90 px-2.5 py-1 text-xs font-bold text-brand-gold">
@@ -140,16 +155,9 @@ export function DesignImagesView({
         <button
           type="button"
           onClick={() => openPreview(0)}
-          className={`relative block w-full ${aspectClass} bg-zinc-100 ring-offset-2 transition hover:ring-2 hover:ring-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold ${className}`}
+          className={`${tapClass} relative ${aspectClass} ${className}`}
         >
-          <Image
-            src={current}
-            alt={alt}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, 33vw"
-            unoptimized={current.endsWith(".svg")}
-          />
+          <ImageTile src={current} altText={alt} sizes="(max-width: 640px) 100vw, 33vw" />
           {previewBtn}
         </button>
         <ImagePreviewLightbox
@@ -170,16 +178,9 @@ export function DesignImagesView({
         <button
           type="button"
           onClick={() => openPreview(active)}
-          className={`relative block w-full ${aspectClass} bg-zinc-100 ring-offset-2 transition hover:ring-2 hover:ring-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold`}
+          className={`${tapClass} relative ${aspectClass}`}
         >
-          <Image
-            src={current}
-            alt={alt}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, 33vw"
-            unoptimized={current.endsWith(".svg")}
-          />
+          <ImageTile src={current} altText={alt} sizes="(max-width: 640px) 100vw, 33vw" />
           {previewBtn}
           <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-xs font-bold text-white">
             {active + 1}/{images.length}
@@ -196,7 +197,7 @@ export function DesignImagesView({
                 i === active ? "border-brand-gold" : "border-transparent"
               }`}
             >
-              <Image src={src} alt="" fill className="object-cover" sizes="64px" unoptimized />
+              <Image src={src} alt="" fill className="object-cover" sizes="64px" unoptimized={isUnoptimizedSrc(src)} />
             </button>
           ))}
         </div>
