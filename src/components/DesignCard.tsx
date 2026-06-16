@@ -33,6 +33,8 @@ export function DesignCard({
         layout={imageLayout}
         detailHref={detailHref}
         photosBadge={photosBadge}
+        previewCloseLabel={t(locale, "closePreview")}
+        previewLabel={t(locale, "tapToPreview")}
       />
       <div className="p-3">
         <p className="text-xs font-medium uppercase text-brand-green">

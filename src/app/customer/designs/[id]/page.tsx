@@ -81,6 +81,8 @@ export default async function CustomerDesignDetailPage({
           imagesJson={design.imagesJson}
           alt={design.title}
           layout="grid"
+          previewCloseLabel={t(locale, "closePreview")}
+          previewLabel={t(locale, "tapToPreview")}
         />
       </section>
 

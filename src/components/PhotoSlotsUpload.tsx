@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { compressImageFile } from "@/lib/compress-image";
+import { ImagePreviewLightbox } from "@/components/ImagePreviewLightbox";
 
 type SlotPreview = { file: File; url: string };
 
@@ -35,6 +36,8 @@ export function PhotoSlotsUpload({
 }) {
   const [previews, setPreviews] = useState<SlotPreview[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const formRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -125,8 +128,17 @@ export function PhotoSlotsUpload({
             <Image src={slot.url} alt="" fill className="object-cover" unoptimized />
             <button
               type="button"
+              onClick={() => {
+                setPreviewIndex(index);
+                setPreviewOpen(true);
+              }}
+              className="absolute inset-0 z-0"
+              aria-label={t(locale, "previewPhoto")}
+            />
+            <button
+              type="button"
               onClick={() => removeAt(index)}
-              className="absolute right-1 top-1 rounded-full bg-red-600 p-1 text-white shadow"
+              className="absolute right-1 top-1 z-10 rounded-full bg-red-600 p-1 text-white shadow"
               aria-label={t(locale, "removePhoto")}
             >
               <X className="h-3.5 w-3.5" />
@@ -241,6 +253,15 @@ export function PhotoSlotsUpload({
           {previews.length}/{max} {t(locale, "photosUploaded")}
         </p>
       )}
+
+      <ImagePreviewLightbox
+        images={previews.map((p) => p.url)}
+        startIndex={previewIndex}
+        alt={t(locale, "previewPhoto")}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        closeLabel={t(locale, "closePreview")}
+      />
     </div>
   );
 }
