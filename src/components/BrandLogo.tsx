@@ -32,7 +32,7 @@ function BrandLogoImage({
       alt={alt}
       width={s.dim}
       height={s.dim}
-      className={`object-cover shadow-xl shadow-brand-green/30 ${s.className} ${className}`}
+      className={`object-contain shadow-xl shadow-brand-green/30 ${s.className} ${className}`}
       priority={size === "hero" || size === "mark"}
       unoptimized
     />
