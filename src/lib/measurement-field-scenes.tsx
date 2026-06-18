@@ -375,6 +375,14 @@ function wrapScene(content: ReactNode, arrowId: string) {
 function blouseScene(field: MeasurementFieldKey, active?: boolean): ReactNode {
   const id = `bl-${field}`;
   switch (field) {
+    case "length":
+      return wrapScene(
+        <>
+          <BlouseFront />
+          <VLine x={56} y1={14} y2={94} active={active} arrowId={id} />
+        </>,
+        id
+      );
     case "shoulder":
       return wrapScene(
         <SceneZoom scale={1.45} tx={36} ty={22}>

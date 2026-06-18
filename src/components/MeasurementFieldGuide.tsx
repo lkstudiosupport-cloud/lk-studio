@@ -23,7 +23,7 @@ export function MeasurementFieldGuide({ measurementType, fieldKey, active, class
       height={58}
       className={
         className ??
-        "h-[58px] w-[92px] shrink-0 rounded-lg border border-zinc-200/90 bg-white object-cover shadow-sm"
+        "h-[58px] w-[92px] shrink-0 rounded-lg border border-zinc-200/90 bg-white object-contain shadow-sm"
       }
       style={active ? { outline: "2px solid rgba(24,24,27,0.35)", outlineOffset: 2 } : undefined}
       aria-hidden

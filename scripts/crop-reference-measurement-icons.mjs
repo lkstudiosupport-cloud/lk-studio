@@ -18,7 +18,11 @@ const OUT_W = 276;
 const OUT_H = 174;
 
 const PANELS = {
-  blouse: { left: 22, fields: ["bust", "underBust", "waist", "shoulder", "frontNeck", "backNeck", "armHole", "armLength", "bicep", "sleeve"] },
+  /** blouse/length.png is user-provided — run measurement-icons:import-hd after updating HD source */
+  blouse: {
+    left: 22,
+    fields: ["bust", "underBust", "waist", "shoulder", "frontNeck", "backNeck", "armHole", "armLength", "bicep", "sleeve"],
+  },
   dress: { left: 360, fields: ["length", "shoulder", "overBust", "bust", "waist", "hip", "armHole", "armLength", "bicep", "wrist"] },
   child: { left: 700, fields: ["length", "chest", "waist", "hip", "shoulder", "armHole", "armLength", "neck", "blouseLen", "trouserThreeQuarter"] },
 };
@@ -44,9 +48,14 @@ async function main() {
 
     for (let i = 0; i < panel.fields.length; i++) {
       const field = panel.fields[i];
-      const top = ROW_TOP + i * ROW_STEP;
+      const override = panel.fieldCrops?.[field];
+      const left = override?.left ?? panel.left;
+      const row =
+        override?.row ??
+        (panel.fields[0] === "length" && field !== "length" ? i - 1 : i);
+      const top = ROW_TOP + row * ROW_STEP;
       const outPath = join(dir, `${field}.png`);
-      await cropIcon(top, panel.left, outPath);
+      await cropIcon(top, left, outPath);
       console.log(`  ${type}/${field}.png`);
       count += 1;
     }

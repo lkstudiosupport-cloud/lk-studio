@@ -24,7 +24,6 @@ const CONFIG = {
       "backNeck",
       "shoulder",
     ],
-    optional: ["length"],
   },
   dress: {
     fields: [
