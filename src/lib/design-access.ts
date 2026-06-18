@@ -2,15 +2,13 @@ import type { Prisma } from "@prisma/client";
 import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 
-/** Shop-owned uploads (per shop gallery). */
+/** Only category shops may upload, edit, or delete. */
 export const SHOP_OWNED_UPLOAD_CATEGORY = "STITCHED_DESIGNS" as const;
-
-/** App catalog uploads with size tier (visible to all shops/customers). */
-export const CATALOG_UPLOAD_CATEGORIES: ServiceCategory[] = ["MAGGAM", "COMPUTER_EMBROIDERY"];
 
 /** @deprecated use SHOP_OWNED_UPLOAD_CATEGORY */
 export const SHOP_UPLOAD_CATEGORY = SHOP_OWNED_UPLOAD_CATEGORY;
 
+/** App catalog — uploaded by LK Studio (seed/admin), view-only for shops; customers can favorite. */
 export const CATALOG_CATEGORIES: ServiceCategory[] = [
   "MAGGAM",
   "COMPUTER_EMBROIDERY",
@@ -23,12 +21,9 @@ export function isShopOwnedUploadCategory(category: ServiceCategory): boolean {
   return category === SHOP_OWNED_UPLOAD_CATEGORY;
 }
 
-export function isCatalogUploadCategory(category: ServiceCategory): boolean {
-  return CATALOG_UPLOAD_CATEGORIES.includes(category);
-}
-
+/** @alias isShopOwnedUploadCategory */
 export function isShopUploadCategory(category: ServiceCategory): boolean {
-  return isShopOwnedUploadCategory(category) || isCatalogUploadCategory(category);
+  return isShopOwnedUploadCategory(category);
 }
 
 export function isCatalogCategory(category: ServiceCategory): boolean {
@@ -74,13 +69,12 @@ export async function countVisibleDesigns(
   return prisma.design.count({ where: visibleDesignCountWhere(shopId) });
 }
 
-/** Shop may delete: own stitched designs, or catalog items they uploaded. */
+/** Shop may delete or edit only their own stitched designs. */
 export function shopManageableDesignWhere(shopId: string, designId: string): Prisma.DesignWhereInput {
   return {
     id: designId,
-    OR: [
-      { shopId, isCatalog: false, category: SHOP_OWNED_UPLOAD_CATEGORY },
-      { isCatalog: true, uploadedByShopId: shopId, category: { in: CATALOG_UPLOAD_CATEGORIES } },
-    ],
+    shopId,
+    isCatalog: false,
+    category: SHOP_OWNED_UPLOAD_CATEGORY,
   };
 }
