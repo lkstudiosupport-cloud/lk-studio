@@ -78,3 +78,18 @@ export function shopManageableDesignWhere(shopId: string, designId: string): Pri
     category: SHOP_OWNED_UPLOAD_CATEGORY,
   };
 }
+
+/** Design a customer may favorite or ask price for while browsing a given shop. */
+export function designVisibleToCustomerShopWhere(
+  designId: string,
+  _shopId: string
+): Prisma.DesignWhereInput {
+  return {
+    id: designId,
+    active: true,
+    OR: [
+      { isCatalog: true, category: { in: CATALOG_CATEGORIES } },
+      { shopId: _shopId, category: SHOP_OWNED_UPLOAD_CATEGORY, isCatalog: false },
+    ],
+  };
+}

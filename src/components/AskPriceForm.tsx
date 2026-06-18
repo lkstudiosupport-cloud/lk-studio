@@ -9,7 +9,7 @@ import { t } from "@/lib/i18n";
 import { categoryLabelKey } from "@/lib/categories";
 import { FormPhotoAdd } from "./FormPhotoAdd";
 import { CheckCircle2, IndianRupee } from "lucide-react";
-import type { Design } from "@prisma/client";
+import type { Design, ServiceCategory } from "@prisma/client";
 import { CATEGORIES } from "@/lib/categories";
 
 export function AskPriceForm({
@@ -17,14 +17,23 @@ export function AskPriceForm({
   shopId,
   design,
   compact,
+  allowedCategories,
+  defaultCategory,
 }: {
   locale: Locale;
   shopId: string;
   design?: Pick<Design, "id" | "title" | "category">;
   compact?: boolean;
+  /** When set, only these categories appear for own-photo price requests. */
+  allowedCategories?: ServiceCategory[];
+  defaultCategory?: ServiceCategory;
 }) {
   const router = useRouter();
   const [state, action, pending] = useActionState(askPrice, initialActionState);
+
+  const categoryOptions = allowedCategories
+    ? CATEGORIES.filter((c) => allowedCategories.includes(c.key))
+    : CATEGORIES;
 
   useEffect(() => {
     if (state.ok) router.refresh();
@@ -60,9 +69,14 @@ export function AskPriceForm({
       )}
 
       {!design && (
-        <select name="category" required className="input-premium w-full text-sm">
+        <select
+          name="category"
+          required
+          defaultValue={defaultCategory ?? ""}
+          className="input-premium w-full text-sm"
+        >
           <option value="">{t(locale, "selectCategory")}</option>
-          {CATEGORIES.map((c) => (
+          {categoryOptions.map((c) => (
             <option key={c.key} value={c.key}>
               {t(locale, c.labelKey)}
             </option>
@@ -84,7 +98,14 @@ export function AskPriceForm({
         className="input-premium w-full text-sm"
       />
 
-      {state.error && <p className="text-xs text-red-600">{state.error}</p>}
+      {state.error && (
+        <p className="text-xs text-red-600">
+          {(() => {
+            const msg = t(locale, state.error);
+            return msg !== state.error ? msg : state.error;
+          })()}
+        </p>
+      )}
       {state.ok && (
         <p className="flex items-center gap-1 text-xs text-emerald-700">
           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -106,15 +127,28 @@ export function AskPriceForm({
 export function AskPriceOwnDesignCard({
   locale,
   shopId,
+  defaultCategory,
 }: {
   locale: Locale;
   shopId: string;
+  defaultCategory?: ServiceCategory;
 }) {
+  const maggamEmbroidery: ServiceCategory[] = ["MAGGAM", "COMPUTER_EMBROIDERY"];
+
   return (
     <div className="card-premium space-y-3 p-4">
       <h3 className="font-bold text-brand-green">{t(locale, "askPriceOwnDesign")}</h3>
       <p className="text-sm text-zinc-600">{t(locale, "askPriceOwnDesignHint")}</p>
-      <AskPriceForm locale={locale} shopId={shopId} />
+      <AskPriceForm
+        locale={locale}
+        shopId={shopId}
+        allowedCategories={maggamEmbroidery}
+        defaultCategory={
+          defaultCategory && maggamEmbroidery.includes(defaultCategory)
+            ? defaultCategory
+            : undefined
+        }
+      />
     </div>
   );
 }

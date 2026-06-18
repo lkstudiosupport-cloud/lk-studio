@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { ServiceCategory, WorkType } from "@prisma/client";
 import { fieldKeysForType, idToPrismaType, MEASUREMENT_TYPES, type MeasurementTypeId } from "@/lib/measurements";
+import { designVisibleToCustomerShopWhere } from "@/lib/design-access";
 import type { ActionState } from "@/lib/action-state";
 import { appendOrderImagesFromForm } from "@/lib/save-order-images";
 import { saveUpload, deleteStoredUpload } from "@/lib/storage";
@@ -315,7 +316,7 @@ export async function toggleFavorite(designId: string, shopId: string): Promise<
   const cid = await customerId();
 
   const design = await prisma.design.findFirst({
-    where: { id: designId, shopId, active: true },
+    where: designVisibleToCustomerShopWhere(designId, shopId),
   });
   if (!design) throw new Error("Design not found");
 
@@ -362,13 +363,16 @@ export async function askPrice(_prev: ActionState, formData: FormData): Promise<
 
     if (designId) {
       const design = await prisma.design.findFirst({
-        where: { id: designId, shopId, active: true },
+        where: designVisibleToCustomerShopWhere(designId, shopId),
       });
       if (!design) return { ok: false, error: "Design not found" };
       category = design.category;
     } else {
       if (!categoryRaw) return { ok: false, error: "Select a category" };
       category = categoryRaw as ServiceCategory;
+      if (category !== "MAGGAM" && category !== "COMPUTER_EMBROIDERY") {
+        return { ok: false, error: "askPriceOwnCategoryOnly" };
+      }
     }
 
     const imageFile = formData.get("customerImage");

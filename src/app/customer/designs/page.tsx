@@ -118,7 +118,13 @@ export default async function CustomerDesignsPage({
 
       {(!category || !categoryHasSizeTiers(category) || sizeTier) && (
         <>
-          <AskPriceOwnDesignCard locale={locale} shopId={shop.id} />
+          {(category === "MAGGAM" || category === "COMPUTER_EMBROIDERY") && (
+            <AskPriceOwnDesignCard
+              locale={locale}
+              shopId={shop.id}
+              defaultCategory={category}
+            />
+          )}
 
           <ShopDesignCollections
             locale={locale}
