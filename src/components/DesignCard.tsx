@@ -37,6 +37,9 @@ export function DesignCard({
         previewLabel={t(locale, "tapToPreview")}
       />
       <div className="p-3">
+        {design.catalogNumber && (
+          <p className="text-xs font-bold tracking-wide text-brand-gold">{design.catalogNumber}</p>
+        )}
         <p className="text-xs font-medium uppercase text-brand-green">
           {t(locale, categoryLabelKey(design.category))}
         </p>

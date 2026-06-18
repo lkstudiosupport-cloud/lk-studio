@@ -14,7 +14,7 @@ import { isShopActive, extendSubscriptionEnd, SHOP_MONTHLY_PRICE_INR } from "@/l
 import { findUserByPhone } from "@/lib/auth-user";
 import type { ActionState } from "@/lib/action-state";
 import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
-import { isShopUploadCategory } from "@/lib/design-access";
+import { shopManageableDesignWhere } from "@/lib/design-access";
 
 const MAX_ORDER_DESIGN_PICKS = 3;
 
@@ -337,12 +337,9 @@ export async function deleteDesignImage(formData: FormData) {
   if (!designId || !imagePath) throw new Error("Invalid request");
 
   const design = await prisma.design.findFirst({
-    where: { id: designId, shopId: id, isCatalog: false },
+    where: shopManageableDesignWhere(id, designId),
   });
   if (!design) throw new Error("Design not found");
-  if (!isShopUploadCategory(design.category)) {
-    throw new Error("Only stitched designs can be deleted");
-  }
 
   const images = parseDesignImages(design.imagesJson, design.imagePath);
   const remaining = images.filter((p) => p !== imagePath);
@@ -373,12 +370,9 @@ export async function deleteDesignImage(formData: FormData) {
 export async function deleteDesign(designId: string) {
   const id = await shopIdOnly();
   const design = await prisma.design.findFirst({
-    where: { id: designId, shopId: id, isCatalog: false },
+    where: shopManageableDesignWhere(id, designId),
   });
   if (!design) throw new Error("Design not found");
-  if (!isShopUploadCategory(design.category)) {
-    throw new Error("Only stitched designs can be deleted");
-  }
 
   const images = parseDesignImages(design.imagesJson, design.imagePath);
   await Promise.all(images.map((p) => deleteStoredUpload(p)));

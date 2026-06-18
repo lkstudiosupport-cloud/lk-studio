@@ -2,11 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Design, ServiceCategory } from "@prisma/client";
+import type { Design, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { CATEGORIES, isCategoryShopUpload } from "@/lib/categories";
-import { SHOP_UPLOAD_CATEGORY } from "@/lib/design-access";
+import { CATEGORIES, isCategoryCatalogUpload, isCategoryShopUpload } from "@/lib/categories";
+import { categoryHasSizeTiers, DESIGN_SIZE_TIERS, sizeTierLabelKey } from "@/lib/design-size-tier";
 import { MAX_DESIGN_IMAGES } from "@/lib/limits";
 import { ShopDesignItem } from "@/components/ShopDesignItem";
 import { compressImageFile } from "@/lib/compress-image";
@@ -15,16 +15,20 @@ import { Loader2, Plus } from "lucide-react";
 export function ShopDesignsPanel({
   locale,
   designs,
+  shopId,
 }: {
   locale: Locale;
   designs: Design[];
+  shopId: string;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState<ServiceCategory>(CATEGORIES[0].key);
+  const [sizeTier, setSizeTier] = useState<DesignSizeTier>("SMALL");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
+  const hasSizeTiers = categoryHasSizeTiers(category);
   const canUpload = isCategoryShopUpload(category);
 
   const counts = useMemo(() => {
@@ -36,21 +40,39 @@ export function ShopDesignsPanel({
   }, [designs]);
 
   const activeCategory = CATEGORIES.find((c) => c.key === category)!;
-  const categoryDesigns = useMemo(
-    () => designs.filter((d) => d.category === category),
-    [designs, category]
-  );
+  const categoryDesigns = useMemo(() => {
+    let list = designs.filter((d) => d.category === category);
+    if (hasSizeTiers) {
+      list = list.filter((d) => d.sizeTier === sizeTier);
+    }
+    return list.sort((a, b) => {
+      if (a.catalogNumber && b.catalogNumber) return a.catalogNumber.localeCompare(b.catalogNumber);
+      return b.createdAt > a.createdAt ? 1 : -1;
+    });
+  }, [designs, category, hasSizeTiers, sizeTier]);
+
+  function designManageable(d: Design): boolean {
+    if (d.isCatalog) {
+      return isCategoryCatalogUpload(category) && d.uploadedByShopId === shopId;
+    }
+    return canUpload && !d.isCatalog;
+  }
 
   async function uploadFiles(raw: FileList | null) {
     if (!raw?.length || !canUpload) return;
+    if (hasSizeTiers && !sizeTier) {
+      setError(t(locale, "selectSizeTier"));
+      return;
+    }
     setError("");
     setPending(true);
     try {
       const picked = Array.from(raw).slice(0, MAX_DESIGN_IMAGES);
       const files = await Promise.all(picked.map((f) => compressImageFile(f)));
       const fd = new FormData();
-      fd.set("category", SHOP_UPLOAD_CATEGORY);
-      fd.set("title", t(locale, "categories.stitched"));
+      fd.set("category", category);
+      if (hasSizeTiers) fd.set("sizeTier", sizeTier);
+      fd.set("title", "");
       files.forEach((f, i) => fd.set(`designImage${i}`, f));
 
       const res = await fetch("/api/shop/designs", { method: "POST", body: fd });
@@ -67,6 +89,12 @@ export function ShopDesignsPanel({
       if (fileRef.current) fileRef.current.value = "";
     }
   }
+
+  const hintKey = canUpload
+    ? isCategoryCatalogUpload(category)
+      ? "catalogUploadHint"
+      : "shopStitchedHint"
+    : "catalogDesignsHint";
 
   return (
     <div className="space-y-6">
@@ -104,9 +132,26 @@ export function ShopDesignsPanel({
           </span>
         </div>
 
-        <p className="text-sm text-zinc-600">
-          {canUpload ? t(locale, "shopStitchedHint") : t(locale, "catalogDesignsHint")}
-        </p>
+        {hasSizeTiers && (
+          <div className="flex flex-wrap gap-2">
+            {DESIGN_SIZE_TIERS.map((tier) => (
+              <button
+                key={tier}
+                type="button"
+                onClick={() => setSizeTier(tier)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  sizeTier === tier
+                    ? "bg-brand-gold text-brand-green ring-2 ring-brand-green ring-offset-2"
+                    : "bg-white text-brand-green ring-1 ring-brand-green/20 hover:bg-brand-cream"
+                }`}
+              >
+                {t(locale, sizeTierLabelKey(tier))}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <p className="text-sm text-zinc-600">{t(locale, hintKey)}</p>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -134,7 +179,7 @@ export function ShopDesignsPanel({
               key={d.id}
               design={d}
               locale={locale}
-              manageable={canUpload && !d.isCatalog}
+              manageable={designManageable(d)}
             />
           ))}
         </div>
@@ -146,7 +191,9 @@ export function ShopDesignsPanel({
         )}
 
         {categoryDesigns.length === 0 && canUpload && (
-          <p className="text-center text-sm text-zinc-500">{t(locale, "noStitchedDesignsYet")}</p>
+          <p className="text-center text-sm text-zinc-500">
+            {hasSizeTiers ? t(locale, "noDesignsInSizeTier") : t(locale, "noStitchedDesignsYet")}
+          </p>
         )}
 
         <input

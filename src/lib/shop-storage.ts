@@ -1,4 +1,4 @@
-import type { ServiceCategory } from "@prisma/client";
+import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
 import { saveUpload } from "@/lib/upload";
 
 /** Category subfolders inside each shop's upload directory. */
@@ -9,6 +9,12 @@ export const CATEGORY_STORAGE_FOLDERS: Record<ServiceCategory, string> = {
   DRESS_MODEL: "dress-models",
   CHILDREN_WEAR: "children-wear",
   STITCHED_DESIGNS: "stitched-designs",
+};
+
+const CATALOG_SIZE_FOLDER: Record<DesignSizeTier, string> = {
+  SMALL: "small",
+  MEDIUM: "medium",
+  BIG: "big",
 };
 
 export function shopStorageSlug(shopName: string, shopCode: string) {
@@ -35,6 +41,11 @@ export function shopDesignStoragePath(
   return `shops/${shopFolder}/${categoryFolder}`;
 }
 
+export function catalogDesignStoragePath(category: ServiceCategory, sizeTier: DesignSizeTier) {
+  const categoryFolder = CATEGORY_STORAGE_FOLDERS[category];
+  return `catalog/${categoryFolder}/${CATALOG_SIZE_FOLDER[sizeTier]}`;
+}
+
 export async function saveShopDesignUpload(
   shopName: string,
   shopCode: string,
@@ -42,5 +53,14 @@ export async function saveShopDesignUpload(
   file: File
 ) {
   const folder = shopDesignStoragePath(shopName, shopCode, category);
+  return saveUpload(file, folder);
+}
+
+export async function saveCatalogDesignUpload(
+  category: ServiceCategory,
+  sizeTier: DesignSizeTier,
+  file: File
+) {
+  const folder = catalogDesignStoragePath(category, sizeTier);
   return saveUpload(file, folder);
 }

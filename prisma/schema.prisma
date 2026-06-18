@@ -39,6 +39,12 @@ enum ServiceCategory {
   STITCHED_DESIGNS
 }
 
+enum DesignSizeTier {
+  SMALL
+  MEDIUM
+  BIG
+}
+
 enum OrderStatus {
   PENDING
   MEASURING
@@ -291,6 +297,9 @@ model Design {
   shopId      String?
   shop        ShopProfile?    @relation(fields: [shopId], references: [id], onDelete: Cascade)
   isCatalog   Boolean         @default(false)
+  catalogNumber String?       @unique
+  sizeTier    DesignSizeTier?
+  uploadedByShopId String?
   title       String
   description String?
   category    ServiceCategory
@@ -307,6 +316,7 @@ model Design {
 
   @@index([shopId, active, category])
   @@index([shopId, createdAt])
+  @@index([isCatalog, category, sizeTier])
 }
 
 model Order {

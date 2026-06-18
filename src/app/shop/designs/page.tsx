@@ -15,6 +15,6 @@ export default async function ShopDesignsPage() {
     take: DESIGN_LIST_LIMIT,
   });
 
-  return <ShopDesignsPanel locale={locale} designs={designs} />;
+  return <ShopDesignsPanel locale={locale} designs={designs} shopId={shopId} />;
 }
 

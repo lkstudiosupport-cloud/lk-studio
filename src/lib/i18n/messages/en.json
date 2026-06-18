@@ -252,8 +252,12 @@
   "tapToViewAllPhotos": "photos — tap to view all",
   "saveDesign": "Save design",
   "yourDesigns": "Your designs",
-  "shopDesignsHint": "Pick a category below. Maggam, embroidery & models are from the app (view only). Upload or delete only under Stitched designs.",
+  "shopDesignsHint": "Pick a category. Maggam & embroidery: choose Small / Medium / Big, then upload. Stitched: your own work photos.",
   "catalogDesignsHint": "Designs from LK Studio app — view only. Customers see these too.",
+  "catalogUploadHint": "Upload designs for this size. Each gets an auto number (e.g. MAG-S-0001). Customers can view and save to favorites.",
+  "pickSizeTierHint": "Choose Small, Medium, or Big to browse designs.",
+  "noDesignsInSizeTier": "No designs in this size yet — tap + to upload.",
+  "selectSizeTier": "Choose Small, Medium, or Big first.",
   "shopStitchedHint": "Your finished work — tap + to add photos. You can delete these.",
   "shopStitchedOnlyHint": "Upload photos of work you stitched. Customers see these under Stitched designs. Maggam, embroidery & models come from the app.",
   "noCatalogDesignsYet": "No app designs in this category yet.",
@@ -504,6 +508,11 @@
     "dress": "Dress model",
     "children": "Children wear model",
     "stitched": "Stitched designs"
+  },
+  "sizeTier": {
+    "small": "Small",
+    "medium": "Medium",
+    "big": "Big"
   },
   "status": {
     "pending": "Pending",

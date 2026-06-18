@@ -58,7 +58,9 @@ export default async function CustomerDesignDetailPage({
         <Link href={backHref} className="text-sm font-semibold text-brand-green underline">
           ← {t(locale, "backToCollections")}
         </Link>
-        <h1 className="page-title mt-2">{design.title}</h1>
+        <h1 className="page-title mt-2">
+          {design.catalogNumber ? `${design.catalogNumber} · ${design.title}` : design.title}
+        </h1>
         <p className="text-sm text-zinc-600">
           {shop.shopName} · {t(locale, categoryLabelKey(design.category))}
         </p>

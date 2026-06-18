@@ -111,7 +111,12 @@ export function ShopDesignItem({
         </div>
       )}
 
-      <p className="truncate px-2 py-2 text-center text-xs font-medium text-brand-green">{design.title}</p>
+      <p className="truncate px-2 py-2 text-center text-xs font-medium text-brand-green">
+        {design.catalogNumber ? (
+          <span className="block font-bold text-brand-gold">{design.catalogNumber}</span>
+        ) : null}
+        {design.title}
+      </p>
       {error && <p className="px-2 pb-2 text-xs text-red-600">{error}</p>}
       <ImagePreviewLightbox
         images={images}

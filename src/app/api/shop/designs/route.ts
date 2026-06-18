@@ -6,8 +6,9 @@ import { MAX_DESIGN_IMAGES } from "@/lib/design-images";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { persistShopDesign } from "@/lib/shop-design-upload";
 import { isShopActive } from "@/lib/subscription";
-import type { ServiceCategory } from "@prisma/client";
 import { isShopUploadCategory } from "@/lib/design-access";
+import { categoryHasSizeTiers } from "@/lib/design-size-tier";
+import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
@@ -56,11 +57,19 @@ export async function POST(req: Request) {
   const category = form.get("category") as ServiceCategory;
   if (!isShopUploadCategory(category)) {
     return NextResponse.json(
-      { error: "Upload is only allowed for Stitched designs" },
+      { error: "Upload not allowed for this category" },
       { status: 400 }
     );
   }
   const title = String(form.get("title") ?? "").trim();
+  const sizeTierRaw = String(form.get("sizeTier") ?? "").trim();
+  const sizeTier = sizeTierRaw ? (sizeTierRaw as DesignSizeTier) : undefined;
+  if (categoryHasSizeTiers(category) && !sizeTier) {
+    return NextResponse.json(
+      { error: "Select size: Small, Medium, or Big" },
+      { status: 400 }
+    );
+  }
 
   const files: File[] = [];
   for (let i = 0; i < MAX_DESIGN_IMAGES; i++) {
@@ -76,7 +85,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    await persistShopDesign(session.shopId, shop, { category, title, files });
+    await persistShopDesign(session.shopId, shop, { category, title, files, sizeTier });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Upload failed";
     return NextResponse.json({ error: message }, { status: 400 });
