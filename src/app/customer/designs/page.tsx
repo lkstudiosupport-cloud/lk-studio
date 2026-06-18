@@ -3,7 +3,7 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { CategoryButtons } from "@/components/CategoryButtons";
-import { AskPriceForm, AskPriceOwnDesignCard } from "@/components/AskPriceForm";
+import { AskPriceOwnDesignCard } from "@/components/AskPriceForm";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { isShopActive } from "@/lib/subscription";
 import { visibleDesignsWhere, visibleDesignCountWhere } from "@/lib/design-access";
@@ -131,9 +131,6 @@ export default async function CustomerDesignsPage({
             designs={designs}
             shopId={shop.id}
             favoriteDesignIds={favoriteDesignIds}
-            renderAction={(d) => (
-              <AskPriceForm locale={locale} shopId={shop.id} design={d} compact />
-            )}
           />
         </>
       )}

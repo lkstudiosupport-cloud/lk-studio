@@ -14,7 +14,7 @@ export function ShopDesignCollections({
   locale: Locale;
   designs: Design[];
   shopId: string;
-  renderAction: (design: Design) => React.ReactNode;
+  renderAction?: (design: Design) => React.ReactNode;
   favoriteDesignIds?: Set<string>;
 }) {
   if (designs.length === 0) {
@@ -35,7 +35,7 @@ export function ShopDesignCollections({
           photosBadge={`${parseDesignImages(d.imagesJson, d.imagePath).length} · ${t(locale, "tapToViewAllPhotos")}`}
           shopId={shopId}
           isFavorite={favoriteDesignIds?.has(d.id)}
-          action={renderAction(d)}
+          action={renderAction?.(d)}
         />
       ))}
     </div>

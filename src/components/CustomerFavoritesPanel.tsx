@@ -4,7 +4,6 @@ import { CATEGORIES } from "@/lib/categories";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { FavoriteButton } from "@/components/FavoriteButton";
-import { AskPriceForm } from "@/components/AskPriceForm";
 import type { ServiceCategory, WorkType } from "@prisma/client";
 import { parseDesignImages } from "@/lib/design-images";
 
@@ -110,14 +109,6 @@ export function CustomerFavoritesPanel({
                               locale={locale}
                             />
                           </div>
-                        </div>
-                        <div className="border-t border-brand-green/10 p-3">
-                          <AskPriceForm
-                            locale={locale}
-                            shopId={shopId}
-                            design={fav.design}
-                            compact
-                          />
                         </div>
                       </article>
                     );
