@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -14,6 +15,9 @@ export function CustomerPriceRequestsPanel({ locale, requests }: { locale: Local
     return (
       <div className="card-premium space-y-3 p-8 text-center">
         <p className="text-zinc-600">{t(locale, "noPriceRequestsCustomer")}</p>
+        <Link href="/customer/shops" className="btn-primary inline-flex px-5 py-2.5 text-sm">
+          {t(locale, "browseShops")}
+        </Link>
       </div>
     );
   }

@@ -4,6 +4,7 @@ import { CATEGORIES } from "@/lib/categories";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { FavoritePriceQuoteForm } from "@/components/FavoritePriceQuoteForm";
 import type { ServiceCategory, WorkType } from "@prisma/client";
 import { parseDesignImages } from "@/lib/design-images";
 
@@ -63,6 +64,13 @@ export function CustomerFavoritesPanel({
         </div>
       ) : (
         <div className="space-y-6">
+          <FavoritePriceQuoteForm
+            locale={locale}
+            shopId={shopId}
+            shopName={shopName}
+            favorites={favorites}
+          />
+
           {withItems.map((cat) => {
             const items = favorites.filter((f) => f.category === cat.key);
             return (

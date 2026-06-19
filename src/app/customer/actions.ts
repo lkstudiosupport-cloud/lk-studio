@@ -405,12 +405,54 @@ export async function askPrice(_prev: ActionState, formData: FormData): Promise<
     const cid = await customerId();
 
     const shopId = String(formData.get("shopId") ?? "").trim();
-    const designIdRaw = String(formData.get("designId") ?? "").trim();
-    const categoryRaw = String(formData.get("category") ?? "").trim();
     const notes = String(formData.get("notes") ?? "").trim() || null;
 
     if (!shopId) return { ok: false, error: "Select a shop" };
     await assertShopAcceptsOrders(shopId);
+
+    const imageFile = formData.get("customerImage");
+    let customerImagePath: string | null = null;
+    if (imageFile instanceof File && imageFile.size > 0) {
+      customerImagePath = await saveUpload(imageFile, "price-requests");
+    }
+
+    const designIds = [...new Set(formData.getAll("designId").map(String).filter(Boolean))];
+
+    if (designIds.length > 0) {
+      let created = 0;
+      for (const id of designIds) {
+        const design = await prisma.design.findFirst({
+          where: designVisibleToCustomerShopWhere(id, shopId),
+        });
+        if (!design) continue;
+
+        await prisma.priceRequest.create({
+          data: {
+            customerId: cid,
+            shopId,
+            designId: design.id,
+            category: design.category,
+            customerImagePath,
+            notes,
+          },
+        });
+        created += 1;
+      }
+
+      if (created === 0) return { ok: false, error: "Design not found" };
+
+      revalidatePath("/customer/price-requests");
+      revalidatePath("/shop/price-requests");
+      revalidatePath("/customer/designs");
+      revalidatePath("/customer/favorites");
+      return {
+        ok: true,
+        message: created > 1 ? "priceRequestsSent" : "priceRequestSent",
+      };
+    }
+
+    const designIdRaw = String(formData.get("designId") ?? "").trim();
+    const categoryRaw = String(formData.get("category") ?? "").trim();
 
     let designId: string | null = designIdRaw || null;
     let category: ServiceCategory;
@@ -427,12 +469,6 @@ export async function askPrice(_prev: ActionState, formData: FormData): Promise<
       if (category !== "MAGGAM" && category !== "COMPUTER_EMBROIDERY") {
         return { ok: false, error: "askPriceOwnCategoryOnly" };
       }
-    }
-
-    const imageFile = formData.get("customerImage");
-    let customerImagePath: string | null = null;
-    if (imageFile instanceof File && imageFile.size > 0) {
-      customerImagePath = await saveUpload(imageFile, "price-requests");
     }
 
     if (!designId && !customerImagePath) {
