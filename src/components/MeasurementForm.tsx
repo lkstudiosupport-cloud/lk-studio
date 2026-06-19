@@ -130,26 +130,47 @@ export function MeasurementForm({
 
   return (
     <article className="card-premium overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 bg-gradient-to-r from-brand-green via-brand-green-light to-brand-green-soft px-4 py-4 text-left text-white"
-      >
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-lg font-bold">
-          {name.charAt(0).toUpperCase()}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-bold">{name}</p>
-          {rel && <p className="text-sm text-white/85">{rel}</p>}
-          {savedTypes.length > 0 && (
-            <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-emerald-200">
-              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-              {savedTypes.map((type) => t(locale, `measurementType_${type}`)).join(" · ")}
-            </p>
-          )}
-        </div>
-        {open ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-      </button>
+      <div className="flex items-center gap-2 bg-gradient-to-r from-brand-green via-brand-green-light to-brand-green-soft px-3 py-4 text-white sm:gap-3 sm:px-4">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-lg font-bold">
+            {name.charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-lg font-bold">{name}</p>
+            {rel && <p className="text-sm text-white/85">{rel}</p>}
+            {savedTypes.length > 0 && (
+              <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-emerald-200">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                {savedTypes.map((type) => t(locale, `measurementType_${type}`)).join(" · ")}
+              </p>
+            )}
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={onDeletePerson}
+          disabled={deletePending || measurePending || personPending}
+          aria-label={t(locale, "deletePerson")}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/90 text-white shadow-sm hover:bg-red-600 disabled:opacity-60"
+        >
+          <Trash2 className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10"
+        >
+          {open ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {deleteError && (
+        <p className="border-t border-red-100 bg-red-50 px-4 py-2 text-sm text-red-700">{deleteError}</p>
+      )}
 
       {open && (
         <div className="border-t border-brand-green/10 bg-white p-4">
@@ -173,39 +194,26 @@ export function MeasurementForm({
 
           <PersonPhotos personId={personId} locale={locale} photosJson={photosJson ?? null} />
 
-          <form action={personAction} className="mb-4 rounded-xl bg-brand-cream/80 p-3">
+          <form action={personAction} className="mb-4 grid gap-2 rounded-xl bg-brand-cream/80 p-3 sm:grid-cols-3">
             <input type="hidden" name="personId" value={personId} />
-            <div className="grid gap-2 sm:grid-cols-3">
-              <input
-                name="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder={t(locale, "name")}
-                className="input-premium"
-              />
-              <input
-                name="relation"
-                value={rel}
-                onChange={(e) => setRel(e.target.value)}
-                className="input-premium"
-                placeholder={t(locale, "relation")}
-              />
-              <button type="submit" disabled={personPending || deletePending} className="btn-primary text-sm">
-                {personPending ? "..." : t(locale, "saveName")}
-              </button>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2 border-t border-brand-green/10 pt-3">
-              <button
-                type="button"
-                onClick={onDeletePerson}
-                disabled={deletePending || measurePending || personPending}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60 sm:w-auto"
-              >
-                <Trash2 className="h-4 w-4" />
-                {deletePending ? "..." : t(locale, "deletePerson")}
-              </button>
-            </div>
+            <input
+              name="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              placeholder={t(locale, "name")}
+              className="input-premium"
+            />
+            <input
+              name="relation"
+              value={rel}
+              onChange={(e) => setRel(e.target.value)}
+              className="input-premium"
+              placeholder={t(locale, "relation")}
+            />
+            <button type="submit" disabled={personPending || deletePending} className="btn-primary text-sm">
+              {personPending ? "..." : t(locale, "saveName")}
+            </button>
           </form>
 
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-green">
@@ -278,10 +286,6 @@ export function MeasurementForm({
               )}
             </div>
           </form>
-
-          {deleteError && (
-            <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{deleteError}</p>
-          )}
 
           {footer && <div className="mt-4 border-t border-zinc-100 pt-4">{footer}</div>}
         </div>
