@@ -35,7 +35,7 @@ export default async function CustomerProfilePage() {
         <ProfileLogout locale={locale} />
       </div>
       <LegalFooter locale={locale} className="pt-2" />
-      <DeleteAccountSection locale={locale} />
+      <DeleteAccountSection locale={locale} aboveBottomNav />
     </div>
   );
 }

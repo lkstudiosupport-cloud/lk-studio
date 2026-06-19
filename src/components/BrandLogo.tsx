@@ -13,7 +13,7 @@ const imageSizes = {
     className: "h-32 w-32 rounded-2xl sm:h-36 sm:w-36 md:h-40 md:w-40",
     dim: 160,
   },
-  mark: { className: "h-10 w-10 rounded-lg", dim: 40 },
+  mark: { className: "h-9 w-9 rounded-lg max-[400px]:h-8 max-[400px]:w-8", dim: 40 },
 } as const;
 
 function BrandLogoImage({

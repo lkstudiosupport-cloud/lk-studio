@@ -245,8 +245,8 @@ export function MultiPieceBillForm({
           <p className="mt-0.5 text-xs text-zinc-500">{t(locale, "voicePieceHint")}</p>
         </div>
 
-        <div className="-mx-1 overflow-x-auto overscroll-x-contain">
-          <div className="min-w-[20rem] sm:min-w-[24rem]">
+        <div className="-mx-1 overflow-x-auto overscroll-x-contain scroll-nav">
+          <div className="min-w-0 w-full min-[360px]:min-w-[20rem] sm:min-w-[24rem]">
             <div className="grid grid-cols-[minmax(8rem,2fr)_3.5rem_4rem_4rem_1.75rem] items-end gap-x-1 border-b border-brand-green/15 px-1 pb-2 text-xs font-bold uppercase tracking-wide text-brand-green-soft sm:grid-cols-[minmax(10rem,2.5fr)_4rem_4.5rem_4.5rem_2rem] sm:gap-x-1.5">
               <span>{t(locale, "piece")}</span>
               <span className="text-center">{t(locale, "quantity")}</span>

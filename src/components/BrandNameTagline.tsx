@@ -18,7 +18,7 @@ export function BrandNameTagline({
         <p className="truncate text-xs font-bold uppercase tracking-[0.1em] text-brand-gold sm:text-sm md:text-base">
           {name}
         </p>
-        <p className="truncate text-xs leading-snug text-white/85 sm:text-sm">{tagline}</p>
+        <p className="hidden truncate text-xs leading-snug text-white/85 min-[400px]:block sm:text-sm">{tagline}</p>
       </div>
     );
   }

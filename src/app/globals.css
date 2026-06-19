@@ -762,3 +762,61 @@ button {
 .blouse-measurement-diagram .measurement-figure-wrap {
   transform-origin: 130px 200px;
 }
+
+/* —— All mobile screen sizes (320px – 480px+ phones) —— */
+html {
+  overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+}
+
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+.page-title {
+  font-size: clamp(1.125rem, 4.2vw + 0.5rem, 1.875rem);
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+@media (max-width: 430px) {
+  .app-main-content,
+  .app-page-shell {
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .card-premium {
+    border-radius: 1rem;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .input-premium {
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+
+  .brand-bottom-nav-item {
+    min-height: 3rem;
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .brand-header .mx-auto {
+    gap: 0.375rem;
+  }
+
+  .page-title {
+    letter-spacing: 0.05em;
+  }
+}

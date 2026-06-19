@@ -48,7 +48,13 @@ function NavPill({
             : "brand-nav-pill"
       }
     >
-      {compact ? <span className="max-w-[5rem] truncate leading-tight">{label}</span> : label}
+      {compact ? (
+        <span className="max-w-[min(5rem,20vw)] truncate text-[0.6875rem] leading-tight sm:max-w-[5rem] sm:text-xs">
+          {label}
+        </span>
+      ) : (
+        label
+      )}
     </button>
   );
 }
@@ -110,7 +116,7 @@ export function NavShell({
   return (
     <>
       <header className="brand-header sticky top-0 z-20">
-        <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-1.5 px-3 py-2.5 sm:gap-2 sm:px-4 sm:py-3.5 md:py-4">
+        <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-1 px-2.5 py-2 sm:gap-2 sm:px-4 sm:py-3.5 md:py-4">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <BrandLogoMark locale={locale} />
             <div className="min-w-0">
