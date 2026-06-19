@@ -11,10 +11,12 @@ export function FormPhotoAdd({
   locale,
   name,
   compact,
+  onPhotoChange,
 }: {
   locale: Locale;
   name: string;
   compact?: boolean;
+  onPhotoChange?: (hasPhoto: boolean) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -35,6 +37,14 @@ export function FormPhotoAdd({
     const dt = new DataTransfer();
     dt.items.add(file);
     fileRef.current.files = dt.files;
+    onPhotoChange?.(true);
+  }
+
+  function clearPhoto() {
+    if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
+    setPreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+    onPhotoChange?.(false);
   }
 
   const box = compact ? "h-16 w-16" : "h-20 w-20";
@@ -47,11 +57,7 @@ export function FormPhotoAdd({
           <Image src={preview} alt="" fill className="object-cover" unoptimized />
           <button
             type="button"
-            onClick={() => {
-              if (preview.startsWith("blob:")) URL.revokeObjectURL(preview);
-              setPreview(null);
-              if (fileRef.current) fileRef.current.value = "";
-            }}
+            onClick={clearPhoto}
             className="absolute right-0.5 top-0.5 rounded-full bg-red-600 p-0.5 text-white"
             aria-label={t(locale, "removePhoto")}
           >

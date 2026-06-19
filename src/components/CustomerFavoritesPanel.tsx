@@ -45,7 +45,7 @@ export function CustomerFavoritesPanel({
         <h1 className="page-title mt-2">{t(locale, "myFavorites")}</h1>
         <p className="text-sm text-zinc-600">{t(locale, "myFavoritesHint")}</p>
         <Link
-          href="/customer/price-requests"
+          href={`/customer/price-requests?shopId=${shopId}`}
           className="mt-2 inline-block text-sm font-semibold text-brand-green underline"
         >
           {t(locale, "myPriceQuotes")} →

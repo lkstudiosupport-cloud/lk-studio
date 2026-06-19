@@ -9,8 +9,11 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { categoryLabelKey } from "@/lib/categories";
 import { FormPhotoAdd } from "@/components/FormPhotoAdd";
-import { CheckCircle2, IndianRupee } from "lucide-react";
+import { CheckCircle2, Camera, IndianRupee } from "lucide-react";
 import type { ServiceCategory } from "@prisma/client";
+import { CATEGORIES } from "@/lib/categories";
+
+const OWN_PHOTO_CATEGORIES: ServiceCategory[] = ["MAGGAM", "COMPUTER_EMBROIDERY"];
 
 type FavoriteDesign = {
   id: string;
@@ -37,6 +40,7 @@ export function FavoritePriceQuoteForm({
   const [state, action, pending] = useActionState(askPrice, initialActionState);
   const allIds = useMemo(() => favorites.map((f) => f.design.id), [favorites]);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(allIds));
+  const [hasPhoto, setHasPhoto] = useState(false);
 
   useEffect(() => {
     setSelected(new Set(allIds));
@@ -56,6 +60,7 @@ export function FavoritePriceQuoteForm({
   }
 
   const selectedCount = selected.size;
+  const canSubmit = selectedCount > 0 || hasPhoto;
 
   return (
     <form action={action} className="card-premium space-y-4 p-4">
@@ -116,14 +121,32 @@ export function FavoritePriceQuoteForm({
             );
           })}
         </div>
-        {selectedCount === 0 && (
-          <p className="mt-2 text-xs text-amber-700">{t(locale, "selectFavoriteForQuote")}</p>
+        {selectedCount === 0 && !hasPhoto && (
+          <p className="mt-2 text-xs text-amber-700">{t(locale, "selectFavoriteOrUploadPhoto")}</p>
         )}
       </div>
 
-      <div>
-        <p className="mb-1 text-xs font-semibold text-brand-green">{t(locale, "optionalOwnPhoto")}</p>
-        <FormPhotoAdd locale={locale} name="customerImage" />
+      {selectedCount === 0 && (
+        <div>
+          <p className="mb-1 text-xs font-semibold text-brand-green">{t(locale, "selectCategory")}</p>
+          <select name="category" required={!hasPhoto && selectedCount === 0} className="input-premium w-full text-sm">
+            <option value="">{t(locale, "selectCategory")}</option>
+            {CATEGORIES.filter((c) => OWN_PHOTO_CATEGORIES.includes(c.key)).map((c) => (
+              <option key={c.key} value={c.key}>
+                {t(locale, c.labelKey)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="rounded-xl border border-brand-green/15 bg-brand-cream/50 p-3">
+        <p className="mb-2 flex items-center gap-1.5 text-sm font-bold text-brand-green">
+          <Camera className="h-4 w-4" />
+          {t(locale, "uploadOwnDesignPhoto")}
+        </p>
+        <p className="mb-3 text-xs text-zinc-600">{t(locale, "priceQuotePhotoHint")}</p>
+        <FormPhotoAdd locale={locale} name="customerImage" onPhotoChange={setHasPhoto} />
       </div>
 
       <textarea
@@ -150,10 +173,10 @@ export function FavoritePriceQuoteForm({
 
       <button
         type="submit"
-        disabled={pending || selectedCount === 0}
+        disabled={pending || !canSubmit}
         className="btn-primary w-full text-sm disabled:opacity-60"
       >
-        {pending ? "..." : t(locale, "sendPriceQuoteToShop")}
+        {pending ? "..." : t(locale, "askPrice")}
       </button>
     </form>
   );

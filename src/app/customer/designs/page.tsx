@@ -93,7 +93,7 @@ export default async function CustomerDesignsPage({
             {t(locale, "myFavorites")} ({favoriteCount})
           </Link>
           <Link
-            href="/customer/price-requests"
+            href={`/customer/price-requests?shopId=${shop.id}`}
             className="inline-flex items-center gap-1 rounded-full bg-brand-cream px-3 py-1.5 text-sm font-semibold text-brand-green ring-1 ring-brand-green/15"
           >
             {t(locale, "myPriceQuotes")}
