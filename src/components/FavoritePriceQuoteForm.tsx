@@ -14,7 +14,6 @@ import type { ServiceCategory } from "@prisma/client";
 
 type FavoriteDesign = {
   id: string;
-  designId: string;
   category: ServiceCategory;
   design: {
     id: string;
