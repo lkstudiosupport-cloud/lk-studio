@@ -128,6 +128,60 @@ export async function deletePersonPhoto(
   }
 }
 
+export async function deletePerson(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    const personId = String(formData.get("personId"));
+    const person = await prisma.person.findFirst({
+      where: { id: personId, customerId: cid },
+      include: { orders: { select: { id: true }, take: 1 } },
+    });
+    if (!person) return { ok: false, error: "Person not found" };
+    if (person.orders.length > 0) return { ok: false, error: "personHasOrders" };
+
+    const photos = parsePersonPhotos(person.photosJson);
+    await Promise.all(photos.map((p) => deleteStoredUpload(p)));
+    await prisma.person.delete({ where: { id: personId } });
+
+    revalidateMeasurementPaths();
+    return { ok: true, message: "personDeleted" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
+export async function deletePersonMeasurements(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    const cid = await customerId();
+    const personId = String(formData.get("personId"));
+    const typeRaw = String(formData.get("measurementType") ?? "");
+    if (!MEASUREMENT_TYPES.includes(typeRaw as MeasurementTypeId)) {
+      return { ok: false, error: "Invalid measurement type" };
+    }
+
+    const person = await prisma.person.findFirst({
+      where: { id: personId, customerId: cid },
+    });
+    if (!person) return { ok: false, error: "Person not found" };
+
+    const prismaType = idToPrismaType(typeRaw as MeasurementTypeId);
+    await prisma.measurement.deleteMany({
+      where: { personId, type: prismaType },
+    });
+
+    revalidateMeasurementPaths();
+    return { ok: true, message: "measurementsDeleted" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
+}
+
 export async function deleteOrderImage(
   _prev: ActionState,
   formData: FormData

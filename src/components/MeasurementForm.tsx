@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   MEASUREMENT_TYPES,
@@ -11,12 +11,12 @@ import {
 } from "@/lib/measurements";
 import { MEASUREMENT_TYPE_THEMES } from "@/lib/measurement-field-guide";
 import { MeasurementFieldsList } from "./MeasurementFieldsList";
-import { saveMeasurements, updatePerson } from "@/app/customer/actions";
+import { saveMeasurements, updatePerson, deletePerson, deletePersonMeasurements } from "@/app/customer/actions";
 import { initialActionState } from "@/lib/action-state";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { PersonPhotos } from "@/components/PersonPhotos";
-import { ChevronDown, ChevronUp, User, CheckCircle2, Shirt } from "lucide-react";
+import { ChevronDown, ChevronUp, User, CheckCircle2, Shirt, Trash2 } from "lucide-react";
 type Props = {
   personId: string;
   personName: string;
@@ -67,12 +67,60 @@ export function MeasurementForm({
     updatePerson,
     initialActionState
   );
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+  const [deletePending, startDelete] = useTransition();
+
+  const hasSavedForType = savedTypes.includes(measureType);
 
   useEffect(() => {
     if (measureState.ok || personState.ok) {
       router.refresh();
     }
   }, [measureState.ok, personState.ok, router]);
+
+  function onDeleteMeasurements() {
+    if (!confirm(t(locale, "deleteMeasurementsConfirm"))) return;
+    setDeleteError("");
+    setDeleteSuccess(null);
+    const fd = new FormData();
+    fd.set("personId", personId);
+    fd.set("measurementType", measureType);
+    startDelete(async () => {
+      const result = await deletePersonMeasurements(initialActionState, fd);
+      if (!result.ok) {
+        setDeleteError(
+          result.error === "personHasOrders"
+            ? t(locale, "personHasOrders")
+            : (result.error ?? t(locale, "deletePhotoFailed"))
+        );
+        return;
+      }
+      setDeleteSuccess(t(locale, "measurementsDeleted"));
+      setActive(null);
+      router.refresh();
+    });
+  }
+
+  function onDeletePerson() {
+    if (!confirm(t(locale, "deletePersonConfirm"))) return;
+    setDeleteError("");
+    setDeleteSuccess(null);
+    const fd = new FormData();
+    fd.set("personId", personId);
+    startDelete(async () => {
+      const result = await deletePerson(initialActionState, fd);
+      if (!result.ok) {
+        setDeleteError(
+          result.error === "personHasOrders"
+            ? t(locale, "personHasOrders")
+            : (result.error ?? t(locale, "deletePhotoFailed"))
+        );
+        return;
+      }
+      router.refresh();
+    });
+  }
 
   const savedMsg = measureState.ok
     ? t(locale, "measurementsSaved")
@@ -111,6 +159,12 @@ export function MeasurementForm({
               {savedMsg}
             </p>
           )}
+          {deleteSuccess && (
+            <p className="mb-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+              <CheckCircle2 className="h-4 w-4" />
+              {deleteSuccess}
+            </p>
+          )}
           {(measureState.error || personState.error) && (
             <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
               {measureState.error || personState.error}
@@ -119,26 +173,39 @@ export function MeasurementForm({
 
           <PersonPhotos personId={personId} locale={locale} photosJson={photosJson ?? null} />
 
-          <form action={personAction} className="mb-4 grid gap-2 rounded-xl bg-brand-cream/80 p-3 sm:grid-cols-3">
+          <form action={personAction} className="mb-4 rounded-xl bg-brand-cream/80 p-3">
             <input type="hidden" name="personId" value={personId} />
-            <input
-              name="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              placeholder={t(locale, "name")}
-              className="input-premium"
-            />
-            <input
-              name="relation"
-              value={rel}
-              onChange={(e) => setRel(e.target.value)}
-              className="input-premium"
-              placeholder={t(locale, "relation")}
-            />
-            <button type="submit" disabled={personPending} className="btn-primary text-sm">
-              {personPending ? "..." : t(locale, "saveName")}
-            </button>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <input
+                name="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                placeholder={t(locale, "name")}
+                className="input-premium"
+              />
+              <input
+                name="relation"
+                value={rel}
+                onChange={(e) => setRel(e.target.value)}
+                className="input-premium"
+                placeholder={t(locale, "relation")}
+              />
+              <button type="submit" disabled={personPending || deletePending} className="btn-primary text-sm">
+                {personPending ? "..." : t(locale, "saveName")}
+              </button>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 border-t border-brand-green/10 pt-3">
+              <button
+                type="button"
+                onClick={onDeletePerson}
+                disabled={deletePending || measurePending || personPending}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60 sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deletePending ? "..." : t(locale, "deletePerson")}
+              </button>
+            </div>
           </form>
 
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-green">
@@ -194,10 +261,27 @@ export function MeasurementForm({
               />
             </div>
 
-            <button type="submit" disabled={measurePending} className="btn-primary w-full sm:w-auto">
-              {measurePending ? "..." : `${t(locale, "save")} ${t(locale, `measurementType_${measureType}`)} ${t(locale, "measurements")}`}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button type="submit" disabled={measurePending || deletePending} className="btn-primary w-full sm:w-auto">
+                {measurePending ? "..." : `${t(locale, "save")} ${t(locale, `measurementType_${measureType}`)} ${t(locale, "measurements")}`}
+              </button>
+              {hasSavedForType && (
+                <button
+                  type="button"
+                  onClick={onDeleteMeasurements}
+                  disabled={deletePending || measurePending}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60 sm:w-auto"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {deletePending ? "..." : t(locale, "deleteMeasurements")}
+                </button>
+              )}
+            </div>
           </form>
+
+          {deleteError && (
+            <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{deleteError}</p>
+          )}
 
           {footer && <div className="mt-4 border-t border-zinc-100 pt-4">{footer}</div>}
         </div>
