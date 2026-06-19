@@ -41,13 +41,17 @@ export function FavoritePriceQuoteForm({
   const allIds = useMemo(() => favorites.map((f) => f.design.id), [favorites]);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(allIds));
   const [hasPhoto, setHasPhoto] = useState(false);
+  const [formResetKey, setFormResetKey] = useState(0);
 
   useEffect(() => {
     setSelected(new Set(allIds));
   }, [allIds]);
 
   useEffect(() => {
-    if (state.ok) router.refresh();
+    if (!state.ok) return;
+    setFormResetKey((k) => k + 1);
+    setHasPhoto(false);
+    router.refresh();
   }, [state.ok, router]);
 
   function toggle(id: string) {
@@ -129,7 +133,12 @@ export function FavoritePriceQuoteForm({
       {selectedCount === 0 && (
         <div>
           <p className="mb-1 text-xs font-semibold text-brand-green">{t(locale, "selectCategory")}</p>
-          <select name="category" required={!hasPhoto && selectedCount === 0} className="input-premium w-full text-sm">
+          <select
+            key={`category-${formResetKey}`}
+            name="category"
+            required={!hasPhoto && selectedCount === 0}
+            className="input-premium w-full text-sm"
+          >
             <option value="">{t(locale, "selectCategory")}</option>
             {CATEGORIES.filter((c) => OWN_PHOTO_CATEGORIES.includes(c.key)).map((c) => (
               <option key={c.key} value={c.key}>
@@ -146,10 +155,16 @@ export function FavoritePriceQuoteForm({
           {t(locale, "uploadOwnDesignPhoto")}
         </p>
         <p className="mb-3 text-xs text-zinc-600">{t(locale, "priceQuotePhotoHint")}</p>
-        <FormPhotoAdd locale={locale} name="customerImage" onPhotoChange={setHasPhoto} />
+        <FormPhotoAdd
+          key={formResetKey}
+          locale={locale}
+          name="customerImage"
+          onPhotoChange={setHasPhoto}
+        />
       </div>
 
       <textarea
+        key={`notes-${formResetKey}`}
         name="notes"
         placeholder={t(locale, "askPriceNotesPlaceholder")}
         rows={3}

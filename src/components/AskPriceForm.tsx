@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { askPrice } from "@/app/customer/actions";
 import { initialActionState } from "@/lib/action-state";
@@ -30,13 +30,16 @@ export function AskPriceForm({
 }) {
   const router = useRouter();
   const [state, action, pending] = useActionState(askPrice, initialActionState);
+  const [formResetKey, setFormResetKey] = useState(0);
 
   const categoryOptions = allowedCategories
     ? CATEGORIES.filter((c) => allowedCategories.includes(c.key))
     : CATEGORIES;
 
   useEffect(() => {
-    if (state.ok) router.refresh();
+    if (!state.ok) return;
+    setFormResetKey((k) => k + 1);
+    router.refresh();
   }, [state.ok, router]);
 
   return (
@@ -70,6 +73,7 @@ export function AskPriceForm({
 
       {!design && (
         <select
+          key={`category-${formResetKey}`}
           name="category"
           required
           defaultValue={defaultCategory ?? ""}
@@ -88,10 +92,11 @@ export function AskPriceForm({
         <p className="mb-1 text-xs font-semibold text-brand-green">
           {design ? t(locale, "optionalOwnPhoto") : t(locale, "uploadOwnDesignPhoto")}
         </p>
-        <FormPhotoAdd locale={locale} name="customerImage" compact={compact} />
+        <FormPhotoAdd key={formResetKey} locale={locale} name="customerImage" compact={compact} />
       </div>
 
       <textarea
+        key={`notes-${formResetKey}`}
         name="notes"
         placeholder={t(locale, "askPriceNotesPlaceholder")}
         rows={compact ? 2 : 3}
