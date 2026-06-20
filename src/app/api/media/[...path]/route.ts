@@ -1,9 +1,9 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { r2GetObject, isR2Storage } from "@/lib/r2-object";
 import { createS3Client } from "@/lib/s3-client";
 
 export const runtime = "nodejs";
 
-/** Serve R2/S3 uploads through the app when pub-xxx.r2.dev public access is off. */
+/** Serve R2/S3 uploads through the app (no pub-xxx.r2.dev required). */
 export async function GET(
   _req: Request,
   context: { params: Promise<{ path: string[] }> }
@@ -11,11 +11,25 @@ export async function GET(
   const { path } = await context.params;
   const key = path.join("/");
 
-  if (!key.startsWith("uploads/") || key.includes("..")) {
+  if (!key.startsWith("uploads/") && !key.startsWith("assets/")) {
+    return new Response("Forbidden", { status: 403 });
+  }
+  if (key.includes("..")) {
     return new Response("Forbidden", { status: 403 });
   }
 
   try {
+    if (isR2Storage()) {
+      const { body, contentType } = await r2GetObject(key);
+      return new Response(new Uint8Array(body), {
+        headers: {
+          "Content-Type": contentType,
+          "Cache-Control": "public, max-age=604800, immutable",
+        },
+      });
+    }
+
+    const { GetObjectCommand } = await import("@aws-sdk/client-s3");
     const client = createS3Client();
     const res = await client.send(
       new GetObjectCommand({

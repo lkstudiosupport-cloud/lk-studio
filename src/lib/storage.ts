@@ -33,9 +33,15 @@ function storageUrlForKey(key: string): string {
 }
 
 async function saveToS3(buffer: Buffer, key: string, contentType: string): Promise<string> {
+  const { isR2Storage, r2PutObject } = await import("@/lib/r2-object");
+
+  if (isR2Storage()) {
+    await r2PutObject(key, buffer, contentType);
+    return storageUrlForKey(key);
+  }
+
   const { PutObjectCommand } = await import("@aws-sdk/client-s3");
   const { createS3Client } = await import("@/lib/s3-client");
-
   const client = createS3Client();
 
   await client.send(
@@ -136,6 +142,14 @@ function storageKeyFromPath(pathOrUrl: string): string | null {
   const trimmed = pathOrUrl.trim();
   if (!trimmed) return null;
 
+  if (trimmed.startsWith("/api/media/")) {
+    return trimmed.slice("/api/media/".length);
+  }
+
+  if (trimmed.startsWith("api/media/")) {
+    return trimmed.slice("api/media/".length);
+  }
+
   if (trimmed.startsWith("/uploads/")) {
     return trimmed.slice(1);
   }
@@ -168,6 +182,12 @@ export async function deleteStoredUpload(pathOrUrl: string): Promise<void> {
 
   if (s3Configured()) {
     try {
+      const { isR2Storage, r2DeleteObject } = await import("@/lib/r2-object");
+      if (isR2Storage()) {
+        await r2DeleteObject(key);
+        return;
+      }
+
       const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
       const { createS3Client } = await import("@/lib/s3-client");
       const client = createS3Client();

@@ -72,6 +72,15 @@ function parseMaxIndex(category: ServiceCategory, catalogNumber: string): number
 }
 
 async function listImageKeysFromS3(prefix: string): Promise<string[]> {
+  const { isR2Storage, r2ListKeys } = await import("../src/lib/r2-object");
+
+  if (isR2Storage()) {
+    const keys = await r2ListKeys(prefix);
+    return keys
+      .filter((k) => /\.(jpe?g|png|webp)$/i.test(k))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  }
+
   requireEnv("S3_BUCKET");
   const client = createS3Client();
   const bucket = process.env.S3_BUCKET!.trim();
