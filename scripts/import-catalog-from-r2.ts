@@ -1,16 +1,19 @@
 /**
- * Method B: register images already uploaded to R2 as catalog designs.
+ * Method B: images in R2 → Maggam / Embroidery catalog with auto design codes.
  *
- * 1. Upload files to R2 (from PC browser):
- *    - uploads/catalog/maggam-work/MAG-0001.jpg, MAG-0002.jpg, …
- *    - uploads/catalog/embroidery/EMB-0001.jpg, EMB-0002.jpg, …
- * 2. Run on Render Shell (uses S3_* env vars):
- *    npm run db:import-catalog
- *    npm run db:import-catalog -- --category=embroidery
+ * 1. Upload ANY image names to R2 (PC browser):
+ *    - uploads/catalog/maggam-work/   (any .jpg / .png names)
+ *    - uploads/catalog/embroidery/
+ * 2. Render Shell:
+ *    npm run db:import-catalog -- --category=maggam
  *    npm run db:import-catalog -- --dry-run
+ *
+ * Codes are assigned automatically: MAG-0001, MAG-0002, … / EMB-0001, …
+ * (Filenames like MAG-0001.jpg are also accepted.)
  */
 import { PrismaClient, type ServiceCategory } from "@prisma/client";
 import { ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { catalogCodePrefix, nextCatalogDesignNumber } from "../src/lib/catalog-design-number";
 import { createS3Client, logS3ConfigHint } from "../src/lib/s3-client";
 
 const prisma = new PrismaClient();
@@ -49,8 +52,25 @@ function catalogNumberFromFilename(filename: string): string | null {
   return null;
 }
 
-function titleFromCode(code: string): string {
-  return code;
+function titleFromFilename(filename: string, fallbackCode: string): string {
+  const raw = filename.replace(/\.[^.]+$/, "").trim();
+  if (/^(MAG|EMB)(?:-(?:S|M|B))?-\d{4}$/i.test(raw)) return fallbackCode;
+  const title = raw.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  return title.slice(0, 120) || fallbackCode;
+}
+
+function codeFromIndex(category: ServiceCategory, index: number): string {
+  const prefix = catalogCodePrefix(category);
+  return `${prefix}-${String(index).padStart(4, "0")}`;
+}
+
+function parseMaxIndex(category: ServiceCategory, catalogNumber: string): number {
+  const prefix = catalogCodePrefix(category);
+  if (!catalogNumber.startsWith(prefix)) return 0;
+  const match = catalogNumber.match(/(\d{4})$/);
+  if (!match) return 0;
+  const n = parseInt(match[1]!, 10);
+  return Number.isNaN(n) ? 0 : n;
 }
 
 async function listImageKeys(prefix: string): Promise<string[]> {
@@ -74,7 +94,7 @@ async function listImageKeys(prefix: string): Promise<string[]> {
     token = res.NextContinuationToken;
   } while (token);
 
-  return keys.sort();
+  return keys.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
 function parseArgs() {
@@ -98,26 +118,37 @@ async function importPrefix(
 
   console.log(`\n${entry.category}: ${keys.length} file(s) under ${entry.prefix}`);
 
+  let autoIndex = parseMaxIndex(entry.category, await nextCatalogDesignNumber(prisma, entry.category));
+
   for (const key of keys) {
     const filename = key.split("/").pop()!;
-    const catalogNumber = catalogNumberFromFilename(filename);
-    if (!catalogNumber || !entry.codeRe.test(catalogNumber)) {
-      console.warn(`  skip (bad name): ${filename}`);
+    const imagePath = publicUrlForKey(key);
+
+    const byUrl = await prisma.design.findFirst({ where: { imagePath } });
+    if (byUrl && !opts.force) {
       skipped++;
       continue;
     }
 
-    const imagePath = publicUrlForKey(key);
-    const title = titleFromCode(catalogNumber);
-    const existing = await prisma.design.findFirst({ where: { catalogNumber } });
+    let catalogNumber = catalogNumberFromFilename(filename);
+    if (!catalogNumber || !entry.codeRe.test(catalogNumber)) {
+      catalogNumber = codeFromIndex(entry.category, autoIndex);
+      autoIndex++;
+    } else {
+      autoIndex = Math.max(autoIndex, parseMaxIndex(entry.category, catalogNumber) + 1);
+    }
 
-    if (existing && !opts.force) {
+    const title = titleFromFilename(filename, catalogNumber);
+    const existing =
+      byUrl ?? (await prisma.design.findFirst({ where: { catalogNumber } }));
+
+    if (existing && !opts.force && existing.imagePath === imagePath) {
       skipped++;
       continue;
     }
 
     if (opts.dryRun) {
-      console.log(`  would ${existing ? "update" : "create"}: ${catalogNumber} → ${imagePath}`);
+      console.log(`  would ${existing ? "update" : "create"}: ${catalogNumber} ← ${filename}`);
       if (existing) updated++;
       else created++;
       continue;
@@ -129,6 +160,7 @@ async function importPrefix(
         data: {
           title,
           category: entry.category,
+          catalogNumber,
           imagePath,
           imagesJson: JSON.stringify([imagePath]),
           isCatalog: true,
@@ -170,8 +202,8 @@ async function main() {
     opts.dryRun
       ? "Dry run — no database changes."
       : opts.force
-        ? "Import (update existing catalog numbers)."
-        : "Import (skip existing catalog numbers)."
+        ? "Import (update existing rows)."
+        : "Import (auto codes MAG-0001 / EMB-0001, skip already imported URLs)."
   );
   logS3ConfigHint();
 
