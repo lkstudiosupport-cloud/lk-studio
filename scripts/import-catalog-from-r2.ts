@@ -133,17 +133,28 @@ function parseArgs() {
   const useManifest = process.argv.includes("--manifest");
   const manifestFile =
     process.argv.find((a) => a.startsWith("--manifest="))?.split("=")[1] ?? "import-manifest.json";
+  const filesArg = process.argv.find((a) => a.startsWith("--files="))?.split("=")[1];
+  const fileNames = filesArg
+    ? filesArg.split(",").map((s) => s.trim()).filter(Boolean)
+    : null;
   const catArg = process.argv.find((a) => a.startsWith("--category="))?.split("=")[1]?.toLowerCase();
   let filter: "all" | "maggam" | "embroidery" = "all";
   if (catArg === "maggam") filter = "maggam";
   else if (catArg === "embroidery" || catArg === "emb") filter = "embroidery";
-  return { dryRun, force, filter, useManifest, manifestFile };
+  return { dryRun, force, filter, useManifest, manifestFile, fileNames };
 }
 
 async function resolveImageKeys(
   prefix: string,
-  opts: { useManifest: boolean; manifestFile: string }
+  opts: { useManifest: boolean; manifestFile: string; fileNames: string[] | null }
 ): Promise<string[]> {
+  if (opts.fileNames?.length) {
+    return opts.fileNames
+      .filter((n) => /\.(jpe?g|png|webp)$/i.test(n))
+      .map((n) => `${prefix}${n.replace(/^\//, "")}`)
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  }
+
   if (opts.useManifest) {
     return listImageKeysFromManifest(prefix, opts.manifestFile);
   }
@@ -166,7 +177,7 @@ async function resolveImageKeys(
 
 async function importPrefix(
   entry: (typeof PREFIXES)[number],
-  opts: { dryRun: boolean; force: boolean; useManifest: boolean; manifestFile: string }
+  opts: { dryRun: boolean; force: boolean; useManifest: boolean; manifestFile: string; fileNames: string[] | null }
 ): Promise<{ created: number; updated: number; skipped: number }> {
   const keys = await resolveImageKeys(entry.prefix, opts);
   let created = 0;
@@ -263,8 +274,9 @@ async function main() {
   );
 
   if (opts.useManifest) {
-    console.log(`Mode: manifest (${opts.manifestFile}) via public URL`);
-    console.log(`S3 public URL=${publicAssetBaseUrl()}`);
+    console.log(`Mode: manifest (${opts.manifestFile})`);
+  } else if (opts.fileNames?.length) {
+    console.log(`Mode: --files (${opts.fileNames.length} name(s), URLs via /api/media/)`);
   } else {
     logS3ConfigHint();
   }

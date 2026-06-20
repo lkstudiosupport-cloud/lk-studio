@@ -15,7 +15,7 @@ export function resolveS3Endpoint(): string | undefined {
 
   if (raw.includes(".r2.dev")) {
     throw new Error(
-      "S3_ENDPOINT must be https://<ACCOUNT_ID>.r2.cloudflarestorage.com — not the pub-xxx.r2.dev public URL (that is S3_PUBLIC_URL only)."
+      "S3_ENDPOINT must be https://<ACCOUNT_ID>.r2.cloudflarestorage.com — not the pub-xxx.r2.dev public URL."
     );
   }
 
@@ -33,33 +33,37 @@ export function resolveS3Region(): string {
 
 export function validateS3Env(): void {
   requireEnv("S3_BUCKET");
-  requireEnv("S3_PUBLIC_URL");
+  requireEnv("S3_ACCESS_KEY_ID");
+  requireEnv("S3_SECRET_ACCESS_KEY");
 
-  const publicUrl = process.env.S3_PUBLIC_URL!.trim();
-  const endpoint = process.env.S3_ENDPOINT?.trim() ?? "";
-
-  if (publicUrl.includes(".r2.dev") && !endpoint) {
-    throw new Error(
-      "R2 detected (S3_PUBLIC_URL uses .r2.dev) but S3_ENDPOINT is missing. Set S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com"
-    );
+  if (process.env.S3_USE_PUBLIC_URL === "true") {
+    requireEnv("S3_PUBLIC_URL");
   }
 
-  resolveS3Endpoint();
+  const endpoint = process.env.S3_ENDPOINT?.trim() ?? "";
+  if (endpoint) resolveS3Endpoint();
 }
 
-/** Public base URL for catalog images (no trailing slash). */
 export function publicAssetBaseUrl(): string {
-  return requireEnv("S3_PUBLIC_URL").replace(/\/$/, "");
+  const v = process.env.S3_PUBLIC_URL?.trim();
+  if (!v) return "(using /api/media proxy)";
+  return v.replace(/\/$/, "");
 }
 
+/** Stored image URL — defaults to /api/media/ (no R2 public URL required). */
 export function publicUrlForKey(key: string): string {
-  return `${publicAssetBaseUrl()}/${key.replace(/^\//, "")}`;
+  const normalized = key.replace(/^\//, "");
+  const publicBase = process.env.S3_PUBLIC_URL?.trim()?.replace(/\/$/, "");
+
+  if (process.env.S3_USE_PUBLIC_URL === "true" && publicBase) {
+    return `${publicBase}/${normalized}`;
+  }
+
+  return `/api/media/${normalized}`;
 }
 
 export function createS3Client(): S3Client {
   validateS3Env();
-  requireEnv("S3_ACCESS_KEY_ID");
-  requireEnv("S3_SECRET_ACCESS_KEY");
   const endpoint = resolveS3Endpoint();
 
   const requestHandler = new NodeHttpHandler({
@@ -80,7 +84,6 @@ export function createS3Client(): S3Client {
     },
     forcePathStyle: Boolean(endpoint),
     requestHandler,
-    /** Required for AWS SDK v3.729+ with Cloudflare R2. */
     requestChecksumCalculation: "WHEN_REQUIRED",
     responseChecksumValidation: "WHEN_REQUIRED",
   } as ConstructorParameters<typeof S3Client>[0]);
@@ -90,8 +93,7 @@ export function logS3ConfigHint(): void {
   const endpoint = process.env.S3_ENDPOINT?.trim() ?? "(not set)";
   const region = resolveS3Region();
   const bucket = process.env.S3_BUCKET?.trim() ?? "(not set)";
-  const publicUrl = process.env.S3_PUBLIC_URL?.trim() ?? "(not set)";
   console.log(`S3 bucket=${bucket} region=${region}`);
   console.log(`S3 endpoint=${endpoint}`);
-  console.log(`S3 public URL=${publicUrl}`);
+  console.log(`Image URLs=${publicAssetBaseUrl()}`);
 }

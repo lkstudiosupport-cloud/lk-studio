@@ -7,7 +7,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES, isCategoryShopUpload } from "@/lib/categories";
 import { isCatalogUploadCategory, isShopOwnedUploadCategory } from "@/lib/design-access";
-import { MAX_DESIGN_IMAGES } from "@/lib/limits";
+import { MAX_CATALOG_BULK_UPLOAD, MAX_DESIGN_IMAGES } from "@/lib/limits";
 import { ShopDesignItem } from "@/components/ShopDesignItem";
 import { compressImageFile } from "@/lib/compress-image";
 import { Loader2, Plus } from "lucide-react";
@@ -27,6 +27,7 @@ export function ShopDesignsPanel({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [lastCode, setLastCode] = useState("");
+  const [uploadProgress, setUploadProgress] = useState("");
 
   const canUpload = isCategoryShopUpload(category);
   const isCatalogUpload = isCatalogUploadCategory(category);
@@ -59,31 +60,50 @@ export function ShopDesignsPanel({
     return false;
   }
 
+  async function uploadOneDesign(files: File[]) {
+    const fd = new FormData();
+    fd.set("category", category);
+    fd.set("title", isCatalogUpload ? "" : t(locale, "categories.stitched"));
+    files.forEach((f, i) => fd.set(`designImage${i}`, f));
+
+    const res = await fetch("/api/shop/designs", { method: "POST", body: fd });
+    const data = (await res.json().catch(() => ({}))) as { error?: string; catalogNumber?: string };
+    if (!res.ok) {
+      throw new Error(data.error || t(locale, "designUploadFailed"));
+    }
+    return data.catalogNumber ?? "";
+  }
+
   async function uploadFiles(raw: FileList | null) {
     if (!raw?.length || !canUpload) return;
     setError("");
     setLastCode("");
+    setUploadProgress("");
     setPending(true);
     try {
-      const picked = Array.from(raw).slice(0, MAX_DESIGN_IMAGES);
-      const files = await Promise.all(picked.map((f) => compressImageFile(f)));
-      const fd = new FormData();
-      fd.set("category", category);
-      fd.set("title", isCatalogUpload ? "" : t(locale, "categories.stitched"));
-      files.forEach((f, i) => fd.set(`designImage${i}`, f));
+      const limit = isCatalogUpload ? MAX_CATALOG_BULK_UPLOAD : MAX_DESIGN_IMAGES;
+      const picked = Array.from(raw).slice(0, limit);
 
-      const res = await fetch("/api/shop/designs", { method: "POST", body: fd });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; catalogNumber?: string };
-      if (!res.ok) {
-        setError(data.error || t(locale, "designUploadFailed"));
-        return;
+      if (isCatalogUpload && picked.length > 1) {
+        let last = "";
+        for (let i = 0; i < picked.length; i++) {
+          setUploadProgress(`${i + 1}/${picked.length}`);
+          const compressed = await compressImageFile(picked[i]!);
+          last = await uploadOneDesign([compressed]);
+        }
+        if (last) setLastCode(last);
+      } else {
+        const files = await Promise.all(picked.map((f) => compressImageFile(f)));
+        const code = await uploadOneDesign(files);
+        if (code) setLastCode(code);
       }
-      if (data.catalogNumber) setLastCode(data.catalogNumber);
+
       router.refresh();
-    } catch {
-      setError(t(locale, "designUploadFailed"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t(locale, "designUploadFailed"));
     } finally {
       setPending(false);
+      setUploadProgress("");
       if (fileRef.current) fileRef.current.value = "";
     }
   }
@@ -132,6 +152,12 @@ export function ShopDesignsPanel({
         </div>
 
         <p className="text-sm text-zinc-600">{uploadHint()}</p>
+
+        {uploadProgress && (
+          <p className="text-sm font-medium text-brand-green">
+            {t(locale, "uploadingProgress", { current: uploadProgress })}
+          </p>
+        )}
 
         {lastCode && (
           <p className="text-sm font-semibold text-emerald-700">

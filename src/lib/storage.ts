@@ -13,12 +13,23 @@ function s3Configured(): boolean {
   );
 }
 
-function publicUrlForKey(key: string): string {
-  const base = process.env.S3_PUBLIC_URL?.trim()?.replace(/\/$/, "");
-  if (base) return `${base}/${key}`;
+function storageUrlForKey(key: string): string {
+  const normalized = key.replace(/^\//, "");
+  const publicBase = process.env.S3_PUBLIC_URL?.trim()?.replace(/\/$/, "");
+
+  if (process.env.S3_USE_PUBLIC_URL === "true" && publicBase) {
+    return `${publicBase}/${normalized}`;
+  }
+
+  if (s3Configured()) {
+    return `/api/media/${normalized}`;
+  }
+
+  if (publicBase) return `${publicBase}/${normalized}`;
+
   const bucket = process.env.S3_BUCKET!.trim();
   const region = process.env.S3_REGION?.trim() || "ap-south-1";
-  return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+  return `https://${bucket}.s3.${region}.amazonaws.com/${normalized}`;
 }
 
 async function saveToS3(buffer: Buffer, key: string, contentType: string): Promise<string> {
@@ -36,7 +47,7 @@ async function saveToS3(buffer: Buffer, key: string, contentType: string): Promi
     })
   );
 
-  return publicUrlForKey(key);
+  return storageUrlForKey(key);
 }
 
 async function saveToLocal(buffer: Buffer, subfolder: string, name: string): Promise<string> {
