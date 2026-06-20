@@ -26,6 +26,7 @@ coverage/
 android/
 public/dev-access-url.txt
 public/catalog/
+public/assets/catalog/maggam-small/
 public/assets/catalog/maggam-medium/
 public/assets/catalog/maggam-big/
 downloads/
