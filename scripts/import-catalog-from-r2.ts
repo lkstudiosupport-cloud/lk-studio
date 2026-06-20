@@ -10,7 +10,8 @@
  *    npm run db:import-catalog -- --dry-run
  */
 import { PrismaClient, type ServiceCategory } from "@prisma/client";
-import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { createS3Client, logS3ConfigHint } from "../src/lib/s3-client";
 
 const prisma = new PrismaClient();
 
@@ -33,16 +34,8 @@ function requireEnv(name: string): string {
   return v;
 }
 
-function s3Client(): S3Client {
-  return new S3Client({
-    region: process.env.S3_REGION?.trim() || "auto",
-    endpoint: process.env.S3_ENDPOINT?.trim() || undefined,
-    credentials: {
-      accessKeyId: requireEnv("S3_ACCESS_KEY_ID"),
-      secretAccessKey: requireEnv("S3_SECRET_ACCESS_KEY"),
-    },
-    forcePathStyle: Boolean(process.env.S3_ENDPOINT?.trim()),
-  });
+function s3Client() {
+  return createS3Client();
 }
 
 function publicUrlForKey(key: string): string {
@@ -180,6 +173,7 @@ async function main() {
         ? "Import (update existing catalog numbers)."
         : "Import (skip existing catalog numbers)."
   );
+  logS3ConfigHint();
 
   let totalCreated = 0;
   let totalUpdated = 0;
@@ -202,6 +196,14 @@ async function main() {
 main()
   .then(() => prisma.$disconnect())
   .catch((e) => {
+    if (e && typeof e === "object" && "code" in e && e.code === "EPROTO") {
+      console.error(
+        "\nR2 SSL error — check Render env vars:\n" +
+          "  S3_ENDPOINT = https://<ACCOUNT_ID>.r2.cloudflarestorage.com  (NOT pub-xxx.r2.dev)\n" +
+          "  S3_PUBLIC_URL = https://pub-xxx.r2.dev\n" +
+          "  S3_REGION = auto\n"
+      );
+    }
     console.error(e);
     prisma.$disconnect();
     process.exit(1);

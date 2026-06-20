@@ -22,17 +22,10 @@ function publicUrlForKey(key: string): string {
 }
 
 async function saveToS3(buffer: Buffer, key: string, contentType: string): Promise<string> {
-  const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const { createS3Client } = await import("@/lib/s3-client");
 
-  const client = new S3Client({
-    region: process.env.S3_REGION?.trim() || "ap-south-1",
-    endpoint: process.env.S3_ENDPOINT?.trim() || undefined,
-    credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY_ID!.trim(),
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!.trim(),
-    },
-    forcePathStyle: Boolean(process.env.S3_ENDPOINT?.trim()),
-  });
+  const client = createS3Client();
 
   await client.send(
     new PutObjectCommand({
@@ -164,16 +157,9 @@ export async function deleteStoredUpload(pathOrUrl: string): Promise<void> {
 
   if (s3Configured()) {
     try {
-      const { S3Client, DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-      const client = new S3Client({
-        region: process.env.S3_REGION?.trim() || "ap-south-1",
-        endpoint: process.env.S3_ENDPOINT?.trim() || undefined,
-        credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY_ID!.trim(),
-          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!.trim(),
-        },
-        forcePathStyle: Boolean(process.env.S3_ENDPOINT?.trim()),
-      });
+      const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+      const { createS3Client } = await import("@/lib/s3-client");
+      const client = createS3Client();
       await client.send(
         new DeleteObjectCommand({
           Bucket: process.env.S3_BUCKET!.trim(),
