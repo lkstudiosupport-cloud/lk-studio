@@ -1,5 +1,5 @@
 import type { ServiceCategory } from "@prisma/client";
-import { isShopOwnedUploadCategory } from "@/lib/design-access";
+import { isCatalogUploadCategory, isShopOwnedUploadCategory } from "@/lib/design-access";
 
 /** Green fill + gold/yellow text — same look for every category button. */
 export const CATEGORY_BUTTON_CLASS = "bg-brand-green text-brand-gold";
@@ -19,7 +19,7 @@ export const CATEGORIES: {
 ];
 
 export function isCategoryShopUpload(key: ServiceCategory): boolean {
-  return isShopOwnedUploadCategory(key);
+  return isShopOwnedUploadCategory(key) || isCatalogUploadCategory(key);
 }
 
 export function categoryLabelKey(cat: ServiceCategory) {

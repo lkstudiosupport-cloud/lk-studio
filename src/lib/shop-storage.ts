@@ -41,6 +41,11 @@ export function shopDesignStoragePath(
   return `shops/${shopFolder}/${categoryFolder}`;
 }
 
+export function catalogCategoryStoragePath(category: ServiceCategory) {
+  const categoryFolder = CATEGORY_STORAGE_FOLDERS[category];
+  return `catalog/${categoryFolder}`;
+}
+
 export function catalogDesignStoragePath(category: ServiceCategory, sizeTier: DesignSizeTier) {
   const categoryFolder = CATEGORY_STORAGE_FOLDERS[category];
   return `catalog/${categoryFolder}/${CATALOG_SIZE_FOLDER[sizeTier]}`;
@@ -58,9 +63,11 @@ export async function saveShopDesignUpload(
 
 export async function saveCatalogDesignUpload(
   category: ServiceCategory,
-  sizeTier: DesignSizeTier,
-  file: File
+  file: File,
+  sizeTier?: DesignSizeTier
 ) {
-  const folder = catalogDesignStoragePath(category, sizeTier);
+  const folder = sizeTier
+    ? catalogDesignStoragePath(category, sizeTier)
+    : catalogCategoryStoragePath(category);
   return saveUpload(file, folder);
 }

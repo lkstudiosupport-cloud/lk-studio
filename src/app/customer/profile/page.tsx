@@ -19,10 +19,6 @@ export default async function CustomerProfilePage() {
       name: true,
       phone: true,
       whatsapp: true,
-      address: true,
-      locationLink: true,
-      latitude: true,
-      longitude: true,
       profilePhoto: true,
     },
   });

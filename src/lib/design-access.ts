@@ -1,6 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
-import { categoryHasSizeTiers } from "@/lib/design-size-tier";
+import type { ServiceCategory } from "@prisma/client";
 
 /** Only category shops may upload, edit, or delete. */
 export const SHOP_OWNED_UPLOAD_CATEGORY = "STITCHED_DESIGNS" as const;
@@ -17,35 +16,34 @@ export const CATALOG_CATEGORIES: ServiceCategory[] = [
   "CHILDREN_WEAR",
 ];
 
+/** Categories shops may upload (own stitched work + shared catalog maggam). */
+export const CATALOG_UPLOAD_CATEGORIES: ServiceCategory[] = ["MAGGAM"];
+
+export function isCatalogUploadCategory(category: ServiceCategory): boolean {
+  return CATALOG_UPLOAD_CATEGORIES.includes(category);
+}
+
 export function isShopOwnedUploadCategory(category: ServiceCategory): boolean {
   return category === SHOP_OWNED_UPLOAD_CATEGORY;
 }
 
 /** @alias isShopOwnedUploadCategory */
 export function isShopUploadCategory(category: ServiceCategory): boolean {
-  return isShopOwnedUploadCategory(category);
+  return isShopOwnedUploadCategory(category) || isCatalogUploadCategory(category);
 }
 
 export function isCatalogCategory(category: ServiceCategory): boolean {
   return CATALOG_CATEGORIES.includes(category);
 }
 
-function sizeTierFilter(sizeTier?: DesignSizeTier): Prisma.DesignWhereInput {
-  return sizeTier ? { sizeTier } : {};
-}
-
 /** Designs visible on a shop's gallery (app catalog + shop stitched work). */
 export function visibleDesignsWhere(
   shopId: string,
-  category?: ServiceCategory,
-  sizeTier?: DesignSizeTier
+  category?: ServiceCategory
 ): Prisma.DesignWhereInput {
   if (category) {
     if (isShopOwnedUploadCategory(category)) {
       return { shopId, category, active: true, isCatalog: false };
-    }
-    if (categoryHasSizeTiers(category)) {
-      return { isCatalog: true, category, active: true, ...sizeTierFilter(sizeTier) };
     }
     return { isCatalog: true, category, active: true };
   }
@@ -69,13 +67,22 @@ export async function countVisibleDesigns(
   return prisma.design.count({ where: visibleDesignCountWhere(shopId) });
 }
 
-/** Shop may delete or edit only their own stitched designs. */
+/** Shop may delete or edit own stitched designs and catalog uploads they added. */
 export function shopManageableDesignWhere(shopId: string, designId: string): Prisma.DesignWhereInput {
   return {
     id: designId,
-    shopId,
-    isCatalog: false,
-    category: SHOP_OWNED_UPLOAD_CATEGORY,
+    OR: [
+      {
+        shopId,
+        isCatalog: false,
+        category: SHOP_OWNED_UPLOAD_CATEGORY,
+      },
+      {
+        isCatalog: true,
+        uploadedByShopId: shopId,
+        category: { in: CATALOG_UPLOAD_CATEGORIES },
+      },
+    ],
   };
 }
 

@@ -589,8 +589,6 @@ export async function updateCustomerProfile(formData: FormData) {
   const session = await requireSession(["CUSTOMER"]);
   if (!session) throw new Error("Unauthorized");
 
-  const latRaw = String(formData.get("latitude") ?? "").trim();
-  const lngRaw = String(formData.get("longitude") ?? "").trim();
   const photoFile = formData.get("profilePhotoFile");
   let profilePhoto: string | undefined;
   if (formData.get("removeProfilePhoto") === "true") {
@@ -612,10 +610,6 @@ export async function updateCustomerProfile(formData: FormData) {
       name: String(formData.get("name") ?? "").trim(),
       phone: String(formData.get("phone") ?? "").trim() || null,
       whatsapp: String(formData.get("whatsapp") ?? "").trim() || null,
-      address: String(formData.get("address") ?? "").trim() || null,
-      locationLink: String(formData.get("locationLink") ?? "").trim() || null,
-      latitude: latRaw ? parseFloat(latRaw) : null,
-      longitude: lngRaw ? parseFloat(lngRaw) : null,
       ...(profilePhoto !== undefined
         ? { profilePhoto }
         : formData.get("removeProfilePhoto") === "true"

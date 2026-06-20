@@ -7,9 +7,7 @@ import { AskPriceOwnDesignCard } from "@/components/AskPriceForm";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { isShopActive } from "@/lib/subscription";
 import { visibleDesignsWhere, visibleDesignCountWhere } from "@/lib/design-access";
-import { SizeTierButtons } from "@/components/SizeTierButtons";
-import { categoryHasSizeTiers } from "@/lib/design-size-tier";
-import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
+import type { ServiceCategory } from "@prisma/client";
 import Link from "next/link";
 import { shopRatingSummaries } from "@/lib/shop-rating";
 import { ShopRatingBadge } from "@/components/ShopRatingBadge";
@@ -18,13 +16,12 @@ import { SaveShopButton } from "@/components/SaveShopButton";
 export default async function CustomerDesignsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; shopId?: string; sizeTier?: string }>;
+  searchParams: Promise<{ category?: string; shopId?: string }>;
 }) {
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
   const params = await searchParams;
   const category = params.category as ServiceCategory | undefined;
-  const sizeTier = params.sizeTier as DesignSizeTier | undefined;
   const shopIdParam = params.shopId;
 
   const shop = shopIdParam
@@ -44,11 +41,7 @@ export default async function CustomerDesignsPage({
 
   const [designs, totalDesigns, ratingMap, customerFavorites, savedShop] = await Promise.all([
     prisma.design.findMany({
-      where: visibleDesignsWhere(
-        shop.id,
-        category,
-        category && categoryHasSizeTiers(category) ? sizeTier : undefined
-      ),
+      where: visibleDesignsWhere(shop.id, category),
       orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
     }),
     prisma.design.count({ where: visibleDesignCountWhere(shop.id) }),
@@ -103,37 +96,20 @@ export default async function CustomerDesignsPage({
 
       <CategoryButtons locale={locale} basePath={`/customer/designs?shopId=${shop.id}`} active={category} />
 
-      {category && categoryHasSizeTiers(category) && (
-        <SizeTierButtons
+      {(category === "MAGGAM" || category === "COMPUTER_EMBROIDERY") && (
+        <AskPriceOwnDesignCard
           locale={locale}
-          basePath={`/customer/designs?shopId=${shop.id}`}
-          category={category}
-          active={sizeTier}
+          shopId={shop.id}
+          defaultCategory={category}
         />
       )}
 
-      {!sizeTier && category && categoryHasSizeTiers(category) && (
-        <p className="text-sm text-zinc-500">{t(locale, "pickSizeTierHint")}</p>
-      )}
-
-      {(!category || !categoryHasSizeTiers(category) || sizeTier) && (
-        <>
-          {(category === "MAGGAM" || category === "COMPUTER_EMBROIDERY") && (
-            <AskPriceOwnDesignCard
-              locale={locale}
-              shopId={shop.id}
-              defaultCategory={category}
-            />
-          )}
-
-          <ShopDesignCollections
-            locale={locale}
-            designs={designs}
-            shopId={shop.id}
-            favoriteDesignIds={favoriteDesignIds}
-          />
-        </>
-      )}
+      <ShopDesignCollections
+        locale={locale}
+        designs={designs}
+        shopId={shop.id}
+        favoriteDesignIds={favoriteDesignIds}
+      />
     </div>
   );
 }

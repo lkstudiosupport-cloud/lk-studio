@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { User } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { LiveLocationFields } from "@/components/LiveLocationFields";
 import { updateCustomerProfile } from "@/app/customer/actions";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 
@@ -13,10 +12,6 @@ type UserProfile = {
   name: string;
   phone: string | null;
   whatsapp: string | null;
-  address: string | null;
-  locationLink: string | null;
-  latitude: number | null;
-  longitude: number | null;
   profilePhoto: string | null;
 };
 
@@ -69,14 +64,6 @@ export function CustomerProfileForm({ locale, user }: { locale: Locale; user: Us
           className="input-premium w-full"
         />
       </label>
-
-      <LiveLocationFields
-        locale={locale}
-        defaultAddress={user.address ?? ""}
-        defaultLink={user.locationLink ?? ""}
-        defaultLat={user.latitude}
-        defaultLng={user.longitude}
-      />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       {saved && <p className="text-sm font-semibold text-emerald-700">{t(locale, "profileSaved")}</p>}

@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   const category = (form.get("category") as ServiceCategory) || SHOP_OWNED_UPLOAD_CATEGORY;
   if (!isShopUploadCategory(category)) {
     return NextResponse.json(
-      { error: "Upload is only allowed for Stitched designs" },
+      { error: "Upload is not allowed for this category" },
       { status: 400 }
     );
   }
@@ -76,15 +76,14 @@ export async function POST(req: Request) {
   }
 
   try {
-    await persistShopDesign(session.shopId, shop, { category, title, files });
+    const result = await persistShopDesign(session.shopId, shop, { category, title, files });
+    revalidatePath("/shop/designs");
+    revalidatePath("/customer/designs");
+    revalidatePath("/customer/shops");
+
+    return NextResponse.json({ ok: true, catalogNumber: result.catalogNumber });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Upload failed";
     return NextResponse.json({ error: message }, { status: 400 });
   }
-
-  revalidatePath("/shop/designs");
-  revalidatePath("/customer/designs");
-  revalidatePath("/customer/shops");
-
-  return NextResponse.json({ ok: true });
 }

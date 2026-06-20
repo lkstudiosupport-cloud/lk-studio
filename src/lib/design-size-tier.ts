@@ -2,10 +2,11 @@ import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
 
 export const DESIGN_SIZE_TIERS: DesignSizeTier[] = ["SMALL", "MEDIUM", "BIG"];
 
-export const SIZE_TIER_CATEGORIES: ServiceCategory[] = ["MAGGAM", "COMPUTER_EMBROIDERY"];
+/** Size tiers are no longer used in the UI — designs are grouped by category only. */
+export const SIZE_TIER_CATEGORIES: ServiceCategory[] = [];
 
-export function categoryHasSizeTiers(category: ServiceCategory): boolean {
-  return SIZE_TIER_CATEGORIES.includes(category);
+export function categoryHasSizeTiers(_category: ServiceCategory): boolean {
+  return false;
 }
 
 export function sizeTierLabelKey(tier: DesignSizeTier): string {

@@ -263,6 +263,8 @@
   "pickSizeTierHint": "डिज़ाइन देखने के लिए छोटा, मध्यम या बड़ा चुनें।",
   "noDesignsInSizeTierView": "इस साइज़ में अभी कोई डिज़ाइन नहीं।",
   "shopStitchedHint": "आपका काम — + दबाकर फोटो जोड़ें। इन्हें हटा सकते हैं।",
+  "maggamUploadHint": "मग्गम फोटो अपलोड करें — ऐप डिज़ाइन कोड देगा (MAG-0001, MAG-0002, …)। ग्राहकों को Maggam में दिखेगा।",
+  "designCodeAssigned": "डिज़ाइन सेव — कोड {code}।",
   "shopStitchedOnlyHint": "अपना सिला हुआ काम अपलोड करें। ग्राहक Stitched designs में देखते हैं। मग्गम, कढ़ाई और मॉडल ऐप से आते हैं।",
   "noCatalogDesignsYet": "इस श्रेणी में अभी कोई ऐप डिज़ाइन नहीं।",
   "noStitchedDesignsYet": "अभी कोई सिला हुआ फोटो नहीं — + दबाकर जोड़ें।",
