@@ -13,7 +13,7 @@ import { isDeviceTrusted } from "@/lib/trusted-device";
 const schema = z.object({
   phone: formString(1),
   password: formString(1),
-  role: z.enum(["SHOP", "CUSTOMER"]),
+  role: z.enum(["SHOP", "CUSTOMER", "ADMIN"]),
   deviceId: deviceIdSchema,
   latitude: formOptionalNumber(),
   longitude: formOptionalNumber(),
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    if (isDemoPhone(phone)) {
+    if (role === "ADMIN" || isDemoPhone(phone)) {
       const redirect = await finishLogin(
         user,
         role,

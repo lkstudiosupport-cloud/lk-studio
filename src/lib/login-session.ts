@@ -52,7 +52,7 @@ export async function finishLogin(
 
   await saveUserLocation(user.id, user.role, user.shopProfile?.id, location ?? {});
 
-  return role === "SHOP" ? "/shop" : "/customer";
+  return role === "SHOP" ? "/shop" : role === "ADMIN" ? "/admin" : "/customer";
 }
 
 export async function finishTrustedPasswordLogin(

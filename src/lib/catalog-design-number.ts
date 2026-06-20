@@ -4,6 +4,9 @@ import type { PrismaClient, ServiceCategory } from "@prisma/client";
 export const CATALOG_CODE_PREFIX: Partial<Record<ServiceCategory, string>> = {
   MAGGAM: "MAG",
   COMPUTER_EMBROIDERY: "EMB",
+  BLOUSE_DESIGN: "BLU",
+  DRESS_MODEL: "DRS",
+  CHILDREN_WEAR: "KID",
 };
 
 export function catalogCodePrefix(category: ServiceCategory): string {

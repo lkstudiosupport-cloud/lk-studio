@@ -2,12 +2,15 @@
 export const DEMO_SHOP_PHONE = "9876543210";
 export const DEMO_SHOP2_PHONE = "9988776655";
 export const DEMO_CUSTOMER_PHONE = "9123456789";
+export const DEMO_ADMIN_PHONE = "9000000001";
 export const DEMO_PASSWORD = "demo123";
+export const DEMO_ADMIN_PASSWORD = "lkstudio123";
 
 const DEMO_PHONES = new Set([
   DEMO_SHOP_PHONE,
   DEMO_SHOP2_PHONE,
   DEMO_CUSTOMER_PHONE,
+  DEMO_ADMIN_PHONE,
 ]);
 
 export function demoPhoneKey(rawPhone: string): string | null {

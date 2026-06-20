@@ -10,6 +10,7 @@ datasource db {
 enum UserRole {
   SHOP
   CUSTOMER
+  ADMIN
 }
 
 enum SubscriptionStatus {

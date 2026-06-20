@@ -15,6 +15,8 @@ export function cachedRequireSession(roles: UserRole[]) {
 
 export const cachedShopSession = cache(() => requireSession(["SHOP"]));
 
+export const cachedAdminSession = cache(() => requireSession(["ADMIN"]));
+
 export const cachedCustomerSession = cache(() => requireSession(["CUSTOMER"]));
 
 export const cachedShopNavProfile = cache(async (shopId: string) => {

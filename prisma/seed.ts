@@ -100,8 +100,48 @@ async function upsertShop(
   });
 }
 
+async function upsertAdmin() {
+  const phone = "9000000001";
+  const normalized = "9000000001";
+  const hash = await bcrypt.hash("lkstudio123", 10);
+  const email = internalEmailForUser(normalized, UserRole.ADMIN);
+
+  const existing = await prisma.user.findFirst({
+    where: { role: UserRole.ADMIN, phoneNormalized: normalized },
+  });
+
+  if (existing) {
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        email,
+        passwordHash: hash,
+        name: "LK Studio Admin",
+        phone,
+        phoneNormalized: normalized,
+        subscriptionStatus: "ACTIVE",
+      },
+    });
+    return;
+  }
+
+  await prisma.user.create({
+    data: {
+      email,
+      passwordHash: hash,
+      name: "LK Studio Admin",
+      phone,
+      phoneNormalized: normalized,
+      role: UserRole.ADMIN,
+      subscriptionStatus: "ACTIVE",
+    },
+  });
+}
+
 async function main() {
   await seedCatalogDesigns(prisma);
+  await upsertAdmin();
+  console.log("Admin account ready: mobile 9000000001 | password lkstudio123 | /login/admin");
 
   if (process.env.SKIP_DEMO_SEED === "true") {
     console.log("SKIP_DEMO_SEED=true — demo accounts not created.");
