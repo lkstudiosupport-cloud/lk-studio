@@ -91,6 +91,38 @@ export async function saveUpload(file: File, subfolder: string): Promise<string>
   return saveToLocal(buffer, subfolder, name);
 }
 
+const PUBLIC_DIR = path.join(process.cwd(), "public");
+
+/**
+ * Save catalog design image — S3/R2 when configured (persists on Render),
+ * else public/assets/ (local dev or ephemeral Render until next deploy).
+ */
+export async function saveCatalogAsset(
+  buffer: Buffer,
+  assetPath: string,
+  contentType = "image/jpeg"
+): Promise<string> {
+  const normalized = assetPath.replace(/\\/g, "/").replace(/^\/+/, "");
+  const filename = path.basename(normalized);
+
+  if (s3Configured()) {
+    const key = normalized.startsWith("assets/") ? normalized : `assets/${normalized}`;
+    return saveToS3(buffer, key, contentType);
+  }
+
+  const full = path.join(PUBLIC_DIR, normalized);
+  await mkdir(path.dirname(full), { recursive: true });
+  await writeFile(full, buffer);
+
+  if (isProductionHosting()) {
+    console.warn(
+      `[catalog] Saved ${filename} to disk only — set S3_* env vars so images survive redeploy.`
+    );
+  }
+
+  return `/${normalized}`;
+}
+
 function isProductionHosting(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 }

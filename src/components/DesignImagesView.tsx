@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Expand } from "lucide-react";
 import { parseDesignImages } from "@/lib/design-images";
 import { ImagePreviewLightbox } from "@/components/ImagePreviewLightbox";
+
+const FALLBACK_DESIGN_IMAGE = "/placeholder-design.svg";
 
 function isUnoptimizedSrc(src: string) {
   return (
@@ -62,15 +64,23 @@ export function DesignImagesView({
     "block w-full overflow-hidden border-0 bg-zinc-100 p-0 text-left appearance-none ring-offset-2 transition hover:ring-2 hover:ring-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold";
 
   function ImageTile({ src, altText, sizes }: { src: string; altText: string; sizes: string }) {
+    const [imgSrc, setImgSrc] = useState(src);
+    useEffect(() => {
+      setImgSrc(src);
+    }, [src]);
+
     return (
-      <span className="relative block h-full w-full">
+      <span className="relative block h-full w-full bg-zinc-200">
         <Image
-          src={src}
+          src={imgSrc}
           alt={altText}
           fill
           className="object-cover"
           sizes={sizes}
-          unoptimized={isUnoptimizedSrc(src)}
+          unoptimized={isUnoptimizedSrc(imgSrc)}
+          onError={() => {
+            if (imgSrc !== FALLBACK_DESIGN_IMAGE) setImgSrc(FALLBACK_DESIGN_IMAGE);
+          }}
         />
       </span>
     );
@@ -197,7 +207,20 @@ export function DesignImagesView({
                 i === active ? "border-brand-gold" : "border-transparent"
               }`}
             >
-              <Image src={src} alt="" fill className="object-cover" sizes="64px" unoptimized={isUnoptimizedSrc(src)} />
+              <Image
+                src={src}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="64px"
+                unoptimized={isUnoptimizedSrc(src)}
+                onError={(e) => {
+                  const el = e.currentTarget;
+                  if (el.src && !el.src.includes("placeholder-design")) {
+                    el.src = FALLBACK_DESIGN_IMAGE;
+                  }
+                }}
+              />
             </button>
           ))}
         </div>

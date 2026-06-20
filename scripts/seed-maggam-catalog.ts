@@ -7,16 +7,13 @@
  * Force regenerate: npm run db:seed-maggam -- --force
  */
 import { PrismaClient, type DesignSizeTier } from "@prisma/client";
-import { mkdir } from "fs/promises";
-import path from "path";
-import sharp from "sharp";
-import { deleteStoredUpload } from "../src/lib/storage";
+import { deleteStoredUpload, saveCatalogAsset } from "../src/lib/storage";
 import {
   catalogNumberFor,
   folderSlugForTier,
   renderMaggamBlouse,
   titleForIndex,
-} from "./lib/render-maggam-blouse";
+} from "../src/lib/maggam-catalog-image";
 
 const prisma = new PrismaClient();
 const TARGET_COUNT = 100;
@@ -30,22 +27,18 @@ function tierArg(): DesignSizeTier[] | "all" {
   throw new Error(`Unknown tier "${raw}". Use small, medium, big, or all.`);
 }
 
-function assetDir(tier: DesignSizeTier): string {
-  return path.join(process.cwd(), "public", "assets", "catalog", folderSlugForTier(tier));
-}
-
 function assetUrlPrefix(tier: DesignSizeTier): string {
   return `/assets/catalog/${folderSlugForTier(tier)}`;
 }
 
 function isStaticAssetPath(imagePath: string | null | undefined, tier: DesignSizeTier): boolean {
-  return Boolean(imagePath?.startsWith(assetUrlPrefix(tier)));
+  if (!imagePath) return false;
+  const slug = folderSlugForTier(tier);
+  return imagePath.startsWith(assetUrlPrefix(tier)) || imagePath.includes(`/${slug}/MAG-`);
 }
 
 async function seedTier(tier: DesignSizeTier) {
-  const dir = assetDir(tier);
   const urlPrefix = assetUrlPrefix(tier);
-  await mkdir(dir, { recursive: true });
 
   let created = 0;
   let updated = 0;
@@ -56,8 +49,6 @@ async function seedTier(tier: DesignSizeTier) {
   for (let n = 1; n <= TARGET_COUNT; n++) {
     const catalogNumber = catalogNumberFor(tier, n);
     const existing = await prisma.design.findFirst({ where: { catalogNumber } });
-    const imagePath = `${urlPrefix}/${catalogNumber}.jpg`;
-    const outFile = path.join(dir, `${catalogNumber}.jpg`);
 
     if (existing && isStaticAssetPath(existing.imagePath, tier) && !FORCE) {
       skipped++;
@@ -65,7 +56,8 @@ async function seedTier(tier: DesignSizeTier) {
     }
 
     const buffer = await renderMaggamBlouse(n, tier, catalogNumber);
-    await sharp(buffer).toFile(outFile);
+    const relPath = `assets/catalog/${folderSlugForTier(tier)}/${catalogNumber}.jpg`;
+    const imagePath = await saveCatalogAsset(buffer, relPath);
     const title = titleForIndex(n);
 
     if (existing) {
