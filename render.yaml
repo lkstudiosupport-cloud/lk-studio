@@ -4,12 +4,12 @@ services:
     name: lk-studio
     runtime: node
     plan: free
-    buildCommand: NODE_OPTIONS=--max-old-space-size=460 npm install && npm run build
+    buildCommand: npm install && npm run build
     startCommand: npx next start -H 0.0.0.0 -p $PORT
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
-        value: "20"
+        value: "22"
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
       - key: NODE_ENV

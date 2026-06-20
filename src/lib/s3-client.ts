@@ -1,4 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
+import https from "node:https";
 
 function requireEnv(name: string): string {
   const v = process.env[name]?.trim();
@@ -31,8 +33,6 @@ export function resolveS3Region(): string {
 
 export function validateS3Env(): void {
   requireEnv("S3_BUCKET");
-  requireEnv("S3_ACCESS_KEY_ID");
-  requireEnv("S3_SECRET_ACCESS_KEY");
   requireEnv("S3_PUBLIC_URL");
 
   const publicUrl = process.env.S3_PUBLIC_URL!.trim();
@@ -47,9 +47,29 @@ export function validateS3Env(): void {
   resolveS3Endpoint();
 }
 
+/** Public base URL for catalog images (no trailing slash). */
+export function publicAssetBaseUrl(): string {
+  return requireEnv("S3_PUBLIC_URL").replace(/\/$/, "");
+}
+
+export function publicUrlForKey(key: string): string {
+  return `${publicAssetBaseUrl()}/${key.replace(/^\//, "")}`;
+}
+
 export function createS3Client(): S3Client {
   validateS3Env();
+  requireEnv("S3_ACCESS_KEY_ID");
+  requireEnv("S3_SECRET_ACCESS_KEY");
   const endpoint = resolveS3Endpoint();
+
+  const requestHandler = new NodeHttpHandler({
+    httpsAgent: new https.Agent({
+      keepAlive: true,
+      minVersion: "TLSv1.2",
+    }),
+    connectionTimeout: 30_000,
+    requestTimeout: 120_000,
+  });
 
   return new S3Client({
     region: resolveS3Region(),
@@ -58,14 +78,12 @@ export function createS3Client(): S3Client {
       accessKeyId: requireEnv("S3_ACCESS_KEY_ID"),
       secretAccessKey: requireEnv("S3_SECRET_ACCESS_KEY"),
     },
-    /** Required for Cloudflare R2 and most S3-compatible endpoints. */
     forcePathStyle: Boolean(endpoint),
-  });
-}
-
-export function maskSecret(value: string): string {
-  if (value.length <= 8) return "***";
-  return `${value.slice(0, 4)}…${value.slice(-4)}`;
+    requestHandler,
+    /** Required for AWS SDK v3.729+ with Cloudflare R2. */
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
+  } as ConstructorParameters<typeof S3Client>[0]);
 }
 
 export function logS3ConfigHint(): void {

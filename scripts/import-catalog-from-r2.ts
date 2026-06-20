@@ -1,20 +1,27 @@
 /**
- * Method B: images in R2 → Maggam / Embroidery catalog with auto design codes.
+ * Method B: images in R2 → Maggam / Embroidery with auto codes MAG-0001, EMB-0001, …
  *
- * 1. Upload ANY image names to R2 (PC browser):
- *    - uploads/catalog/maggam-work/   (any .jpg / .png names)
- *    - uploads/catalog/embroidery/
- * 2. Render Shell:
- *    npm run db:import-catalog -- --category=maggam
- *    npm run db:import-catalog -- --dry-run
+ * Upload photos to R2 folder (any filenames), then on Render Shell:
  *
- * Codes are assigned automatically: MAG-0001, MAG-0002, … / EMB-0001, …
- * (Filenames like MAG-0001.jpg are also accepted.)
+ *   npm run db:import-catalog -- --category=maggam --manifest
+ *
+ * If S3 list works (no SSL error):
+ *   npm run db:import-catalog -- --category=maggam
+ *
+ * Manifest mode (works when Render Shell has R2 SSL issues):
+ * 1. Upload photos to uploads/catalog/maggam-work/
+ * 2. Upload import-manifest.json in the same folder, e.g. ["photo1.jpg","photo2.jpg"]
+ * 3. npm run db:import-catalog -- --category=maggam --manifest --dry-run
  */
 import { PrismaClient, type ServiceCategory } from "@prisma/client";
 import { ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { catalogCodePrefix, nextCatalogDesignNumber } from "../src/lib/catalog-design-number";
-import { createS3Client, logS3ConfigHint } from "../src/lib/s3-client";
+import {
+  createS3Client,
+  logS3ConfigHint,
+  publicAssetBaseUrl,
+  publicUrlForKey,
+} from "../src/lib/s3-client";
 
 const prisma = new PrismaClient();
 
@@ -33,17 +40,8 @@ const PREFIXES: { prefix: string; category: ServiceCategory; codeRe: RegExp }[] 
 
 function requireEnv(name: string): string {
   const v = process.env[name]?.trim();
-  if (!v) throw new Error(`Missing ${name} — set R2/S3 env vars on Render first.`);
+  if (!v) throw new Error(`Missing ${name} — set env on Render.`);
   return v;
-}
-
-function s3Client() {
-  return createS3Client();
-}
-
-function publicUrlForKey(key: string): string {
-  const base = requireEnv("S3_PUBLIC_URL").replace(/\/$/, "");
-  return `${base}/${key.replace(/^\//, "")}`;
 }
 
 function catalogNumberFromFilename(filename: string): string | null {
@@ -73,9 +71,10 @@ function parseMaxIndex(category: ServiceCategory, catalogNumber: string): number
   return Number.isNaN(n) ? 0 : n;
 }
 
-async function listImageKeys(prefix: string): Promise<string[]> {
-  const bucket = requireEnv("S3_BUCKET");
-  const client = s3Client();
+async function listImageKeysFromS3(prefix: string): Promise<string[]> {
+  requireEnv("S3_BUCKET");
+  const client = createS3Client();
+  const bucket = process.env.S3_BUCKET!.trim();
   const keys: string[] = [];
   let token: string | undefined;
 
@@ -97,21 +96,79 @@ async function listImageKeys(prefix: string): Promise<string[]> {
   return keys.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
+async function listImageKeysFromManifest(prefix: string, manifestFile: string): Promise<string[]> {
+  publicAssetBaseUrl();
+  const url = publicUrlForKey(`${prefix}${manifestFile}`);
+  console.log(`Reading manifest: ${url}`);
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(
+      `Could not fetch ${url} (${res.status}). Upload ${manifestFile} to R2 folder ${prefix} with content like ["photo1.jpg","photo2.jpg"]`
+    );
+  }
+
+  const data = (await res.json()) as unknown;
+  const names: string[] = Array.isArray(data)
+    ? data.filter((x): x is string => typeof x === "string")
+    : typeof data === "object" &&
+        data !== null &&
+        Array.isArray((data as { files?: unknown }).files)
+      ? ((data as { files: unknown[] }).files.filter((x): x is string => typeof x === "string"))
+      : [];
+
+  if (names.length === 0) {
+    throw new Error(`${manifestFile} is empty or invalid. Use ["photo1.jpg","photo2.jpg"]`);
+  }
+
+  return names
+    .filter((n) => /\.(jpe?g|png|webp)$/i.test(n))
+    .map((n) => `${prefix}${n.replace(/^\//, "")}`)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
 function parseArgs() {
   const dryRun = process.argv.includes("--dry-run");
   const force = process.argv.includes("--force");
+  const useManifest = process.argv.includes("--manifest");
+  const manifestFile =
+    process.argv.find((a) => a.startsWith("--manifest="))?.split("=")[1] ?? "import-manifest.json";
   const catArg = process.argv.find((a) => a.startsWith("--category="))?.split("=")[1]?.toLowerCase();
   let filter: "all" | "maggam" | "embroidery" = "all";
   if (catArg === "maggam") filter = "maggam";
   else if (catArg === "embroidery" || catArg === "emb") filter = "embroidery";
-  return { dryRun, force, filter };
+  return { dryRun, force, filter, useManifest, manifestFile };
+}
+
+async function resolveImageKeys(
+  prefix: string,
+  opts: { useManifest: boolean; manifestFile: string }
+): Promise<string[]> {
+  if (opts.useManifest) {
+    return listImageKeysFromManifest(prefix, opts.manifestFile);
+  }
+
+  try {
+    return await listImageKeysFromS3(prefix);
+  } catch (e) {
+    const code = e && typeof e === "object" && "code" in e ? String(e.code) : "";
+    if (code === "EPROTO") {
+      console.error(
+        "\nR2 S3 API SSL error on Render Shell — use manifest mode instead:\n" +
+          "  1. Upload import-manifest.json to the same R2 folder as your photos\n" +
+          '     Example: ["photo1.jpg","photo2.jpg"]\n' +
+          "  2. npm run db:import-catalog -- --category=maggam --manifest --dry-run\n"
+      );
+    }
+    throw e;
+  }
 }
 
 async function importPrefix(
   entry: (typeof PREFIXES)[number],
-  opts: { dryRun: boolean; force: boolean }
+  opts: { dryRun: boolean; force: boolean; useManifest: boolean; manifestFile: string }
 ): Promise<{ created: number; updated: number; skipped: number }> {
-  const keys = await listImageKeys(entry.prefix);
+  const keys = await resolveImageKeys(entry.prefix, opts);
   let created = 0;
   let updated = 0;
   let skipped = 0;
@@ -139,8 +196,7 @@ async function importPrefix(
     }
 
     const title = titleFromFilename(filename, catalogNumber);
-    const existing =
-      byUrl ?? (await prisma.design.findFirst({ where: { catalogNumber } }));
+    const existing = byUrl ?? (await prisma.design.findFirst({ where: { catalogNumber } }));
 
     if (existing && !opts.force && existing.imagePath === imagePath) {
       skipped++;
@@ -205,7 +261,13 @@ async function main() {
         ? "Import (update existing rows)."
         : "Import (auto codes MAG-0001 / EMB-0001, skip already imported URLs)."
   );
-  logS3ConfigHint();
+
+  if (opts.useManifest) {
+    console.log(`Mode: manifest (${opts.manifestFile}) via public URL`);
+    console.log(`S3 public URL=${publicAssetBaseUrl()}`);
+  } else {
+    logS3ConfigHint();
+  }
 
   let totalCreated = 0;
   let totalUpdated = 0;
@@ -228,14 +290,6 @@ async function main() {
 main()
   .then(() => prisma.$disconnect())
   .catch((e) => {
-    if (e && typeof e === "object" && "code" in e && e.code === "EPROTO") {
-      console.error(
-        "\nR2 SSL error — check Render env vars:\n" +
-          "  S3_ENDPOINT = https://<ACCOUNT_ID>.r2.cloudflarestorage.com  (NOT pub-xxx.r2.dev)\n" +
-          "  S3_PUBLIC_URL = https://pub-xxx.r2.dev\n" +
-          "  S3_REGION = auto\n"
-      );
-    }
     console.error(e);
     prisma.$disconnect();
     process.exit(1);
