@@ -25,6 +25,11 @@ coverage/
 # Android / Capacitor
 android/
 public/dev-access-url.txt
+public/catalog/
+public/assets/catalog/maggam-medium/
+public/assets/catalog/maggam-big/
+downloads/
+maggam-seed-log.txt
 tunnel-out.txt
 tunnel-err.txt
 LK-Studio-debug.apk

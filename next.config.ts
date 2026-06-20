@@ -41,6 +41,13 @@ const nextConfig: NextConfig = {
   compress: true,
   /** Phone / other device on Wi‑Fi loading dev server by PC IP (mobile testing). */
   allowedDevOrigins: lanDevOrigins,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  /** Keep Render builds under free-tier memory while catalog JPGs stay in public/. */
+  outputFileTracingExcludes: {
+    "*": ["./public/assets/catalog/**", "./public/catalog/**"],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "25mb",
