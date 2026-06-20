@@ -1,9 +1,10 @@
+import { storageBackend, supabaseGetObject } from "@/lib/supabase-storage";
 import { r2GetObject, isR2Storage } from "@/lib/r2-object";
 import { createS3Client } from "@/lib/s3-client";
 
 export const runtime = "nodejs";
 
-/** Serve R2/S3 uploads through the app (no pub-xxx.r2.dev required). */
+/** Serve uploads from Supabase Storage, R2, or S3 via app proxy. */
 export async function GET(
   _req: Request,
   context: { params: Promise<{ path: string[] }> }
@@ -19,6 +20,16 @@ export async function GET(
   }
 
   try {
+    if (storageBackend() === "supabase") {
+      const { body, contentType } = await supabaseGetObject(key);
+      return new Response(new Uint8Array(body), {
+        headers: {
+          "Content-Type": contentType,
+          "Cache-Control": "public, max-age=604800, immutable",
+        },
+      });
+    }
+
     if (isR2Storage()) {
       const { body, contentType } = await r2GetObject(key);
       return new Response(new Uint8Array(body), {

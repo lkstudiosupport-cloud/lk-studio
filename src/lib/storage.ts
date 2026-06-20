@@ -13,6 +13,16 @@ function s3Configured(): boolean {
   );
 }
 
+function remoteStorageConfigured(): boolean {
+  return (
+    s3Configured() ||
+    Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+        process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+    )
+  );
+}
+
 function storageUrlForKey(key: string): string {
   const normalized = key.replace(/^\//, "");
   const publicBase = process.env.S3_PUBLIC_URL?.trim()?.replace(/\/$/, "");
@@ -21,7 +31,7 @@ function storageUrlForKey(key: string): string {
     return `${publicBase}/${normalized}`;
   }
 
-  if (s3Configured()) {
+  if (remoteStorageConfigured()) {
     return `/api/media/${normalized}`;
   }
 
@@ -32,12 +42,32 @@ function storageUrlForKey(key: string): string {
   return `https://${bucket}.s3.${region}.amazonaws.com/${normalized}`;
 }
 
-async function saveToS3(buffer: Buffer, key: string, contentType: string): Promise<string> {
+/** Save bytes to remote storage (Supabase preferred on Render; R2 via fetch; else AWS SDK). */
+async function saveToRemote(buffer: Buffer, key: string, contentType: string): Promise<string> {
+  const { storageBackend } = await import("@/lib/supabase-storage");
+
+  if (storageBackend() === "supabase") {
+    const { supabasePutObject } = await import("@/lib/supabase-storage");
+    await supabasePutObject(key, buffer, contentType);
+    return storageUrlForKey(key);
+  }
+
   const { isR2Storage, r2PutObject } = await import("@/lib/r2-object");
 
   if (isR2Storage()) {
-    await r2PutObject(key, buffer, contentType);
-    return storageUrlForKey(key);
+    try {
+      await r2PutObject(key, buffer, contentType);
+      return storageUrlForKey(key);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const code = e && typeof e === "object" && "code" in e ? String(e.code) : "";
+      if (code === "EPROTO" || msg.includes("EPROTO") || msg.includes("handshake")) {
+        throw new Error(
+          "R2 SSL error on server. Set SUPABASE_SERVICE_ROLE_KEY + STORAGE_BACKEND=supabase on Render (see Supabase → Storage → bucket lk-uploads)."
+        );
+      }
+      throw e;
+    }
   }
 
   const { PutObjectCommand } = await import("@aws-sdk/client-s3");
@@ -88,13 +118,13 @@ export async function saveUpload(file: File, subfolder: string): Promise<string>
   const name = `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`;
   const key = `uploads/${subfolder}/${name}`;
 
-  if (s3Configured()) {
-    return saveToS3(buffer, key, file.type || guessContentType(ext));
+  if (remoteStorageConfigured()) {
+    return saveToRemote(buffer, key, file.type || guessContentType(ext));
   }
 
   if (isProductionHosting()) {
     throw new Error(
-      "File storage not configured. Set S3_BUCKET, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
+      "File storage not configured. Set SUPABASE_SERVICE_ROLE_KEY (recommended) or S3_* on Render."
     );
   }
 
@@ -115,9 +145,9 @@ export async function saveCatalogAsset(
   const normalized = assetPath.replace(/\\/g, "/").replace(/^\/+/, "");
   const filename = path.basename(normalized);
 
-  if (s3Configured()) {
+  if (remoteStorageConfigured()) {
     const key = normalized.startsWith("assets/") ? normalized : `assets/${normalized}`;
-    return saveToS3(buffer, key, contentType);
+    return saveToRemote(buffer, key, contentType);
   }
 
   const full = path.join(PUBLIC_DIR, normalized);
@@ -180,8 +210,14 @@ export async function deleteStoredUpload(pathOrUrl: string): Promise<void> {
   const key = storageKeyFromPath(pathOrUrl);
   if (!key) return;
 
-  if (s3Configured()) {
+  if (remoteStorageConfigured()) {
     try {
+      const { storageBackend, supabaseDeleteObject } = await import("@/lib/supabase-storage");
+      if (storageBackend() === "supabase") {
+        await supabaseDeleteObject(key);
+        return;
+      }
+
       const { isR2Storage, r2DeleteObject } = await import("@/lib/r2-object");
       if (isR2Storage()) {
         await r2DeleteObject(key);
