@@ -18,6 +18,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed-maggam-small": "tsx scripts/seed-maggam-small-catalog.ts",
     "db:seed-maggam": "tsx scripts/seed-maggam-catalog.ts",
+    "db:import-catalog": "tsx scripts/import-catalog-from-r2.ts",
     "catalog:export-maggam": "tsx scripts/export-maggam-catalog.ts",
     "db:fix": "tsx scripts/fix-db.ts && prisma db push",
     "db:fix-trial": "tsx scripts/fix-trial-ends.ts",
