@@ -3,7 +3,6 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { CategoryButtons } from "@/components/CategoryButtons";
-import { AskPriceOwnDesignCard } from "@/components/AskPriceForm";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { isShopActive } from "@/lib/subscription";
 import {
@@ -84,13 +83,9 @@ async function CustomerAppCatalogPage({
         </p>
       )}
 
-      {showCatalog && priceShopId && (category === "MAGGAM" || category === "COMPUTER_EMBROIDERY") && (
-        <AskPriceOwnDesignCard locale={locale} shopId={priceShopId} defaultCategory={category} />
-      )}
-
-      {showCatalog && !priceShopId && (category === "MAGGAM" || category === "COMPUTER_EMBROIDERY") && (
+      {showCatalog && !priceShopId && (
         <p className="card-premium p-4 text-sm text-zinc-600">
-          {t(locale, "pickShopForPriceQuote")}{" "}
+          {t(locale, "pickShopForFavorites")}{" "}
           <Link href="/customer/shops" className="font-semibold text-brand-green underline">
             {t(locale, "browseShops")}
           </Link>

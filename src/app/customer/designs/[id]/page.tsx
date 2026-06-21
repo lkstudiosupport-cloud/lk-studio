@@ -6,7 +6,6 @@ import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { categoryLabelKey } from "@/lib/categories";
 import { DesignImagesView } from "@/components/DesignImagesView";
-import { AskPriceForm } from "@/components/AskPriceForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { isShopActive } from "@/lib/subscription";
 import { parseDesignImages } from "@/lib/design-images";
@@ -121,13 +120,9 @@ export default async function CustomerDesignDetailPage({
         />
       </section>
 
-      {contextShopId ? (
-        <section className="card-premium p-4">
-          <AskPriceForm locale={locale} shopId={contextShopId} design={design} />
-        </section>
-      ) : (
+      {!contextShopId && (
         <section className="card-premium p-4 text-sm text-zinc-600">
-          {t(locale, "pickShopForPriceQuote")}{" "}
+          {t(locale, "pickShopForFavorites")}{" "}
           <Link href="/customer/shops" className="font-semibold text-brand-green underline">
             {t(locale, "browseShops")}
           </Link>
