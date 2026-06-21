@@ -1,6 +1,7 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
 import https from "node:https";
+import { storedUrlForKey } from "@/lib/storage-url";
 
 function requireEnv(name: string): string {
   const v = process.env[name]?.trim();
@@ -52,14 +53,7 @@ export function publicAssetBaseUrl(): string {
 
 /** Stored image URL — defaults to /api/media/ (no R2 public URL required). */
 export function publicUrlForKey(key: string): string {
-  const normalized = key.replace(/^\//, "");
-  const publicBase = process.env.S3_PUBLIC_URL?.trim()?.replace(/\/$/, "");
-
-  if (process.env.S3_USE_PUBLIC_URL === "true" && publicBase) {
-    return `${publicBase}/${normalized}`;
-  }
-
-  return `/api/media/${normalized}`;
+  return storedUrlForKey(key);
 }
 
 export function createS3Client(): S3Client {

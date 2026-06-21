@@ -1,6 +1,10 @@
+import { normalizeStoredImageUrl } from "@/lib/storage-url";
+
 /** Map missing static catalog paths to on-demand API that generates the JPEG. */
 export function resolveDesignImageUrl(path: string): string {
   if (!path?.trim()) return path;
+
+  path = normalizeStoredImageUrl(path);
 
   if (path.startsWith("/api/catalog/maggam/")) return path;
 

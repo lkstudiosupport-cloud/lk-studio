@@ -2,6 +2,7 @@ import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { randomBytes } from "crypto";
 import { MAX_UPLOAD_BYTES } from "@/lib/limits";
+import { storageKeyFromStoredUrl, storedUrlForKey, normalizeStoredImageUrl } from "@/lib/storage-url";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
@@ -24,22 +25,7 @@ function remoteStorageConfigured(): boolean {
 }
 
 function storageUrlForKey(key: string): string {
-  const normalized = key.replace(/^\//, "");
-  const publicBase = process.env.S3_PUBLIC_URL?.trim()?.replace(/\/$/, "");
-
-  if (process.env.S3_USE_PUBLIC_URL === "true" && publicBase) {
-    return `${publicBase}/${normalized}`;
-  }
-
-  if (remoteStorageConfigured()) {
-    return `/api/media/${normalized}`;
-  }
-
-  if (publicBase) return `${publicBase}/${normalized}`;
-
-  const bucket = process.env.S3_BUCKET!.trim();
-  const region = process.env.S3_REGION?.trim() || "ap-south-1";
-  return `https://${bucket}.s3.${region}.amazonaws.com/${normalized}`;
+  return storedUrlForKey(key);
 }
 
 /** Save bytes to remote storage (Supabase preferred on Render; R2 via fetch; else AWS SDK). */
@@ -169,40 +155,7 @@ function isProductionHosting(): boolean {
 
 /** Extract S3 object key from a stored path or public URL. */
 function storageKeyFromPath(pathOrUrl: string): string | null {
-  const trimmed = pathOrUrl.trim();
-  if (!trimmed) return null;
-
-  if (trimmed.startsWith("/api/media/")) {
-    return trimmed.slice("/api/media/".length);
-  }
-
-  if (trimmed.startsWith("api/media/")) {
-    return trimmed.slice("api/media/".length);
-  }
-
-  if (trimmed.startsWith("/uploads/")) {
-    return trimmed.slice(1);
-  }
-
-  if (trimmed.startsWith("uploads/")) {
-    return trimmed;
-  }
-
-  const publicBase = process.env.S3_PUBLIC_URL?.trim()?.replace(/\/$/, "");
-  if (publicBase && trimmed.startsWith(`${publicBase}/`)) {
-    return trimmed.slice(publicBase.length + 1);
-  }
-
-  const bucket = process.env.S3_BUCKET?.trim();
-  if (bucket) {
-    const region = process.env.S3_REGION?.trim() || "ap-south-1";
-    const hostPrefix = `https://${bucket}.s3.${region}.amazonaws.com/`;
-    if (trimmed.startsWith(hostPrefix)) {
-      return trimmed.slice(hostPrefix.length);
-    }
-  }
-
-  return null;
+  return storageKeyFromStoredUrl(pathOrUrl);
 }
 
 /** Best-effort delete of a stored upload (S3/R2 or local dev file). */
@@ -250,7 +203,8 @@ export async function deleteStoredUpload(pathOrUrl: string): Promise<void> {
 
 /** Resolve display URL (already absolute from S3, or site-relative local). */
 export function resolvePublicAssetUrl(pathOrUrl: string, siteOrigin?: string): string {
-  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) return pathOrUrl;
-  if (!siteOrigin) return pathOrUrl;
-  return `${siteOrigin.replace(/\/$/, "")}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
+  const path = normalizeStoredImageUrl(pathOrUrl);
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (!siteOrigin) return path;
+  return `${siteOrigin.replace(/\/$/, "")}${path.startsWith("/") ? "" : "/"}${path}`;
 }

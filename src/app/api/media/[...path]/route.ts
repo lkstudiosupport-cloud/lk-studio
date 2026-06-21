@@ -1,6 +1,5 @@
-import { storageBackend, supabaseGetObject } from "@/lib/supabase-storage";
-import { r2GetObject, isR2Storage } from "@/lib/r2-object";
-import { createS3Client } from "@/lib/s3-client";
+import { fetchStoredObject } from "@/lib/fetch-stored-object";
+import { storageBackend } from "@/lib/supabase-storage";
 
 export const runtime = "nodejs";
 
@@ -20,45 +19,18 @@ export async function GET(
   }
 
   try {
-    if (storageBackend() === "supabase") {
-      const { body, contentType } = await supabaseGetObject(key);
-      return new Response(new Uint8Array(body), {
-        headers: {
-          "Content-Type": contentType,
-          "Cache-Control": "public, max-age=604800, immutable",
-        },
-      });
-    }
-
-    if (isR2Storage()) {
-      const { body, contentType } = await r2GetObject(key);
-      return new Response(new Uint8Array(body), {
-        headers: {
-          "Content-Type": contentType,
-          "Cache-Control": "public, max-age=604800, immutable",
-        },
-      });
-    }
-
-    const { GetObjectCommand } = await import("@aws-sdk/client-s3");
-    const client = createS3Client();
-    const res = await client.send(
-      new GetObjectCommand({
-        Bucket: process.env.S3_BUCKET!.trim(),
-        Key: key,
-      })
-    );
-
-    if (!res.Body) return new Response("Not found", { status: 404 });
-
-    const bytes = await res.Body.transformToByteArray();
-    return new Response(Buffer.from(bytes), {
+    const { body, contentType } = await fetchStoredObject(key);
+    return new Response(new Uint8Array(body), {
       headers: {
-        "Content-Type": res.ContentType ?? "application/octet-stream",
+        "Content-Type": contentType,
         "Cache-Control": "public, max-age=604800, immutable",
       },
     });
-  } catch {
+  } catch (e) {
+    if (process.env.NODE_ENV !== "test") {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[media] ${key} (${storageBackend()}): ${msg}`);
+    }
     return new Response("Not found", { status: 404 });
   }
 }
