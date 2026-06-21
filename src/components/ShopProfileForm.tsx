@@ -7,6 +7,7 @@ import { t } from "@/lib/i18n";
 import { updateShopProfile } from "@/app/shop/actions";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { UpiQrUpload } from "@/components/UpiQrUpload";
+import { Phone, MessageCircle } from "lucide-react";
 import { LiveLocationFields } from "@/components/LiveLocationFields";
 
 type ShopProfileData = {
@@ -15,7 +16,6 @@ type ShopProfileData = {
   locationLink: string | null;
   latitude: number | null;
   longitude: number | null;
-  shopTimings: string | null;
   phone: string | null;
   whatsapp: string | null;
   instagram: string | null;
@@ -65,20 +65,33 @@ export function ShopProfileForm({
       </label>
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "phone")}</span>
-        <input name="phone" type="tel" defaultValue={profile.phone ?? ""} className="input-premium w-full" />
+        <div className="relative">
+          <Phone
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-green"
+            aria-hidden
+          />
+          <input
+            name="phone"
+            type="tel"
+            defaultValue={profile.phone ?? ""}
+            className="input-premium w-full pl-10"
+          />
+        </div>
       </label>
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "whatsapp")}</span>
-        <input name="whatsapp" type="tel" defaultValue={profile.whatsapp ?? ""} className="input-premium w-full" />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "shopTimings")}</span>
-        <input
-          name="shopTimings"
-          defaultValue={profile.shopTimings ?? ""}
-          placeholder={t(locale, "shopTimingsPlaceholder")}
-          className="input-premium w-full"
-        />
+        <div className="relative">
+          <MessageCircle
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600"
+            aria-hidden
+          />
+          <input
+            name="whatsapp"
+            type="tel"
+            defaultValue={profile.whatsapp ?? ""}
+            className="input-premium w-full pl-10"
+          />
+        </div>
       </label>
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "instagram")}</span>

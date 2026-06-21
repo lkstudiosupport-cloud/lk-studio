@@ -260,7 +260,6 @@ export async function updateShopProfile(formData: FormData) {
       locationLink: String(formData.get("locationLink") ?? "").trim() || null,
       latitude: latRaw ? parseFloat(latRaw) : null,
       longitude: lngRaw ? parseFloat(lngRaw) : null,
-      shopTimings: String(formData.get("shopTimings") ?? "").trim() || null,
       phone: String(formData.get("phone") ?? "").trim() || null,
       whatsapp: String(formData.get("whatsapp") ?? "").trim() || null,
       instagram: String(formData.get("instagram") ?? "").trim() || null,

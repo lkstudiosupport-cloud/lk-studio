@@ -5,7 +5,6 @@ import {
   Instagram,
   CreditCard,
   ExternalLink,
-  Clock,
 } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -15,7 +14,6 @@ type Shop = {
   shopName: string;
   address: string | null;
   locationLink: string | null;
-  shopTimings: string | null;
   phone: string | null;
   whatsapp: string | null;
   instagram: string | null;
@@ -28,8 +26,9 @@ function cleanPhone(p: string) {
 }
 
 export function ContactActions({ shop, locale }: { shop: Shop; locale: Locale }) {
-  const wa = shop.whatsapp || shop.phone;
-  const waLink = wa ? `https://wa.me/${cleanPhone(wa).replace(/\D/g, "")}` : null;
+  const waLink = shop.whatsapp
+    ? `https://wa.me/${cleanPhone(shop.whatsapp).replace(/\D/g, "")}`
+    : null;
   const mapsLink = shop.locationLink
     ? shop.locationLink
     : shop.address
@@ -52,8 +51,8 @@ export function ContactActions({ shop, locale }: { shop: Shop; locale: Locale })
     },
     waLink && {
       icon: MessageCircle,
-      label: "WhatsApp",
-      value: wa!,
+      label: t(locale, "whatsapp"),
+      value: shop.whatsapp!,
       href: waLink,
       color: "from-green-500 to-green-600",
     },
@@ -82,16 +81,8 @@ export function ContactActions({ shop, locale }: { shop: Shop; locale: Locale })
   return (
     <div className="space-y-6">
       <div className="card-premium overflow-hidden p-6 text-center">
-        <h1 className="page-title text-3xl">
-          {shop.shopName}
-        </h1>
+        <h1 className="page-title text-3xl">{shop.shopName}</h1>
         <p className="mt-1 text-sm text-zinc-500">{t(locale, "contactShop")}</p>
-        {shop.shopTimings && (
-          <p className="mt-3 flex items-center justify-center gap-1.5 text-sm font-medium text-brand-green">
-            <Clock className="h-4 w-4" />
-            {shop.shopTimings}
-          </p>
-        )}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -99,7 +90,7 @@ export function ContactActions({ shop, locale }: { shop: Shop; locale: Locale })
           <a
             key={item.label}
             href={item.href}
-            target={item.label === "WhatsApp" || item.label === t(locale, "instagram") ? "_blank" : undefined}
+            target={item.label === t(locale, "whatsapp") || item.label === t(locale, "instagram") ? "_blank" : undefined}
             rel="noreferrer"
             className={`group flex items-start gap-3 rounded-2xl bg-gradient-to-br ${item.color} p-4 text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl`}
           >
