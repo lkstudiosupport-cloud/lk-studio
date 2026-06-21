@@ -1,4 +1,4 @@
-import type { Design } from "@prisma/client";
+import type { DesignListItem } from "@/lib/design-queries";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { categoryLabelKey } from "@/lib/categories";
@@ -15,7 +15,7 @@ export function DesignCard({
   shopId,
   isFavorite,
 }: {
-  design: Design;
+  design: DesignListItem;
   locale: Locale;
   action?: React.ReactNode;
   detailHref?: string;

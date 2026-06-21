@@ -7,6 +7,9 @@ export const DASHBOARD_ORDER_LIMIT = 40;
 /** Max designs per shop gallery load. */
 export const DESIGN_LIST_LIMIT = 200;
 
+/** Max app catalog designs loaded for customer browse (all categories). */
+export const CATALOG_LIST_LIMIT = 500;
+
 /** Max photos per shop design (cover + gallery). */
 export const MAX_DESIGN_IMAGES = 2;
 

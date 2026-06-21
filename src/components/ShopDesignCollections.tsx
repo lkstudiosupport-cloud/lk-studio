@@ -2,7 +2,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { DesignCard } from "@/components/DesignCard";
 import { parseDesignImages } from "@/lib/design-images";
-import type { Design } from "@prisma/client";
+import type { DesignListItem } from "@/lib/design-queries";
 
 export function ShopDesignCollections({
   locale,
@@ -13,11 +13,11 @@ export function ShopDesignCollections({
   detailHrefForDesign,
 }: {
   locale: Locale;
-  designs: Design[];
+  designs: DesignListItem[];
   shopId?: string;
-  renderAction?: (design: Design) => React.ReactNode;
+  renderAction?: (design: DesignListItem) => React.ReactNode;
   favoriteDesignIds?: Set<string>;
-  detailHrefForDesign?: (design: Design) => string;
+  detailHrefForDesign?: (design: DesignListItem) => string;
 }) {
   if (designs.length === 0) {
     return (

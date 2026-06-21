@@ -2,110 +2,21 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
-import { CategoryButtons } from "@/components/CategoryButtons";
+import { CustomerCatalogPanel } from "@/components/CustomerCatalogPanel";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { isShopActive } from "@/lib/subscription";
 import {
-  appCatalogDesignsWhere,
   CATALOG_CATEGORIES,
   isCatalogCategory,
   shopStitchedDesignsWhere,
 } from "@/lib/design-access";
+import { cachedAppCatalogDesigns } from "@/lib/cached-catalog-designs";
+import { DESIGN_CARD_SELECT } from "@/lib/design-queries";
 import type { ServiceCategory } from "@prisma/client";
 import Link from "next/link";
 import { shopRatingSummaries } from "@/lib/shop-rating";
 import { ShopRatingBadge } from "@/components/ShopRatingBadge";
 import { SaveShopButton } from "@/components/SaveShopButton";
-import { withQueryParam } from "@/lib/query-string";
-
-/** App catalog (Maggam, Embroidery, Blouse, Dress, Children) — no shop required. */
-async function CustomerAppCatalogPage({
-  locale,
-  customerId,
-  category,
-}: {
-  locale: Awaited<ReturnType<typeof getLocale>>;
-  customerId: string;
-  category?: ServiceCategory;
-}) {
-  const savedShop = await prisma.customerSavedShop.findFirst({
-    where: { customerId },
-    orderBy: { createdAt: "desc" },
-    select: { shopId: true },
-  });
-  const priceShopId = savedShop?.shopId;
-
-  const showCatalog = category && isCatalogCategory(category);
-
-  const [designs, categoryCount, customerFavorites] = await Promise.all([
-    showCatalog
-      ? prisma.design.findMany({
-          where: appCatalogDesignsWhere(category),
-          orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
-        })
-      : Promise.resolve([]),
-    showCatalog
-      ? prisma.design.count({ where: appCatalogDesignsWhere(category) })
-      : Promise.resolve(0),
-    priceShopId
-      ? prisma.customerFavorite.findMany({
-          where: { customerId, shopId: priceShopId },
-          select: { designId: true },
-        })
-      : Promise.resolve([]),
-  ]);
-
-  const favoriteDesignIds = new Set(customerFavorites.map((f) => f.designId));
-  const basePath = "/customer/designs";
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="page-title">{t(locale, "designs")}</h1>
-        <p className="mt-1 text-sm text-zinc-600">{t(locale, "customerCatalogDesignsHint")}</p>
-        {showCatalog && (
-          <p className="mt-1 text-sm text-zinc-500">
-            {categoryCount} {t(locale, "collectionItems")}
-          </p>
-        )}
-      </div>
-
-      <CategoryButtons
-        locale={locale}
-        basePath={basePath}
-        active={showCatalog ? category : undefined}
-        categories={CATALOG_CATEGORIES}
-      />
-
-      {!showCatalog && (
-        <p className="card-premium p-6 text-center text-sm text-zinc-600">
-          {t(locale, "customerPickCategoryHint")}
-        </p>
-      )}
-
-      {showCatalog && !priceShopId && (
-        <p className="card-premium p-4 text-sm text-zinc-600">
-          {t(locale, "pickShopForFavorites")}{" "}
-          <Link href="/customer/shops" className="font-semibold text-brand-green underline">
-            {t(locale, "browseShops")}
-          </Link>
-        </p>
-      )}
-
-      {showCatalog && (
-        <ShopDesignCollections
-          locale={locale}
-          designs={designs}
-          shopId={priceShopId ?? undefined}
-          favoriteDesignIds={favoriteDesignIds}
-          detailHrefForDesign={(d) =>
-            withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
-          }
-        />
-      )}
-    </div>
-  );
-}
 
 /** Shop stitched designs only — after picking a shop from Find Shops. */
 async function CustomerShopStitchedPage({
@@ -130,12 +41,12 @@ async function CustomerShopStitchedPage({
     );
   }
 
-  const [designs, stitchedCount, ratingMap, customerFavorites, savedShop] = await Promise.all([
+  const [designs, ratingMap, customerFavorites, savedShop] = await Promise.all([
     prisma.design.findMany({
       where: shopStitchedDesignsWhere(shop.id),
+      select: DESIGN_CARD_SELECT,
       orderBy: { createdAt: "desc" },
     }),
-    prisma.design.count({ where: shopStitchedDesignsWhere(shop.id) }),
     shopRatingSummaries([shop.id]),
     prisma.customerFavorite.findMany({
       where: { customerId, shopId: shop.id },
@@ -159,7 +70,7 @@ async function CustomerShopStitchedPage({
         </Link>
         <h1 className="page-title mt-2">{shop.shopName}</h1>
         <p className="text-sm text-zinc-500">
-          {shop.shopCode} · {stitchedCount} {t(locale, "shopStitchedDesignsCount")}
+          {shop.shopCode} · {designs.length} {t(locale, "shopStitchedDesignsCount")}
         </p>
         <div className="mt-1">
           <ShopRatingBadge locale={locale} average={rating?.average ?? 0} count={rating?.count ?? 0} />
@@ -216,7 +127,30 @@ export default async function CustomerDesignsPage({
     );
   }
 
+  const savedShop = await prisma.customerSavedShop.findFirst({
+    where: { customerId: session!.id },
+    orderBy: { createdAt: "desc" },
+    select: { shopId: true },
+  });
+  const priceShopId = savedShop?.shopId;
+
+  const [designs, customerFavorites] = await Promise.all([
+    cachedAppCatalogDesigns(),
+    priceShopId
+      ? prisma.customerFavorite.findMany({
+          where: { customerId: session!.id, shopId: priceShopId },
+          select: { designId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
   return (
-    <CustomerAppCatalogPage locale={locale} customerId={session!.id} category={category} />
+    <CustomerCatalogPanel
+      locale={locale}
+      designs={designs}
+      favoriteDesignIds={customerFavorites.map((f) => f.designId)}
+      priceShopId={priceShopId}
+      initialCategory={category && CATALOG_CATEGORIES.includes(category) ? category : undefined}
+    />
   );
 }
