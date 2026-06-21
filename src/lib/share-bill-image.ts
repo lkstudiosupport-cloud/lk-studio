@@ -21,6 +21,15 @@ type ShareResult = "shared" | "cancelled" | "unavailable" | "failed";
 
 let cachedBillBlob: { key: string; blob: Blob } | null = null;
 
+/** Cache key must change when bill line items change (e.g. after edit). */
+export function billShareCacheKey(billNumber: string, itemsJson: string, amount: number) {
+  return `${billNumber}:${amount}:${itemsJson}`;
+}
+
+export function clearBillShareCache() {
+  cachedBillBlob = null;
+}
+
 function isShareCancelled(err: unknown) {
   if (err instanceof DOMException && err.name === "AbortError") return true;
   const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
@@ -240,10 +249,13 @@ export async function shareBillImage({
   fileName,
   shopName,
   fallbackHint,
+  cacheKey,
 }: {
   fileName: string;
   shopName?: string;
   fallbackHint?: string;
+  /** Include bill content (itemsJson) so edits produce a fresh capture. */
+  cacheKey?: string;
 }): Promise<ShareBillOutcome> {
   preloadBillCaptureLib();
 
@@ -252,7 +264,7 @@ export async function shareBillImage({
       ? fileName
       : billImageFileName(fileName.replace(/\.(png|jpe?g)$/i, ""));
 
-  const blob = await getBillImageBlob(resolvedName);
+  const blob = await getBillImageBlob(cacheKey ?? resolvedName);
 
   const file = new File([blob], resolvedName, { type: "image/jpeg" });
   const title = shopName ? `Bill — ${shopName}` : "Bill";

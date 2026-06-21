@@ -57,6 +57,8 @@ export function ShopBillDetailView({
           editHref={`/shop/bills/${billId}/edit`}
           billNumber={receiptData.billNumber}
           shopName={receiptData.shop.shopName}
+          itemsJson={receiptData.itemsJson}
+          amount={receiptData.amount}
           showShare
         />
       }
@@ -64,6 +66,8 @@ export function ShopBillDetailView({
         <BillShareAutoSend
           billNumber={receiptData.billNumber}
           shopName={receiptData.shop.shopName}
+          itemsJson={receiptData.itemsJson}
+          amount={receiptData.amount}
           enabled={isPostCreate}
           silent={hideChromeWhileFullscreen}
           preparingLabel={preparingLabel}
@@ -87,6 +91,8 @@ export function ShopBillDetailView({
               editHref={`/shop/bills/${billId}/edit`}
               billNumber={receiptData.billNumber}
               shopName={receiptData.shop.shopName}
+              itemsJson={receiptData.itemsJson}
+              amount={receiptData.amount}
               showShare
               compact
             />

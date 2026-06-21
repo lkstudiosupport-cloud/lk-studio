@@ -118,7 +118,7 @@ export function MultiPieceBillForm({
       if (isEdit && editBillId) {
         fd.set("billId", editBillId);
         await updateBill(fd);
-        router.push(`/shop/bills/${editBillId}`);
+        router.push(`/shop/bills/${editBillId}?share=1`);
         router.refresh();
         return;
       }

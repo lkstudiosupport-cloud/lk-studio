@@ -1,26 +1,29 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { preloadBillCaptureLib, shareBillImage } from "@/lib/share-bill-image";
+import { preloadBillCaptureLib, shareBillImage, billShareCacheKey } from "@/lib/share-bill-image";
 
-function autoShareStorageKey(billNumber: string) {
+function autoShareStorageKey(billNumber: string, itemsJson?: string, amount?: number) {
+  if (itemsJson != null && amount != null) {
+    return `lk-share-bill-${billShareCacheKey(billNumber, itemsJson, amount)}`;
+  }
   return `lk-share-bill-${billNumber}`;
 }
 
-function hasAutoShareAttempted(billNumber: string) {
+function hasAutoShareAttempted(billNumber: string, itemsJson?: string, amount?: number) {
   if (typeof sessionStorage === "undefined") return false;
-  return sessionStorage.getItem(autoShareStorageKey(billNumber)) != null;
+  return sessionStorage.getItem(autoShareStorageKey(billNumber, itemsJson, amount)) != null;
 }
 
-function markAutoShareAttempted(billNumber: string) {
+function markAutoShareAttempted(billNumber: string, itemsJson?: string, amount?: number) {
   if (typeof sessionStorage !== "undefined") {
-    sessionStorage.setItem(autoShareStorageKey(billNumber), "1");
+    sessionStorage.setItem(autoShareStorageKey(billNumber, itemsJson, amount), "1");
   }
 }
 
-function clearAutoShareAttempted(billNumber: string) {
+function clearAutoShareAttempted(billNumber: string, itemsJson?: string, amount?: number) {
   if (typeof sessionStorage !== "undefined") {
-    sessionStorage.removeItem(autoShareStorageKey(billNumber));
+    sessionStorage.removeItem(autoShareStorageKey(billNumber, itemsJson, amount));
   }
 }
 
@@ -32,6 +35,8 @@ export function BillShareAutoSend({
   preparingLabel = "Preparing bill image…",
   errorLabel = "Could not share bill image — try again",
   fallbackHint,
+  itemsJson,
+  amount,
 }: {
   billNumber: string;
   shopName?: string;
@@ -41,6 +46,8 @@ export function BillShareAutoSend({
   preparingLabel?: string;
   errorLabel?: string;
   fallbackHint?: string;
+  itemsJson?: string;
+  amount?: number;
 }) {
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState("");
@@ -52,10 +59,10 @@ export function BillShareAutoSend({
   }, [enabled]);
 
   useEffect(() => {
-    if (!enabled || startedRef.current || hasAutoShareAttempted(billNumber)) return;
+    if (!enabled || startedRef.current || hasAutoShareAttempted(billNumber, itemsJson, amount)) return;
 
     startedRef.current = true;
-    markAutoShareAttempted(billNumber);
+    markAutoShareAttempted(billNumber, itemsJson, amount);
     setPreparing(true);
     setError("");
 
@@ -67,9 +74,13 @@ export function BillShareAutoSend({
           fileName: `${billNumber}.jpg`,
           shopName,
           fallbackHint,
+          cacheKey:
+            itemsJson != null && amount != null
+              ? billShareCacheKey(billNumber, itemsJson, amount)
+              : undefined,
         });
       } catch (err) {
-        clearAutoShareAttempted(billNumber);
+        clearAutoShareAttempted(billNumber, itemsJson, amount);
         if (!cancelled) {
           setError(err instanceof Error ? err.message : errorLabel);
         }
@@ -81,7 +92,7 @@ export function BillShareAutoSend({
     return () => {
       cancelled = true;
     };
-  }, [enabled, billNumber, shopName, fallbackHint, errorLabel]);
+  }, [enabled, billNumber, shopName, fallbackHint, errorLabel, itemsJson, amount]);
 
   if (!preparing && !error) return null;
   if (silent && preparing && !error) return null;

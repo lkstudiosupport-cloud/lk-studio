@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Share2, ArrowLeft, Printer, Pencil } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { preloadBillCaptureLib, shareBillImage } from "@/lib/share-bill-image";
+import { preloadBillCaptureLib, shareBillImage, billShareCacheKey } from "@/lib/share-bill-image";
 
 export function BillShareActions({
   locale,
@@ -15,6 +15,8 @@ export function BillShareActions({
   showShare,
   editHref,
   compact,
+  itemsJson,
+  amount,
 }: {
   locale: Locale;
   backHref: string;
@@ -24,6 +26,8 @@ export function BillShareActions({
   editHref?: string;
   /** Inline bar for fullscreen receipt hero view. */
   compact?: boolean;
+  itemsJson?: string;
+  amount?: number;
 }) {
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +44,10 @@ export function BillShareActions({
         fileName: `${billNumber ?? "bill"}.jpg`,
         shopName,
         fallbackHint: t(locale, "shareBillFallback"),
+        cacheKey:
+          billNumber && itemsJson != null && amount != null
+            ? billShareCacheKey(billNumber, itemsJson, amount)
+            : undefined,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : t(locale, "shareBillFailed"));
