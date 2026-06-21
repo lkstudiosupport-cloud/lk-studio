@@ -1,8 +1,215 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
+
+const MIN_SCALE = 1;
+const MAX_SCALE = 4;
+const DOUBLE_TAP_MS = 300;
+const DOUBLE_TAP_SCALE = 2.5;
+
+function clampScale(value: number) {
+  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+}
+
+function touchDistance(t1: Touch, t2: Touch) {
+  const dx = t1.clientX - t2.clientX;
+  const dy = t1.clientY - t2.clientY;
+  return Math.hypot(dx, dy);
+}
+
+function ZoomablePreviewImage({ src, alt }: { src: string; alt: string }) {
+  const [scale, setScale] = useState(1);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [animate, setAnimate] = useState(false);
+
+  const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
+  const panRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
+  const lastTapRef = useRef(0);
+
+  useEffect(() => {
+    setScale(1);
+    setPos({ x: 0, y: 0 });
+    setAnimate(false);
+  }, [src]);
+
+  const resetZoom = useCallback(() => {
+    setAnimate(true);
+    setScale(1);
+    setPos({ x: 0, y: 0 });
+  }, []);
+
+  const zoomBy = useCallback((delta: number) => {
+    setAnimate(true);
+    setScale((s) => {
+      const next = clampScale(s + delta);
+      if (next <= MIN_SCALE) setPos({ x: 0, y: 0 });
+      return next;
+    });
+  }, []);
+
+  function onDoubleTap() {
+    setAnimate(true);
+    if (scale > MIN_SCALE) {
+      setScale(1);
+      setPos({ x: 0, y: 0 });
+    } else {
+      setScale(DOUBLE_TAP_SCALE);
+    }
+  }
+
+  function onTouchStart(e: React.TouchEvent) {
+    setAnimate(false);
+    if (e.touches.length === 2) {
+      panRef.current = null;
+      pinchRef.current = {
+        startDist: touchDistance(e.touches[0]!, e.touches[1]!),
+        startScale: scale,
+      };
+    } else if (e.touches.length === 1 && scale > MIN_SCALE) {
+      pinchRef.current = null;
+      panRef.current = {
+        startX: e.touches[0]!.clientX,
+        startY: e.touches[0]!.clientY,
+        posX: pos.x,
+        posY: pos.y,
+      };
+    }
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    if (e.touches.length === 2 && pinchRef.current) {
+      e.preventDefault();
+      const dist = touchDistance(e.touches[0]!, e.touches[1]!);
+      const next = clampScale(pinchRef.current.startScale * (dist / pinchRef.current.startDist));
+      setScale(next);
+      if (next <= MIN_SCALE) setPos({ x: 0, y: 0 });
+    } else if (e.touches.length === 1 && panRef.current && scale > MIN_SCALE) {
+      e.preventDefault();
+      const t = e.touches[0]!;
+      setPos({
+        x: panRef.current.posX + (t.clientX - panRef.current.startX),
+        y: panRef.current.posY + (t.clientY - panRef.current.startY),
+      });
+    }
+  }
+
+  function onTouchEnd(e: React.TouchEvent) {
+    if (e.touches.length === 0) {
+      pinchRef.current = null;
+      panRef.current = null;
+    }
+    if (e.changedTouches.length === 1 && e.touches.length === 0 && !pinchRef.current) {
+      const now = Date.now();
+      if (now - lastTapRef.current < DOUBLE_TAP_MS) {
+        onDoubleTap();
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
+    }
+  }
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (e.pointerType === "touch") return;
+    if (scale <= MIN_SCALE) return;
+    setAnimate(false);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    panRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      posX: pos.x,
+      posY: pos.y,
+    };
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!panRef.current || e.pointerType === "touch") return;
+    setPos({
+      x: panRef.current.posX + (e.clientX - panRef.current.startX),
+      y: panRef.current.posY + (e.clientY - panRef.current.startY),
+    });
+  }
+
+  function onPointerUp(e: React.PointerEvent) {
+    if (e.pointerType === "touch") return;
+    panRef.current = null;
+  }
+
+  function onWheel(e: React.WheelEvent) {
+    e.preventDefault();
+    setAnimate(false);
+    const delta = e.deltaY < 0 ? 0.15 : -0.15;
+    setScale((s) => {
+      const next = clampScale(s + delta);
+      if (next <= MIN_SCALE) setPos({ x: 0, y: 0 });
+      return next;
+    });
+  }
+
+  function onDoubleClick(e: React.MouseEvent) {
+    e.preventDefault();
+    onDoubleTap();
+  }
+
+  return (
+    <div
+      className="flex h-full w-full items-center justify-center overflow-hidden"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onWheel={onWheel}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        draggable={false}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onDoubleClick={onDoubleClick}
+        className="max-h-full max-w-full select-none object-contain touch-none"
+        style={{
+          transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
+          transition: animate ? "transform 0.2s ease-out" : "none",
+          cursor: scale > MIN_SCALE ? "grab" : "zoom-in",
+        }}
+      />
+
+      <div className="pointer-events-auto absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-2 py-1.5 text-white">
+        <button
+          type="button"
+          onClick={() => zoomBy(-0.5)}
+          disabled={scale <= MIN_SCALE}
+          className="rounded-full p-1.5 active:bg-white/20 disabled:opacity-40"
+          aria-label="Zoom out"
+        >
+          <Minus className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={resetZoom}
+          className="min-w-[3rem] text-xs font-semibold tabular-nums active:opacity-70"
+          aria-label="Reset zoom"
+        >
+          {Math.round(scale * 100)}%
+        </button>
+        <button
+          type="button"
+          onClick={() => zoomBy(0.5)}
+          disabled={scale >= MAX_SCALE}
+          className="rounded-full p-1.5 active:bg-white/20 disabled:opacity-40"
+          aria-label="Zoom in"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function ImagePreviewLightbox({
   images,
@@ -83,13 +290,7 @@ export function ImagePreviewLightbox({
         className="relative flex min-h-0 flex-1 items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={`${alt} ${index + 1}`}
-          className="max-h-full max-w-full object-contain"
-          draggable={false}
-        />
+        <ZoomablePreviewImage key={src} src={src} alt={`${alt} ${index + 1}`} />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-3 pb-8 pt-2">
           <span className="pointer-events-auto text-sm font-medium text-white">
