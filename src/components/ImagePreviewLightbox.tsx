@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Minus, Plus, X } from "lucide-react";
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
@@ -261,8 +261,8 @@ export function ImagePreviewLightbox({
     if (!open) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") goPrev();
-      if (e.key === "ArrowRight") goNext();
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") goPrev();
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") goNext();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -311,16 +311,32 @@ export function ImagePreviewLightbox({
             <button
               type="button"
               onClick={goPrev}
-              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70 sm:left-4"
-              aria-label="Previous"
+              className="absolute left-1/2 top-[calc(env(safe-area-inset-top,0px)+3.25rem)] z-10 -translate-x-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70"
+              aria-label="Previous photo"
+            >
+              <ChevronUp className="h-8 w-8" />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70"
+              aria-label="Next photo"
+            >
+              <ChevronDown className="h-8 w-8" />
+            </button>
+            <button
+              type="button"
+              onClick={goPrev}
+              className="absolute left-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70 sm:block sm:left-4"
+              aria-label="Previous photo"
             >
               <ChevronLeft className="h-8 w-8" />
             </button>
             <button
               type="button"
               onClick={goNext}
-              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70 sm:right-4"
-              aria-label="Next"
+              className="absolute right-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70 sm:block sm:right-4"
+              aria-label="Next photo"
             >
               <ChevronRight className="h-8 w-8" />
             </button>
