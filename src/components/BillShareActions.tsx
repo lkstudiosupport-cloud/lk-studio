@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Share2, ArrowLeft, Printer, Pencil } from "lucide-react";
+import { Share2, ArrowLeft, Pencil } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { preloadBillCaptureLib, shareBillImage, billShareCacheKey } from "@/lib/share-bill-image";
@@ -58,13 +58,13 @@ export function BillShareActions({
 
   const barClass = compact
     ? "bill-detail-actions bill-detail-actions--compact flex min-w-0 flex-1 flex-nowrap items-center gap-1.5"
-    : "bill-detail-actions sticky top-0 z-10 mb-4 flex min-w-0 flex-wrap items-center gap-2 border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur";
+    : "bill-detail-actions sticky top-0 z-10 mb-4 flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur";
 
   const backLabel = compact ? t(locale, "backShort") : t(locale, "backToBills");
   const shareLabel = sharing ? t(locale, "sharingBill") : t(locale, "shareBill");
   const btnBase = compact
     ? "inline-flex shrink-0 items-center gap-1 rounded-xl px-2 py-2 text-xs font-semibold"
-    : "inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-semibold";
+    : "inline-flex shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-sm font-semibold";
 
   return (
     <div className={barClass}>
@@ -101,15 +101,7 @@ export function BillShareActions({
           <span>{shareLabel}</span>
         </button>
       )}
-      {error && <p className="w-full text-sm text-red-600">{error}</p>}
-      <button
-        type="button"
-        onClick={() => window.print()}
-        className={`${btnBase} border border-brand-green/20 bg-white text-brand-green ${compact ? "" : "ml-auto"}`}
-      >
-        <Printer className="h-4 w-4 shrink-0" />
-        <span>{t(locale, "printBill")}</span>
-      </button>
+      {error && <p className="w-full shrink-0 basis-full text-sm text-red-600">{error}</p>}
     </div>
   );
 }
