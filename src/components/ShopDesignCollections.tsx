@@ -10,12 +10,14 @@ export function ShopDesignCollections({
   shopId,
   renderAction,
   favoriteDesignIds,
+  detailHrefForDesign,
 }: {
   locale: Locale;
   designs: Design[];
-  shopId: string;
+  shopId?: string;
   renderAction?: (design: Design) => React.ReactNode;
   favoriteDesignIds?: Set<string>;
+  detailHrefForDesign?: (design: Design) => string;
 }) {
   if (designs.length === 0) {
     return (
@@ -31,7 +33,10 @@ export function ShopDesignCollections({
           design={d}
           locale={locale}
           imageLayout="cover"
-          detailHref={`/customer/designs/${d.id}?shopId=${shopId}`}
+          detailHref={
+            detailHrefForDesign?.(d) ??
+            (shopId ? `/customer/designs/${d.id}?shopId=${shopId}` : `/customer/designs/${d.id}`)
+          }
           photosBadge={`${parseDesignImages(d.imagesJson, d.imagePath).length} · ${t(locale, "tapToViewAllPhotos")}`}
           shopId={shopId}
           isFavorite={favoriteDesignIds?.has(d.id)}

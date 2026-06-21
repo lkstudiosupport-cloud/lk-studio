@@ -10,18 +10,20 @@ import { AskPriceForm } from "@/components/AskPriceForm";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { isShopActive } from "@/lib/subscription";
 import { parseDesignImages } from "@/lib/design-images";
+import { withQueryParam } from "@/lib/query-string";
+import type { ServiceCategory } from "@prisma/client";
 
 export default async function CustomerDesignDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ shopId?: string }>;
+  searchParams: Promise<{ shopId?: string; category?: string }>;
 }) {
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
   const { id } = await params;
-  const { shopId: shopIdParam } = await searchParams;
+  const { shopId: shopIdParam, category: categoryParam } = await searchParams;
 
   const design = await prisma.design.findFirst({
     where: { id, active: true },
@@ -30,27 +32,55 @@ export default async function CustomerDesignDetailPage({
 
   if (!design) notFound();
 
-  const contextShopId = shopIdParam ?? design.shopId ?? null;
-  if (!contextShopId) notFound();
-
-  const shop =
-    design.shop ??
-    (await prisma.shopProfile.findUnique({ where: { id: contextShopId } }));
-
-  if (!shop || !isShopActive(shop.subscriptionStatus, shop.subscriptionEndsAt)) {
-    notFound();
-  }
-
-  if (!design.isCatalog && design.shopId !== contextShopId) notFound();
-
-  const favorite = await prisma.customerFavorite.findUnique({
-    where: {
-      customerId_designId: { customerId: session!.id, designId: design.id },
-    },
+  const savedShop = await prisma.customerSavedShop.findFirst({
+    where: { customerId: session!.id },
+    orderBy: { createdAt: "desc" },
+    select: { shopId: true },
   });
 
+  let contextShopId = shopIdParam?.trim() || savedShop?.shopId || null;
+
+  if (design.isCatalog) {
+    if (shopIdParam) {
+      const shop = await prisma.shopProfile.findUnique({ where: { id: shopIdParam } });
+      if (!shop || !isShopActive(shop.subscriptionStatus, shop.subscriptionEndsAt)) {
+        notFound();
+      }
+      contextShopId = shopIdParam;
+    }
+  } else {
+    if (!design.shopId) notFound();
+    contextShopId = design.shopId;
+    const shop =
+      design.shop ??
+      (await prisma.shopProfile.findUnique({ where: { id: design.shopId } }));
+    if (!shop || !isShopActive(shop.subscriptionStatus, shop.subscriptionEndsAt)) {
+      notFound();
+    }
+  }
+
+  const favorite = contextShopId
+    ? await prisma.customerFavorite.findUnique({
+        where: {
+          customerId_designId: { customerId: session!.id, designId: design.id },
+        },
+      })
+    : null;
+
   const images = parseDesignImages(design.imagesJson, design.imagePath);
-  const backHref = `/customer/designs?shopId=${contextShopId}`;
+
+  const backHref = design.isCatalog
+    ? categoryParam
+      ? withQueryParam("/customer/designs", "category", categoryParam as ServiceCategory)
+      : withQueryParam("/customer/designs", "category", design.category)
+    : `/customer/designs?shopId=${contextShopId}`;
+
+  const shopForLabel = contextShopId
+    ? await prisma.shopProfile.findUnique({
+        where: { id: contextShopId },
+        select: { shopName: true },
+      })
+    : null;
 
   return (
     <div className="space-y-6 pb-8">
@@ -62,16 +92,19 @@ export default async function CustomerDesignDetailPage({
           {design.catalogNumber ? `${design.catalogNumber} · ${design.title}` : design.title}
         </h1>
         <p className="text-sm text-zinc-600">
-          {shop.shopName} · {t(locale, categoryLabelKey(design.category))}
+          {shopForLabel ? `${shopForLabel.shopName} · ` : ""}
+          {t(locale, categoryLabelKey(design.category))}
         </p>
-        <div className="mt-2">
-          <FavoriteButton
-            designId={design.id}
-            shopId={contextShopId}
-            isFavorite={!!favorite}
-            locale={locale}
-          />
-        </div>
+        {contextShopId && (
+          <div className="mt-2">
+            <FavoriteButton
+              designId={design.id}
+              shopId={contextShopId}
+              isFavorite={!!favorite}
+              locale={locale}
+            />
+          </div>
+        )}
       </div>
 
       <section className="card-premium p-4">
@@ -88,9 +121,18 @@ export default async function CustomerDesignDetailPage({
         />
       </section>
 
-      <section className="card-premium p-4">
-        <AskPriceForm locale={locale} shopId={contextShopId} design={design} />
-      </section>
+      {contextShopId ? (
+        <section className="card-premium p-4">
+          <AskPriceForm locale={locale} shopId={contextShopId} design={design} />
+        </section>
+      ) : (
+        <section className="card-premium p-4 text-sm text-zinc-600">
+          {t(locale, "pickShopForPriceQuote")}{" "}
+          <Link href="/customer/shops" className="font-semibold text-brand-green underline">
+            {t(locale, "browseShops")}
+          </Link>
+        </section>
+      )}
     </div>
   );
 }

@@ -9,11 +9,18 @@ export function CategoryButtons({
   locale,
   basePath,
   active,
+  categories,
 }: {
   locale: Locale;
   basePath: string;
   active?: ServiceCategory;
+  /** When set, only these category tabs are shown (e.g. app catalog vs shop stitched). */
+  categories?: ServiceCategory[];
 }) {
+  const tabs = categories
+    ? CATEGORIES.filter((c) => categories.includes(c.key))
+    : CATEGORIES;
+
   return (
     <div className="space-y-2">
       <Link
@@ -27,7 +34,7 @@ export function CategoryButtons({
         {t(locale, "allDesigns")}
       </Link>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {CATEGORIES.map((c) => (
+        {tabs.map((c) => (
           <Link
             key={c.key}
             href={withQueryParam(basePath, "category", c.key)}

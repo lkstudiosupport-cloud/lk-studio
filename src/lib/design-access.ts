@@ -36,7 +36,25 @@ export function isCatalogCategory(category: ServiceCategory): boolean {
   return CATALOG_CATEGORIES.includes(category);
 }
 
-/** Designs visible on a shop's gallery (app catalog + shop stitched work). */
+/** App catalog designs (admin) — same for all shops. */
+export function appCatalogDesignsWhere(category?: ServiceCategory): Prisma.DesignWhereInput {
+  if (category && isCatalogCategory(category)) {
+    return { isCatalog: true, category, active: true };
+  }
+  return { isCatalog: true, category: { in: CATALOG_CATEGORIES }, active: true };
+}
+
+/** Stitched work uploaded by a specific shop. */
+export function shopStitchedDesignsWhere(shopId: string): Prisma.DesignWhereInput {
+  return {
+    shopId,
+    category: SHOP_OWNED_UPLOAD_CATEGORY,
+    isCatalog: false,
+    active: true,
+  };
+}
+
+/** @deprecated Prefer appCatalogDesignsWhere or shopStitchedDesignsWhere for customer UI. */
 export function visibleDesignsWhere(
   shopId: string,
   category?: ServiceCategory

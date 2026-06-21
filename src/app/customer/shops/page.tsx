@@ -8,7 +8,7 @@ import { shopRatingSummaries } from "@/lib/shop-rating";
 import { cachedLocale, cachedCustomerSession } from "@/lib/cached-server";
 import { ShopCodeSearch } from "@/components/ShopCodeSearch";
 import { ShopBrowseCard } from "@/components/ShopBrowseCard";
-import { SHOP_UPLOAD_CATEGORY, CATALOG_CATEGORIES } from "@/lib/design-access";
+import { SHOP_UPLOAD_CATEGORY } from "@/lib/design-access";
 
 function firstPreviewByShop(
   designs: { shopId: string | null; imagePath: string; isCatalog: boolean }[],
@@ -157,13 +157,10 @@ export default async function CustomerShopsPage({
     shopIdsForMeta.push(codeMatchActive.id);
   }
 
-  const [catalogDesignCount, stitchedCountRows, previewDesigns, ratingMap] =
+  const [stitchedCountRows, previewDesigns, ratingMap] =
     shopIdsForMeta.length === 0
-      ? [0, [], [], new Map()]
+      ? [[], [], new Map()]
       : await Promise.all([
-          prisma.design.count({
-            where: { isCatalog: true, active: true, category: { in: CATALOG_CATEGORIES } },
-          }),
           prisma.design.groupBy({
             by: ["shopId"],
             where: {
@@ -176,11 +173,10 @@ export default async function CustomerShopsPage({
           }),
           prisma.design.findMany({
             where: {
+              shopId: { in: shopIdsForMeta },
+              category: SHOP_UPLOAD_CATEGORY,
               active: true,
-              OR: [
-                { isCatalog: true, category: { in: CATALOG_CATEGORIES } },
-                { shopId: { in: shopIdsForMeta }, category: SHOP_UPLOAD_CATEGORY, isCatalog: false },
-              ],
+              isCatalog: false,
             },
             orderBy: { createdAt: "desc" },
             select: { shopId: true, imagePath: true, isCatalog: true },
@@ -195,7 +191,7 @@ export default async function CustomerShopsPage({
   const thumbMap = firstPreviewByShop(previewDesigns, shopIdsForMeta);
 
   function renderShop(shop: ShopWithDistance, showNearestBadge = false) {
-    const designCount = catalogDesignCount + (stitchedCountMap.get(shop.id) ?? 0);
+    const designCount = stitchedCountMap.get(shop.id) ?? 0;
     const thumb = shop.profilePhoto || thumbMap.get(shop.id) || null;
     const rating = ratingMap.get(shop.id);
 

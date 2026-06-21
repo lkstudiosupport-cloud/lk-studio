@@ -19,7 +19,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   ]);
 
   const navLinks = [
-    { href: "/customer", label: t(locale, "dashboard") },
+    { href: "/customer/designs", label: t(locale, "designs") },
     { href: "/customer/shops", label: t(locale, "browseShops") },
     { href: "/customer/price-requests", label: t(locale, "myPriceQuotes") },
     { href: "/customer/persons", label: t(locale, "measurements") },
