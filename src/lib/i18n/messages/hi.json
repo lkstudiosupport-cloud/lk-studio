@@ -526,6 +526,10 @@
     "medium": "मध्यम",
     "big": "बड़ा"
   },
+  "sizeTierUnassigned": "असाइन नहीं",
+  "adminMoveToSize": "साइज़ में ले जाएँ",
+  "adminCatalogSizeTierHint": "अपलोड के बाद Unassigned खोलें और हर डिज़ाइन पर Small, Medium या Big चुनें।",
+  "customerPickSizeTierHint": "डिज़ाइन देखने के लिए Small, Medium या Big चुनें।",
   "status": {
     "pending": "लंबित",
     "measuring": "नाप लिया जा रहा है",

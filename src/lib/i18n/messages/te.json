@@ -526,6 +526,10 @@
     "medium": "మధ్య",
     "big": "పెద్ద"
   },
+  "sizeTierUnassigned": "కేటాయించలేదు",
+  "adminMoveToSize": "సైజ్‌కు మార్చండి",
+  "adminCatalogSizeTierHint": "అప్‌లోడ్ తర్వాత Unassigned తెరిచి, ప్రతి డిజైన్‌పై Small, Medium లేదా Big ఎంచుకోండి.",
+  "customerPickSizeTierHint": "డిజైన్లు చూడడానికి Small, Medium లేదా Big ఎంచుకోండి.",
   "status": {
     "pending": "పెండింగ్",
     "measuring": "మెజర్ తీసుకుంటున్నారు",

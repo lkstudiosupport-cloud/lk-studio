@@ -10,9 +10,10 @@ import {
   isCatalogCategory,
   shopStitchedDesignsWhere,
 } from "@/lib/design-access";
+import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 import { cachedAppCatalogDesigns } from "@/lib/cached-catalog-designs";
 import { DESIGN_CARD_SELECT } from "@/lib/design-queries";
-import type { ServiceCategory } from "@prisma/client";
+import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
 import Link from "next/link";
 import { shopRatingSummaries } from "@/lib/shop-rating";
 import { ShopRatingBadge } from "@/components/ShopRatingBadge";
@@ -107,7 +108,7 @@ async function CustomerShopStitchedPage({
 export default async function CustomerDesignsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; shopId?: string }>;
+  searchParams: Promise<{ category?: string; shopId?: string; size?: string }>;
 }) {
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
@@ -115,6 +116,11 @@ export default async function CustomerDesignsPage({
   const rawCategory = params.category as ServiceCategory | undefined;
   const category =
     rawCategory && isCatalogCategory(rawCategory) ? rawCategory : undefined;
+  const rawSize = params.size?.toUpperCase();
+  const initialSizeTier =
+    rawSize === "SMALL" || rawSize === "MEDIUM" || rawSize === "BIG"
+      ? (rawSize as DesignSizeTier)
+      : undefined;
   const shopIdParam = params.shopId?.trim();
 
   if (shopIdParam) {
@@ -151,6 +157,9 @@ export default async function CustomerDesignsPage({
       favoriteDesignIds={customerFavorites.map((f) => f.designId)}
       priceShopId={priceShopId}
       initialCategory={category && CATALOG_CATEGORIES.includes(category) ? category : undefined}
+      initialSizeTier={
+        category && categoryHasSizeTiers(category) ? initialSizeTier : undefined
+      }
     />
   );
 }

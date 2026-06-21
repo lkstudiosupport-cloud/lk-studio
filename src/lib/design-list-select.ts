@@ -11,6 +11,7 @@ export const designListSelect = {
   imagesJson: true,
   category: true,
   createdAt: true,
+  sizeTier: true,
 } satisfies Prisma.DesignSelect;
 
 export type DesignListItem = Prisma.DesignGetPayload<{ select: typeof designListSelect }>;

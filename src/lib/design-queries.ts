@@ -13,6 +13,7 @@ export const DESIGN_CARD_SELECT = {
   isCatalog: true,
   active: true,
   createdAt: true,
+  sizeTier: true,
 } satisfies Prisma.DesignSelect;
 
 export type DesignListItem = Prisma.DesignGetPayload<{ select: typeof DESIGN_CARD_SELECT }>;

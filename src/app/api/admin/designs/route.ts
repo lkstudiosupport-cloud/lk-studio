@@ -4,10 +4,11 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { persistAdminCatalogDesign, isAdminCatalogCategory } from "@/lib/admin-design-upload";
+import { assignCatalogDesignSizeTier } from "@/lib/admin-assign-tier";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import { parseDesignImages } from "@/lib/design-images";
 import { deleteStoredUpload } from "@/lib/storage";
-import type { ServiceCategory } from "@prisma/client";
+import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -57,6 +58,37 @@ export async function POST(req: Request) {
       message.includes("not configured") || message.includes("Storage not configured") ? 503 : 400;
     console.error("[admin/designs POST]", message);
     return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function PATCH(req: Request) {
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { id?: string; sizeTier?: DesignSizeTier };
+  try {
+    body = (await req.json()) as { id?: string; sizeTier?: DesignSizeTier };
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const id = body.id?.trim();
+  const sizeTier = body.sizeTier;
+  if (!id || !sizeTier || !["SMALL", "MEDIUM", "BIG"].includes(sizeTier)) {
+    return NextResponse.json({ error: "Design id and size tier (SMALL, MEDIUM, BIG) required" }, { status: 400 });
+  }
+
+  try {
+    const result = await assignCatalogDesignSizeTier(id, sizeTier);
+    revalidatePath("/admin/designs");
+    revalidatePath("/shop/designs");
+    revalidatePath("/customer/designs");
+    revalidatePath("/customer/shops");
+    return NextResponse.json({ ok: true, catalogNumber: result.catalogNumber });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Update failed";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
 

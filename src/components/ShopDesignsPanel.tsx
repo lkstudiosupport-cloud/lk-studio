@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ServiceCategory } from "@prisma/client";
+import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES, isCategoryShopUpload } from "@/lib/categories";
@@ -12,6 +12,8 @@ import type { DesignListItem } from "@/lib/design-list-select";
 import { withQueryParam } from "@/lib/query-string";
 import { MAX_DESIGN_IMAGES } from "@/lib/limits";
 import { ShopDesignItem } from "@/components/ShopDesignItem";
+import { SizeTierButtons } from "@/components/SizeTierButtons";
+import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 import { compressImageFile } from "@/lib/compress-image";
 import { Loader2, Plus } from "lucide-react";
 
@@ -35,9 +37,31 @@ export function ShopDesignsPanel({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
+  const [sizeTier, setSizeTier] = useState<DesignSizeTier | undefined>();
 
   const canUpload = isCategoryShopUpload(category);
   const activeCategory = CATEGORIES.find((c) => c.key === category)!;
+  const hasSizeTiers = categoryHasSizeTiers(category);
+
+  const tierCounts = useMemo(() => {
+    if (!hasSizeTiers) return null;
+    const counts = { SMALL: 0, MEDIUM: 0, BIG: 0 } as Record<DesignSizeTier, number>;
+    for (const d of designs) {
+      if (!d.sizeTier) continue;
+      counts[d.sizeTier]++;
+    }
+    return counts;
+  }, [designs, hasSizeTiers]);
+
+  const visibleDesigns = useMemo(() => {
+    if (!hasSizeTiers) return designs;
+    if (!sizeTier) return [];
+    return designs.filter((d) => d.sizeTier === sizeTier);
+  }, [designs, hasSizeTiers, sizeTier]);
+
+  useEffect(() => {
+    setSizeTier(undefined);
+  }, [category]);
 
   function canManageDesign(design: DesignListItem): boolean {
     return canUpload && isShopOwnedUploadCategory(category) && !design.isCatalog && design.shopId === shopId;
@@ -111,11 +135,27 @@ export function ShopDesignsPanel({
             {t(locale, activeCategory.labelKey)}
           </h2>
           <span className="rounded-full bg-brand-cream px-3 py-1 text-xs font-semibold text-brand-green">
-            {designs.length} {t(locale, "collectionItems")}
+            {visibleDesigns.length} {t(locale, "collectionItems")}
           </span>
         </div>
 
         <p className="text-sm text-zinc-600">{uploadHint()}</p>
+
+        {hasSizeTiers && (
+          <div className="space-y-2">
+            <SizeTierButtons
+              locale={locale}
+              active={sizeTier}
+              onPick={setSizeTier}
+              counts={tierCounts ?? undefined}
+            />
+            {!sizeTier && (
+              <p className="card-premium p-4 text-center text-sm text-zinc-600">
+                {t(locale, "customerPickSizeTierHint")}
+              </p>
+            )}
+          </div>
+        )}
 
         {uploadProgress && (
           <p className="text-sm font-medium text-brand-green">
@@ -144,7 +184,7 @@ export function ShopDesignsPanel({
             </button>
           )}
 
-          {designs.map((d) => (
+          {visibleDesigns.map((d) => (
             <ShopDesignItem
               key={d.id}
               design={d}
@@ -154,13 +194,19 @@ export function ShopDesignsPanel({
           ))}
         </div>
 
-        {designs.length === 0 && !canUpload && (
+        {visibleDesigns.length === 0 && !canUpload && hasSizeTiers && !sizeTier && (
+          <p className="card-premium py-10 text-center text-sm text-zinc-500">
+            {t(locale, "customerPickSizeTierHint")}
+          </p>
+        )}
+
+        {visibleDesigns.length === 0 && !canUpload && (!hasSizeTiers || sizeTier) && (
           <p className="card-premium py-10 text-center text-sm text-zinc-500">
             {t(locale, "noCatalogDesignsYet")}
           </p>
         )}
 
-        {designs.length === 0 && canUpload && (
+        {visibleDesigns.length === 0 && canUpload && (
           <p className="text-center text-sm text-zinc-500">{t(locale, "noStitchedDesignsYet")}</p>
         )}
 

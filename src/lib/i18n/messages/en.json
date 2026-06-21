@@ -529,6 +529,10 @@
     "medium": "Medium",
     "big": "Big"
   },
+  "sizeTierUnassigned": "Unassigned",
+  "adminMoveToSize": "Move to size",
+  "adminCatalogSizeTierHint": "After upload, open Unassigned and tap Small, Medium, or Big on each design.",
+  "customerPickSizeTierHint": "Choose Small, Medium, or Big to view designs.",
   "status": {
     "pending": "Pending",
     "measuring": "Measuring",

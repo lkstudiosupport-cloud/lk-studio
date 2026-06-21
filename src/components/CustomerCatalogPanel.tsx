@@ -7,9 +7,12 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES } from "@/lib/categories";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
+import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 import type { DesignListItem } from "@/lib/design-queries";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
+import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { withQueryParam } from "@/lib/query-string";
+import type { DesignSizeTier } from "@prisma/client";
 
 export function CustomerCatalogPanel({
   locale,
@@ -17,34 +20,69 @@ export function CustomerCatalogPanel({
   favoriteDesignIds,
   priceShopId,
   initialCategory,
+  initialSizeTier,
 }: {
   locale: Locale;
   designs: DesignListItem[];
   favoriteDesignIds: string[];
   priceShopId?: string;
   initialCategory?: ServiceCategory;
+  initialSizeTier?: DesignSizeTier;
 }) {
   const tabs = CATEGORIES.filter((c) => CATALOG_CATEGORIES.includes(c.key));
   const [category, setCategory] = useState<ServiceCategory | undefined>(initialCategory);
+  const [sizeTier, setSizeTier] = useState<DesignSizeTier | undefined>(initialSizeTier);
 
   const favorites = useMemo(() => new Set(favoriteDesignIds), [favoriteDesignIds]);
+  const hasSizeTiers = category ? categoryHasSizeTiers(category) : false;
+
+  const tierCounts = useMemo(() => {
+    if (!category || !hasSizeTiers) return null;
+    const counts = { SMALL: 0, MEDIUM: 0, BIG: 0 } as Record<DesignSizeTier, number>;
+    for (const d of designs) {
+      if (d.category !== category || !d.sizeTier) continue;
+      counts[d.sizeTier]++;
+    }
+    return counts;
+  }, [designs, category, hasSizeTiers]);
+
+  const categoryDesigns = useMemo(() => {
+    if (!category) return [];
+    let list = designs.filter((d) => d.category === category);
+    if (hasSizeTiers) {
+      if (!sizeTier) return [];
+      list = list.filter((d) => d.sizeTier === sizeTier);
+    }
+    return list;
+  }, [designs, category, hasSizeTiers, sizeTier]);
 
   const counts = useMemo(() => {
     const map = {} as Record<string, number>;
     for (const c of tabs) {
-      map[c.key] = designs.filter((d) => d.category === c.key).length;
+      map[c.key] = designs.filter((d) => {
+        if (d.category !== c.key) return false;
+        if (categoryHasSizeTiers(c.key)) return !!d.sizeTier;
+        return true;
+      }).length;
     }
     return map;
   }, [designs, tabs]);
 
-  const categoryDesigns = useMemo(() => {
-    if (!category) return [];
-    return designs.filter((d) => d.category === category);
-  }, [designs, category]);
-
   function pickCategory(next: ServiceCategory) {
     setCategory(next);
+    setSizeTier(undefined);
     const url = withQueryParam("/customer/designs", "category", next);
+    window.history.replaceState(null, "", url);
+  }
+
+  function pickSizeTier(next: DesignSizeTier) {
+    setSizeTier(next);
+    if (!category) return;
+    const url = withQueryParam(
+      withQueryParam("/customer/designs", "category", category),
+      "size",
+      next
+    );
     window.history.replaceState(null, "", url);
   }
 
@@ -91,7 +129,23 @@ export function CustomerCatalogPanel({
         </p>
       )}
 
-      {category && (
+      {category && hasSizeTiers && (
+        <div className="space-y-2">
+          <SizeTierButtons
+            locale={locale}
+            active={sizeTier}
+            onPick={pickSizeTier}
+            counts={tierCounts ?? undefined}
+          />
+          {!sizeTier && (
+            <p className="card-premium p-4 text-center text-sm text-zinc-600">
+              {t(locale, "customerPickSizeTierHint")}
+            </p>
+          )}
+        </div>
+      )}
+
+      {category && (!hasSizeTiers || sizeTier) && (
         <ShopDesignCollections
           locale={locale}
           designs={categoryDesigns}

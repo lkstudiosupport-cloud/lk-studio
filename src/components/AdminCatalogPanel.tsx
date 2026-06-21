@@ -9,6 +9,9 @@ import { CATEGORIES } from "@/lib/categories";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import { MAX_CATALOG_BULK_UPLOAD } from "@/lib/limits";
 import { AdminDesignItem } from "@/components/AdminDesignItem";
+import { SizeTierButtons } from "@/components/SizeTierButtons";
+import { categoryHasSizeTiers } from "@/lib/design-size-tier";
+import type { DesignSizeTier } from "@prisma/client";
 import { compressImageFile } from "@/lib/compress-image";
 import { fetchApi, formatFetchError } from "@/lib/parse-api-response";
 import { Loader2, Plus } from "lucide-react";
@@ -27,6 +30,7 @@ export function AdminCatalogPanel({
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState<ServiceCategory>(ADMIN_CATEGORIES[0]!.key);
+  const [sizeTierFilter, setSizeTierFilter] = useState<DesignSizeTier | "UNASSIGNED">("UNASSIGNED");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [lastCode, setLastCode] = useState("");
@@ -41,6 +45,8 @@ export function AdminCatalogPanel({
   }, [designs]);
 
   const activeCategory = ADMIN_CATEGORIES.find((c) => c.key === category)!;
+  const hasSizeTiers = categoryHasSizeTiers(category);
+
   const categoryDesigns = useMemo(() => {
     return designs
       .filter((d) => d.category === category && d.isCatalog)
@@ -49,6 +55,24 @@ export function AdminCatalogPanel({
         return b.createdAt > a.createdAt ? 1 : -1;
       });
   }, [designs, category]);
+
+  const tierCounts = useMemo(() => {
+    const counts = { SMALL: 0, MEDIUM: 0, BIG: 0 } as Record<DesignSizeTier, number>;
+    let unassigned = 0;
+    for (const d of categoryDesigns) {
+      if (!d.sizeTier) unassigned++;
+      else counts[d.sizeTier]++;
+    }
+    return { ...counts, unassigned };
+  }, [categoryDesigns]);
+
+  const visibleDesigns = useMemo(() => {
+    if (!hasSizeTiers) return categoryDesigns;
+    if (sizeTierFilter === "UNASSIGNED") {
+      return categoryDesigns.filter((d) => !d.sizeTier);
+    }
+    return categoryDesigns.filter((d) => d.sizeTier === sizeTierFilter);
+  }, [categoryDesigns, hasSizeTiers, sizeTierFilter]);
 
   async function uploadOne(file: File) {
     const fd = new FormData();
@@ -101,6 +125,7 @@ export function AdminCatalogPanel({
             type="button"
             onClick={() => {
               setCategory(c.key);
+              setSizeTierFilter("UNASSIGNED");
               setError("");
               setLastCode("");
             }}
@@ -118,13 +143,36 @@ export function AdminCatalogPanel({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-bold text-brand-green">{t(locale, activeCategory.labelKey)}</h2>
           <span className="rounded-full bg-brand-cream px-3 py-1 text-xs font-semibold text-brand-green">
-            {categoryDesigns.length} designs
+            {visibleDesigns.length} designs
           </span>
         </div>
 
         <p className="text-sm text-zinc-600">
           Tap + and select many images from your computer — one design code per photo.
+          {hasSizeTiers && (
+            <>
+              {" "}
+              {t(locale, "adminCatalogSizeTierHint")}
+            </>
+          )}
         </p>
+
+        {hasSizeTiers && (
+          <SizeTierButtons
+            locale={locale}
+            active={sizeTierFilter === "UNASSIGNED" ? undefined : sizeTierFilter}
+            onPick={setSizeTierFilter}
+            counts={{
+              SMALL: tierCounts.SMALL,
+              MEDIUM: tierCounts.MEDIUM,
+              BIG: tierCounts.BIG,
+            }}
+            showUnassigned
+            unassignedCount={tierCounts.unassigned}
+            unassignedActive={sizeTierFilter === "UNASSIGNED"}
+            onPickUnassigned={() => setSizeTierFilter("UNASSIGNED")}
+          />
+        )}
 
         {uploadProgress && (
           <p className="text-sm font-medium text-brand-green">Uploading {uploadProgress}…</p>
@@ -153,7 +201,7 @@ export function AdminCatalogPanel({
             )}
           </button>
 
-          {categoryDesigns.map((d) => (
+          {visibleDesigns.map((d) => (
             <AdminDesignItem key={d.id} design={d} locale={locale} />
           ))}
         </div>
