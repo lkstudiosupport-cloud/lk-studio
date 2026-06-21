@@ -4,15 +4,14 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { billPending } from "@/lib/bill-payment";
-import { Store, Receipt, ClipboardList, ChevronRight } from "lucide-react";
+import { Receipt, ClipboardList, ChevronRight } from "lucide-react";
 
 export default async function CustomerHome() {
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
-  const [orders, bills, shopCount] = await Promise.all([
+  const [orders, bills] = await Promise.all([
     prisma.order.count({ where: { customerId: session!.id } }),
     prisma.bill.findMany({ where: { customerId: session!.id } }),
-    prisma.shopProfile.count(),
   ]);
 
   const totalPending = bills.reduce(
@@ -24,6 +23,7 @@ export default async function CustomerHome() {
   return (
     <div className="space-y-6">
       <h1 className="page-title">{t(locale, "dashboard")}</h1>
+      <p className="text-sm text-zinc-600">{t(locale, "customerDashboardHint")}</p>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Link
@@ -67,20 +67,6 @@ export default async function CustomerHome() {
           )}
         </Link>
       </div>
-
-      <Link
-        href="/customer/shops"
-        className="card-premium flex items-center gap-4 p-5 transition hover:shadow-xl"
-      >
-        <Store className="h-10 w-10 text-brand-green" />
-        <div className="min-w-0 flex-1">
-          <p className="font-bold text-brand-green">{t(locale, "browseShops")}</p>
-          <p className="text-sm text-zinc-600">
-            {shopCount} {t(locale, "shopsAvailable")}
-          </p>
-        </div>
-        <ChevronRight className="h-5 w-5 shrink-0 text-brand-gold-dark" />
-      </Link>
     </div>
   );
 }

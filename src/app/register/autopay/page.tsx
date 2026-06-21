@@ -56,5 +56,5 @@ export default async function RegisterAutopayPage() {
     );
   }
 
-  redirect("/customer");
+  redirect("/customer/designs");
 }

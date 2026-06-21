@@ -13,7 +13,7 @@ export default async function HomePage() {
   const session = await getSession();
 
   if (session?.role === "SHOP") redirect("/shop");
-  if (session?.role === "CUSTOMER") redirect("/customer");
+  if (session?.role === "CUSTOMER") redirect("/customer/designs");
 
   return (
     <main className="brand-page-bg app-page-shell mx-auto flex min-h-dvh w-full max-w-lg flex-col py-6 sm:max-w-xl sm:py-8 md:max-w-2xl">

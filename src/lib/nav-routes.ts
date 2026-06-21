@@ -15,7 +15,7 @@ export function isSwipeNavBlocked(pathname: string): boolean {
 
 /** Off-nav pages map to a main tab so swipe still works (profile, designs, …). */
 const OFF_NAV_TAB: Record<string, string> = {
-  "/customer/profile": "/customer/shops",
+  "/customer/profile": "/customer/designs",
   "/customer": "/customer/designs",
   "/customer/favorites": "/customer/shops",
   "/customer/price-requests": "/customer/shops",
