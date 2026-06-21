@@ -9,6 +9,7 @@ import { isShopActive } from "@/lib/subscription";
 import {
   appCatalogDesignsWhere,
   CATALOG_CATEGORIES,
+  isCatalogCategory,
   shopStitchedDesignsWhere,
 } from "@/lib/design-access";
 import type { ServiceCategory } from "@prisma/client";
@@ -35,12 +36,18 @@ async function CustomerAppCatalogPage({
   });
   const priceShopId = savedShop?.shopId;
 
-  const [designs, totalDesigns, customerFavorites] = await Promise.all([
-    prisma.design.findMany({
-      where: appCatalogDesignsWhere(category),
-      orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
-    }),
-    prisma.design.count({ where: appCatalogDesignsWhere() }),
+  const showCatalog = category && isCatalogCategory(category);
+
+  const [designs, categoryCount, customerFavorites] = await Promise.all([
+    showCatalog
+      ? prisma.design.findMany({
+          where: appCatalogDesignsWhere(category),
+          orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
+        })
+      : Promise.resolve([]),
+    showCatalog
+      ? prisma.design.count({ where: appCatalogDesignsWhere(category) })
+      : Promise.resolve(0),
     priceShopId
       ? prisma.customerFavorite.findMany({
           where: { customerId, shopId: priceShopId },
@@ -57,23 +64,31 @@ async function CustomerAppCatalogPage({
       <div>
         <h1 className="page-title">{t(locale, "designs")}</h1>
         <p className="mt-1 text-sm text-zinc-600">{t(locale, "customerCatalogDesignsHint")}</p>
-        <p className="mt-1 text-sm text-zinc-500">
-          {totalDesigns} {t(locale, "collectionItems")}
-        </p>
+        {showCatalog && (
+          <p className="mt-1 text-sm text-zinc-500">
+            {categoryCount} {t(locale, "collectionItems")}
+          </p>
+        )}
       </div>
 
       <CategoryButtons
         locale={locale}
         basePath={basePath}
-        active={category}
+        active={showCatalog ? category : undefined}
         categories={CATALOG_CATEGORIES}
       />
 
-      {priceShopId && (category === "MAGGAM" || category === "COMPUTER_EMBROIDERY") && (
+      {!showCatalog && (
+        <p className="card-premium p-6 text-center text-sm text-zinc-600">
+          {t(locale, "customerPickCategoryHint")}
+        </p>
+      )}
+
+      {showCatalog && priceShopId && (category === "MAGGAM" || category === "COMPUTER_EMBROIDERY") && (
         <AskPriceOwnDesignCard locale={locale} shopId={priceShopId} defaultCategory={category} />
       )}
 
-      {!priceShopId && (category === "MAGGAM" || category === "COMPUTER_EMBROIDERY") && (
+      {showCatalog && !priceShopId && (category === "MAGGAM" || category === "COMPUTER_EMBROIDERY") && (
         <p className="card-premium p-4 text-sm text-zinc-600">
           {t(locale, "pickShopForPriceQuote")}{" "}
           <Link href="/customer/shops" className="font-semibold text-brand-green underline">
@@ -82,15 +97,17 @@ async function CustomerAppCatalogPage({
         </p>
       )}
 
-      <ShopDesignCollections
-        locale={locale}
-        designs={designs}
-        shopId={priceShopId ?? undefined}
-        favoriteDesignIds={favoriteDesignIds}
-        detailHrefForDesign={(d) =>
-          withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
-        }
-      />
+      {showCatalog && (
+        <ShopDesignCollections
+          locale={locale}
+          designs={designs}
+          shopId={priceShopId ?? undefined}
+          favoriteDesignIds={favoriteDesignIds}
+          detailHrefForDesign={(d) =>
+            withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
+          }
+        />
+      )}
     </div>
   );
 }
@@ -189,7 +206,9 @@ export default async function CustomerDesignsPage({
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
   const params = await searchParams;
-  const category = params.category as ServiceCategory | undefined;
+  const rawCategory = params.category as ServiceCategory | undefined;
+  const category =
+    rawCategory && isCatalogCategory(rawCategory) ? rawCategory : undefined;
   const shopIdParam = params.shopId?.trim();
 
   if (shopIdParam) {

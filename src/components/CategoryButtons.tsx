@@ -23,16 +23,6 @@ export function CategoryButtons({
 
   return (
     <div className="space-y-2">
-      <Link
-        href={basePath}
-        className={`inline-flex rounded-full px-4 py-2 text-sm font-semibold transition ${
-          !active
-            ? "bg-brand-green text-brand-gold ring-2 ring-brand-gold ring-offset-2"
-            : "bg-brand-cream text-brand-green ring-1 ring-brand-green/15 hover:bg-brand-green/10"
-        }`}
-      >
-        {t(locale, "allDesigns")}
-      </Link>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {tabs.map((c) => (
           <Link
