@@ -10,6 +10,7 @@ import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import { MAX_CATALOG_BULK_UPLOAD } from "@/lib/limits";
 import { AdminDesignItem } from "@/components/AdminDesignItem";
 import { compressImageFile } from "@/lib/compress-image";
+import { fetchApi, formatFetchError } from "@/lib/parse-api-response";
 import { Loader2, Plus } from "lucide-react";
 
 const ADMIN_CATEGORIES = CATEGORIES.filter((c) =>
@@ -53,10 +54,9 @@ export function AdminCatalogPanel({
     const fd = new FormData();
     fd.set("category", category);
     fd.set("designImage0", file);
-    const res = await fetch("/api/admin/designs", { method: "POST", body: fd });
-    const data = (await res.json().catch(() => ({}))) as { error?: string; catalogNumber?: string };
-    if (!res.ok) throw new Error(data.error || "Upload failed");
-    return data.catalogNumber ?? "";
+    const { res, data } = await fetchApi("/api/admin/designs", { method: "POST", body: fd });
+    if (!res.ok) throw new Error(String(data.error ?? "Upload failed"));
+    return String(data.catalogNumber ?? "");
   }
 
   async function uploadFiles(raw: FileList | null) {
@@ -76,7 +76,7 @@ export function AdminCatalogPanel({
       if (last) setLastCode(last);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
+      setError(formatFetchError(e, "Upload failed"));
     } finally {
       setPending(false);
       setUploadProgress("");

@@ -6,8 +6,8 @@ import type { Design, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES, isCategoryShopUpload } from "@/lib/categories";
-import { isCatalogUploadCategory, isShopOwnedUploadCategory } from "@/lib/design-access";
-import { MAX_CATALOG_BULK_UPLOAD, MAX_DESIGN_IMAGES } from "@/lib/limits";
+import { isShopOwnedUploadCategory } from "@/lib/design-access";
+import { MAX_DESIGN_IMAGES } from "@/lib/limits";
 import { ShopDesignItem } from "@/components/ShopDesignItem";
 import { compressImageFile } from "@/lib/compress-image";
 import { Loader2, Plus } from "lucide-react";
@@ -26,11 +26,9 @@ export function ShopDesignsPanel({
   const [category, setCategory] = useState<ServiceCategory>(CATEGORIES[0].key);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [lastCode, setLastCode] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
 
   const canUpload = isCategoryShopUpload(category);
-  const isCatalogUpload = isCatalogUploadCategory(category);
 
   const counts = useMemo(() => {
     const map = {} as Record<string, number>;
@@ -51,53 +49,32 @@ export function ShopDesignsPanel({
   }, [designs, category]);
 
   function canManageDesign(design: Design): boolean {
-    if (isShopOwnedUploadCategory(category)) {
-      return canUpload && !design.isCatalog;
-    }
-    if (isCatalogUploadCategory(category)) {
-      return design.isCatalog && design.uploadedByShopId === shopId;
-    }
-    return false;
+    return canUpload && isShopOwnedUploadCategory(category) && !design.isCatalog && design.shopId === shopId;
   }
 
   async function uploadOneDesign(files: File[]) {
     const fd = new FormData();
     fd.set("category", category);
-    fd.set("title", isCatalogUpload ? "" : t(locale, "categories.stitched"));
+    fd.set("title", t(locale, "categories.stitched"));
     files.forEach((f, i) => fd.set(`designImage${i}`, f));
 
     const res = await fetch("/api/shop/designs", { method: "POST", body: fd });
-    const data = (await res.json().catch(() => ({}))) as { error?: string; catalogNumber?: string };
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {
       throw new Error(data.error || t(locale, "designUploadFailed"));
     }
-    return data.catalogNumber ?? "";
   }
 
   async function uploadFiles(raw: FileList | null) {
     if (!raw?.length || !canUpload) return;
     setError("");
-    setLastCode("");
     setUploadProgress("");
     setPending(true);
     try {
-      const limit = isCatalogUpload ? MAX_CATALOG_BULK_UPLOAD : MAX_DESIGN_IMAGES;
-      const picked = Array.from(raw).slice(0, limit);
-
-      if (isCatalogUpload && picked.length > 1) {
-        let last = "";
-        for (let i = 0; i < picked.length; i++) {
-          setUploadProgress(`${i + 1}/${picked.length}`);
-          const compressed = await compressImageFile(picked[i]!);
-          last = await uploadOneDesign([compressed]);
-        }
-        if (last) setLastCode(last);
-      } else {
-        const files = await Promise.all(picked.map((f) => compressImageFile(f)));
-        const code = await uploadOneDesign(files);
-        if (code) setLastCode(code);
-      }
-
+      const picked = Array.from(raw).slice(0, MAX_DESIGN_IMAGES);
+      setUploadProgress(`1/${picked.length}`);
+      const files = await Promise.all(picked.map((f) => compressImageFile(f)));
+      await uploadOneDesign(files);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : t(locale, "designUploadFailed"));
@@ -109,7 +86,6 @@ export function ShopDesignsPanel({
   }
 
   function uploadHint(): string {
-    if (isCatalogUpload) return t(locale, "maggamUploadHint");
     if (isShopOwnedUploadCategory(category)) return t(locale, "shopStitchedHint");
     return t(locale, "catalogDesignsHint");
   }
@@ -129,7 +105,6 @@ export function ShopDesignsPanel({
             onClick={() => {
               setCategory(c.key);
               setError("");
-              setLastCode("");
             }}
             className={`min-h-[4.5rem] rounded-2xl p-3 text-center text-sm font-semibold shadow-md transition active:scale-[0.98] ${
               c.color
@@ -156,12 +131,6 @@ export function ShopDesignsPanel({
         {uploadProgress && (
           <p className="text-sm font-medium text-brand-green">
             {t(locale, "uploadingProgress", { current: uploadProgress })}
-          </p>
-        )}
-
-        {lastCode && (
-          <p className="text-sm font-semibold text-emerald-700">
-            {t(locale, "designCodeAssigned", { code: lastCode })}
           </p>
         )}
 

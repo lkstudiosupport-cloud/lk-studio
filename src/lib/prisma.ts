@@ -22,9 +22,7 @@ function getPrismaClient() {
   }
 
   const client = createClient();
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
-  }
+  globalForPrisma.prisma = client;
   return client;
 }
 
@@ -39,12 +37,14 @@ if (process.env.NODE_ENV === "production" && dbUrl.startsWith("file:")) {
   );
 }
 
-if (
-  process.env.NODE_ENV === "production" &&
-  dbUrl.includes("pooler.supabase.com") &&
-  !dbUrl.includes("pgbouncer=true")
-) {
-  console.error(
-    "[lk-studio] DATABASE_URL uses Supabase pooler without ?pgbouncer=true — use direct db.<ref>.supabase.co:5432 on Render instead."
-  );
+if (process.env.NODE_ENV === "production" && dbUrl.includes("pooler.supabase.com")) {
+  if (dbUrl.includes(":5432/") && !dbUrl.includes("pgbouncer=true")) {
+    console.error(
+      "[lk-studio] DATABASE_URL uses Supabase Session pooler (:5432). On Render use Transaction pooler :6543 with ?pgbouncer=true&connection_limit=1 — otherwise you hit “max clients reached” (pool_size 15)."
+    );
+  } else if (dbUrl.includes(":6543/") && !dbUrl.includes("pgbouncer=true")) {
+    console.error(
+      "[lk-studio] DATABASE_URL uses Supabase Transaction pooler (:6543) without ?pgbouncer=true — append ?pgbouncer=true&connection_limit=1"
+    );
+  }
 }

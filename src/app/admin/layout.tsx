@@ -20,6 +20,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link href="/admin/designs" className="text-brand-green underline">
               Catalog
             </Link>
+            <Link href="/admin/shops" className="text-brand-green underline">
+              Shops
+            </Link>
             <form action="/api/auth/logout" method="POST">
               <button type="submit" className="text-zinc-600 hover:text-red-600">
                 Log out

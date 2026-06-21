@@ -14,7 +14,7 @@ import { isShopActive, extendSubscriptionEnd, SHOP_MONTHLY_PRICE_INR } from "@/l
 import { findUserByPhone } from "@/lib/auth-user";
 import type { ActionState } from "@/lib/action-state";
 import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
-import { shopManageableDesignWhere } from "@/lib/design-access";
+import { shopManageableDesignWhere, isShopUploadCategory } from "@/lib/design-access";
 
 const MAX_ORDER_DESIGN_PICKS = 3;
 
@@ -305,6 +305,9 @@ export async function uploadDesign(formData: FormData) {
   if (!shop) throw new Error("Shop not found");
 
   const category = formData.get("category") as ServiceCategory;
+  if (!isShopUploadCategory(category)) {
+    throw new Error("Only stitched designs can be uploaded by shops");
+  }
   const title = String(formData.get("title") ?? "").trim();
 
   const uploadFiles: File[] = [];

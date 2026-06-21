@@ -57,6 +57,8 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "25mb",
     },
+    /** Allow multipart uploads through middleware (admin catalog photos). */
+    middlewareClientMaxBodySize: "10mb",
   },
 };
 

@@ -10,8 +10,8 @@ export const DESIGN_LIST_LIMIT = 200;
 /** Max photos per shop design (cover + gallery). */
 export const MAX_DESIGN_IMAGES = 2;
 
-/** Max photos per bulk maggam catalog upload (one design code each). */
-export const MAX_CATALOG_BULK_UPLOAD = 40;
+/** Max photos per bulk catalog upload (one design code each). */
+export const MAX_CATALOG_BULK_UPLOAD = 100;
 
 /** Max reference photos per person profile. */
 export const MAX_PERSON_PHOTOS = 3;

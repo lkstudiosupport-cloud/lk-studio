@@ -8,6 +8,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  // API routes use JWT cookies, not Supabase Auth — skip refresh to avoid upload timeouts.
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -36,7 +41,11 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // Supabase Auth is optional — app login uses JWT (lk_session). Do not block uploads/pages.
+  }
 
   return supabaseResponse;
 }

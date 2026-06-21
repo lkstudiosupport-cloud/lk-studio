@@ -7,7 +7,7 @@ export const SHOP_OWNED_UPLOAD_CATEGORY = "STITCHED_DESIGNS" as const;
 /** @deprecated use SHOP_OWNED_UPLOAD_CATEGORY */
 export const SHOP_UPLOAD_CATEGORY = SHOP_OWNED_UPLOAD_CATEGORY;
 
-/** App catalog — uploaded by LK Studio (seed/admin), view-only for shops; customers can favorite. */
+/** App catalog — uploaded by LK Studio admin only; view-only for shops and customers. */
 export const CATALOG_CATEGORIES: ServiceCategory[] = [
   "MAGGAM",
   "COMPUTER_EMBROIDERY",
@@ -16,20 +16,20 @@ export const CATALOG_CATEGORIES: ServiceCategory[] = [
   "CHILDREN_WEAR",
 ];
 
-/** Categories shops may upload (own stitched work + shared catalog maggam). */
-export const CATALOG_UPLOAD_CATEGORIES: ServiceCategory[] = ["MAGGAM"];
+/** @deprecated Shops no longer upload catalog categories — admin only. */
+export const CATALOG_UPLOAD_CATEGORIES: ServiceCategory[] = [];
 
-export function isCatalogUploadCategory(category: ServiceCategory): boolean {
-  return CATALOG_UPLOAD_CATEGORIES.includes(category);
+export function isCatalogUploadCategory(_category: ServiceCategory): boolean {
+  return false;
 }
 
 export function isShopOwnedUploadCategory(category: ServiceCategory): boolean {
   return category === SHOP_OWNED_UPLOAD_CATEGORY;
 }
 
-/** @alias isShopOwnedUploadCategory */
+/** @alias isShopOwnedUploadCategory — only stitched designs. */
 export function isShopUploadCategory(category: ServiceCategory): boolean {
-  return isShopOwnedUploadCategory(category) || isCatalogUploadCategory(category);
+  return isShopOwnedUploadCategory(category);
 }
 
 export function isCatalogCategory(category: ServiceCategory): boolean {
@@ -67,22 +67,13 @@ export async function countVisibleDesigns(
   return prisma.design.count({ where: visibleDesignCountWhere(shopId) });
 }
 
-/** Shop may delete or edit own stitched designs and catalog uploads they added. */
+/** Shop may delete or edit own stitched designs only. */
 export function shopManageableDesignWhere(shopId: string, designId: string): Prisma.DesignWhereInput {
   return {
     id: designId,
-    OR: [
-      {
-        shopId,
-        isCatalog: false,
-        category: SHOP_OWNED_UPLOAD_CATEGORY,
-      },
-      {
-        isCatalog: true,
-        uploadedByShopId: shopId,
-        category: { in: CATALOG_UPLOAD_CATEGORIES },
-      },
-    ],
+    shopId,
+    isCatalog: false,
+    category: SHOP_OWNED_UPLOAD_CATEGORY,
   };
 }
 
