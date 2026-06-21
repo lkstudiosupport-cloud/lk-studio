@@ -1,5 +1,5 @@
 import { fetchStoredObject } from "@/lib/fetch-stored-object";
-import { storageBackend } from "@/lib/supabase-storage";
+import { storageBackend } from "@/lib/storage-backend";
 
 export const runtime = "nodejs";
 

@@ -1,28 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { supabaseStorageConfigured } from "@/lib/storage-backend";
 
 let admin: SupabaseClient | null = null;
 
-export function supabaseStorageConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-  );
-}
-
-export function storageBackend(): "supabase" | "s3" | "local" {
-  const forced = process.env.STORAGE_BACKEND?.trim().toLowerCase();
-  if (forced === "supabase") return "supabase";
-  if (forced === "s3" || forced === "r2") return "s3";
-  if (supabaseStorageConfigured()) return "supabase";
-  if (
-    process.env.S3_BUCKET?.trim() &&
-    process.env.S3_ACCESS_KEY_ID?.trim() &&
-    process.env.S3_SECRET_ACCESS_KEY?.trim()
-  ) {
-    return "s3";
-  }
-  return "local";
-}
+export { supabaseStorageConfigured };
 
 export function supabaseBucket(): string {
   return process.env.SUPABASE_STORAGE_BUCKET?.trim() || "lk-uploads";
@@ -30,8 +11,13 @@ export function supabaseBucket(): string {
 
 export function getSupabaseAdmin(): SupabaseClient {
   if (admin) return admin;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!.trim();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!.trim();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!url || !key) {
+    throw new Error(
+      "Supabase Storage not configured — set STORAGE_BACKEND=supabase plus NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    );
+  }
   admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   return admin;
 }
@@ -43,12 +29,19 @@ export async function supabasePutObject(
 ): Promise<void> {
   const supabase = getSupabaseAdmin();
   const bucket = supabaseBucket();
-  const { error } = await supabase.storage.from(bucket).upload(key, body, {
+  const payload = body instanceof Buffer ? new Uint8Array(body) : body;
+  const { error } = await supabase.storage.from(bucket).upload(key, payload, {
     contentType,
     upsert: true,
     cacheControl: "604800",
   });
-  if (error) throw new Error(`Supabase upload failed: ${error.message}`);
+  if (error) {
+    const hint =
+      error.message.includes("Bucket not found") || error.message.includes("not found")
+        ? ` Create bucket "${bucket}" in Supabase → Storage (private is OK).`
+        : "";
+    throw new Error(`Supabase upload failed: ${error.message}.${hint}`);
+  }
 }
 
 export async function supabaseGetObject(

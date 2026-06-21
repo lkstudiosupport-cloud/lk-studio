@@ -3,44 +3,30 @@ import path from "path";
 import { randomBytes } from "crypto";
 import { MAX_UPLOAD_BYTES } from "@/lib/limits";
 import { storageKeyFromStoredUrl, storedUrlForKey, normalizeStoredImageUrl } from "@/lib/storage-url";
+import { remoteFileStorageConfigured, storageBackend } from "@/lib/storage-backend";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
-function s3Configured(): boolean {
-  return Boolean(
-    process.env.S3_BUCKET?.trim() &&
-      process.env.S3_ACCESS_KEY_ID?.trim() &&
-      process.env.S3_SECRET_ACCESS_KEY?.trim()
-  );
-}
-
 function remoteStorageConfigured(): boolean {
-  return (
-    s3Configured() ||
-    Boolean(
-      process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-        process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-    )
-  );
+  return remoteFileStorageConfigured();
 }
 
 function storageUrlForKey(key: string): string {
   return storedUrlForKey(key);
 }
 
-/** Save bytes to remote storage (Supabase preferred on Render; R2 via fetch; else AWS SDK). */
+/** Save bytes to Cloudflare R2 (default), AWS S3, or opt-in Supabase Storage. */
 async function saveToRemote(buffer: Buffer, key: string, contentType: string): Promise<string> {
-  const { storageBackend } = await import("@/lib/supabase-storage");
+  const backend = storageBackend();
 
-  if (storageBackend() === "supabase") {
+  if (backend === "supabase") {
     const { supabasePutObject } = await import("@/lib/supabase-storage");
     await supabasePutObject(key, buffer, contentType);
     return storageUrlForKey(key);
   }
 
-  const { isR2Storage, r2PutObject } = await import("@/lib/r2-object");
-
-  if (isR2Storage()) {
+  if (backend === "r2") {
+    const { r2PutObject } = await import("@/lib/r2-object");
     try {
       await r2PutObject(key, buffer, contentType);
       return storageUrlForKey(key);
@@ -49,27 +35,33 @@ async function saveToRemote(buffer: Buffer, key: string, contentType: string): P
       const code = e && typeof e === "object" && "code" in e ? String(e.code) : "";
       if (code === "EPROTO" || msg.includes("EPROTO") || msg.includes("handshake")) {
         throw new Error(
-          "R2 SSL error on server. Set SUPABASE_SERVICE_ROLE_KEY + STORAGE_BACKEND=supabase on Render (see Supabase → Storage → bucket lk-uploads)."
+          "Cloudflare R2 SSL error from Render. Check S3_ENDPOINT (account-id.r2.cloudflarestorage.com), R2 API token permissions, and redeploy after env changes."
         );
       }
       throw e;
     }
   }
 
-  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
-  const { createS3Client } = await import("@/lib/s3-client");
-  const client = createS3Client();
+  if (backend === "s3") {
+    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const { createS3Client } = await import("@/lib/s3-client");
+    const client = createS3Client();
 
-  await client.send(
-    new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET!.trim(),
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-    })
+    await client.send(
+      new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET!.trim(),
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+      })
+    );
+
+    return storageUrlForKey(key);
+  }
+
+  throw new Error(
+    "File storage not configured. Set S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_ENDPOINT on Render (Cloudflare R2)."
   );
-
-  return storageUrlForKey(key);
 }
 
 async function saveToLocal(buffer: Buffer, subfolder: string, name: string): Promise<string> {
@@ -110,7 +102,7 @@ export async function saveUpload(file: File, subfolder: string): Promise<string>
 
   if (isProductionHosting()) {
     throw new Error(
-      "File storage not configured. Set SUPABASE_SERVICE_ROLE_KEY (recommended) or S3_* on Render."
+      "File storage not configured. Set S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_ENDPOINT on Render (Cloudflare R2)."
     );
   }
 
@@ -165,27 +157,28 @@ export async function deleteStoredUpload(pathOrUrl: string): Promise<void> {
 
   if (remoteStorageConfigured()) {
     try {
-      const { storageBackend, supabaseDeleteObject } = await import("@/lib/supabase-storage");
-      if (storageBackend() === "supabase") {
+      const backend = storageBackend();
+      if (backend === "supabase") {
+        const { supabaseDeleteObject } = await import("@/lib/supabase-storage");
         await supabaseDeleteObject(key);
         return;
       }
-
-      const { isR2Storage, r2DeleteObject } = await import("@/lib/r2-object");
-      if (isR2Storage()) {
+      if (backend === "r2") {
+        const { r2DeleteObject } = await import("@/lib/r2-object");
         await r2DeleteObject(key);
         return;
       }
-
-      const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-      const { createS3Client } = await import("@/lib/s3-client");
-      const client = createS3Client();
-      await client.send(
-        new DeleteObjectCommand({
-          Bucket: process.env.S3_BUCKET!.trim(),
-          Key: key,
-        })
-      );
+      if (backend === "s3") {
+        const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+        const { createS3Client } = await import("@/lib/s3-client");
+        const client = createS3Client();
+        await client.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.S3_BUCKET!.trim(),
+            Key: key,
+          })
+        );
+      }
     } catch {
       // ignore — DB row is still removed
     }

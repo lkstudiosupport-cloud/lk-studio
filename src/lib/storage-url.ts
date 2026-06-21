@@ -114,16 +114,11 @@ export function storedUrlForKey(key: string): string {
     return `${publicBase}/${normalized}`;
   }
 
-  const hasRemote =
-    Boolean(
-      process.env.S3_BUCKET?.trim() &&
-        process.env.S3_ACCESS_KEY_ID?.trim() &&
-        process.env.S3_SECRET_ACCESS_KEY?.trim()
-    ) ||
-    Boolean(
-      process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-        process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-    );
+  const hasRemote = Boolean(
+    process.env.S3_BUCKET?.trim() &&
+      process.env.S3_ACCESS_KEY_ID?.trim() &&
+      process.env.S3_SECRET_ACCESS_KEY?.trim()
+  );
 
   if (hasRemote) {
     return mediaProxyUrlForKey(normalized);

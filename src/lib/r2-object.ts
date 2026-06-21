@@ -41,9 +41,10 @@ export function r2ObjectUrl(key: string): string {
 
 export async function r2PutObject(key: string, body: Buffer, contentType: string): Promise<void> {
   const url = r2ObjectUrl(key);
+  const payload = body instanceof Buffer ? new Uint8Array(body) : body;
   const res = await awsClient().fetch(url, {
     method: "PUT",
-    body,
+    body: payload,
     headers: {
       "Content-Type": contentType,
       "Content-Length": String(body.length),
