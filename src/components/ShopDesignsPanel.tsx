@@ -1,54 +1,45 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Design, ServiceCategory } from "@prisma/client";
+import type { ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES, isCategoryShopUpload } from "@/lib/categories";
 import { isShopOwnedUploadCategory } from "@/lib/design-access";
+import type { DesignListItem } from "@/lib/design-list-select";
+import { withQueryParam } from "@/lib/query-string";
 import { MAX_DESIGN_IMAGES } from "@/lib/limits";
 import { ShopDesignItem } from "@/components/ShopDesignItem";
 import { compressImageFile } from "@/lib/compress-image";
 import { Loader2, Plus } from "lucide-react";
 
+const BASE_PATH = "/shop/designs";
+
 export function ShopDesignsPanel({
   locale,
   designs,
   shopId,
+  category,
+  categoryCounts,
 }: {
   locale: Locale;
-  designs: Design[];
+  designs: DesignListItem[];
   shopId: string;
+  category: ServiceCategory;
+  categoryCounts: Record<ServiceCategory, number>;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [category, setCategory] = useState<ServiceCategory>(CATEGORIES[0].key);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
 
   const canUpload = isCategoryShopUpload(category);
-
-  const counts = useMemo(() => {
-    const map = {} as Record<string, number>;
-    for (const c of CATEGORIES) {
-      map[c.key] = designs.filter((d) => d.category === c.key).length;
-    }
-    return map;
-  }, [designs]);
-
   const activeCategory = CATEGORIES.find((c) => c.key === category)!;
-  const categoryDesigns = useMemo(() => {
-    return designs
-      .filter((d) => d.category === category)
-      .sort((a, b) => {
-        if (a.catalogNumber && b.catalogNumber) return a.catalogNumber.localeCompare(b.catalogNumber);
-        return b.createdAt > a.createdAt ? 1 : -1;
-      });
-  }, [designs, category]);
 
-  function canManageDesign(design: Design): boolean {
+  function canManageDesign(design: DesignListItem): boolean {
     return canUpload && isShopOwnedUploadCategory(category) && !design.isCatalog && design.shopId === shopId;
   }
 
@@ -99,20 +90,18 @@ export function ShopDesignsPanel({
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {CATEGORIES.map((c) => (
-          <button
+          <Link
             key={c.key}
-            type="button"
-            onClick={() => {
-              setCategory(c.key);
-              setError("");
-            }}
-            className={`min-h-[4.5rem] rounded-2xl p-3 text-center text-sm font-semibold shadow-md transition active:scale-[0.98] ${
+            href={withQueryParam(BASE_PATH, "category", c.key)}
+            scroll={false}
+            prefetch
+            className={`min-h-[4.5rem] rounded-2xl p-3 text-center text-sm font-semibold shadow-md transition hover:opacity-100 ${
               c.color
-            } ${category === c.key ? "ring-4 ring-brand-gold ring-offset-2" : "opacity-90 hover:opacity-100"}`}
+            } ${category === c.key ? "ring-4 ring-brand-gold ring-offset-2" : "opacity-90"}`}
           >
             <span className="block leading-tight">{t(locale, c.labelKey)}</span>
-            <span className="mt-1 block text-xs opacity-90">{counts[c.key] ?? 0}</span>
-          </button>
+            <span className="mt-1 block text-xs opacity-90">{categoryCounts[c.key] ?? 0}</span>
+          </Link>
         ))}
       </div>
 
@@ -122,7 +111,7 @@ export function ShopDesignsPanel({
             {t(locale, activeCategory.labelKey)}
           </h2>
           <span className="rounded-full bg-brand-cream px-3 py-1 text-xs font-semibold text-brand-green">
-            {categoryDesigns.length} {t(locale, "collectionItems")}
+            {designs.length} {t(locale, "collectionItems")}
           </span>
         </div>
 
@@ -155,7 +144,7 @@ export function ShopDesignsPanel({
             </button>
           )}
 
-          {categoryDesigns.map((d) => (
+          {designs.map((d) => (
             <ShopDesignItem
               key={d.id}
               design={d}
@@ -165,13 +154,13 @@ export function ShopDesignsPanel({
           ))}
         </div>
 
-        {categoryDesigns.length === 0 && !canUpload && (
+        {designs.length === 0 && !canUpload && (
           <p className="card-premium py-10 text-center text-sm text-zinc-500">
             {t(locale, "noCatalogDesignsYet")}
           </p>
         )}
 
-        {categoryDesigns.length === 0 && canUpload && (
+        {designs.length === 0 && canUpload && (
           <p className="text-center text-sm text-zinc-500">{t(locale, "noStitchedDesignsYet")}</p>
         )}
 

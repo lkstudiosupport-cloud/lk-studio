@@ -75,6 +75,7 @@ export function DesignImagesView({
           src={imgSrc}
           alt={altText}
           fill
+          loading="lazy"
           className="object-cover"
           sizes={sizes}
           unoptimized={isUnoptimizedSrc(imgSrc)}
@@ -211,6 +212,7 @@ export function DesignImagesView({
                 src={src}
                 alt=""
                 fill
+                loading="lazy"
                 className="object-cover"
                 sizes="64px"
                 unoptimized={isUnoptimizedSrc(src)}

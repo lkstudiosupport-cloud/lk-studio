@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Design } from "@prisma/client";
+import type { DesignListItem } from "@/lib/design-list-select";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { parseDesignImages } from "@/lib/design-images";
@@ -17,7 +17,7 @@ export function ShopDesignItem({
   locale,
   manageable = true,
 }: {
-  design: Design;
+  design: DesignListItem;
   locale: Locale;
   manageable?: boolean;
 }) {
@@ -93,7 +93,7 @@ export function ShopDesignItem({
                 className="absolute inset-0"
                 aria-label={t(locale, "previewPhoto")}
               >
-                <Image src={path} alt="" fill className="object-cover" unoptimized />
+                <Image src={path} alt="" fill loading="lazy" className="object-cover" unoptimized />
               </button>
               {manageable && (
                 <button
