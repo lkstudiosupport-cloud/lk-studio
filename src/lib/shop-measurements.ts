@@ -1,5 +1,6 @@
 import {
   fieldsForType,
+  MEASUREMENT_TYPES,
   type MeasurementFieldKey,
   type MeasurementRecord,
   type MeasurementTypeId,
@@ -11,12 +12,20 @@ export type ShopMeasurementsData = {
   fields: Partial<Record<MeasurementFieldKey, string>>;
 };
 
+export function normalizeMeasurementTypeId(raw: string | null | undefined): MeasurementTypeId {
+  const value = raw?.trim().toLowerCase();
+  if (value === "dress" || value === "child") return value;
+  return "blouse";
+}
+
 export function parseShopMeasurementsJson(raw: string | null | undefined): ShopMeasurementsData | null {
   if (!raw?.trim()) return null;
   try {
     const parsed = JSON.parse(raw) as ShopMeasurementsData;
-    if (!parsed?.type || !parsed.fields) return null;
-    return parsed;
+    if (!parsed?.fields) return null;
+    const type = normalizeMeasurementTypeId(parsed.type);
+    if (!MEASUREMENT_TYPES.includes(type)) return null;
+    return { ...parsed, type };
   } catch {
     return null;
   }

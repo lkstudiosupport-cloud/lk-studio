@@ -89,11 +89,6 @@ export function CreateShopOrderFlow({
     });
   }
 
-  const canSubmit =
-    measurementMode === "view"
-      ? Boolean(personId) || customer!.persons.length === 0
-      : true;
-
   if (!customer) {
     return (
       <div className="card-premium min-w-0 space-y-5 p-4 sm:p-5">

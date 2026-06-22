@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -7,7 +9,6 @@ import { OrderSelectedDesigns } from "./OrderSelectedDesigns";
 import { OrderImageGallery } from "./OrderImageGallery";
 import { UserRound, Shirt, Ruler, ChevronDown } from "lucide-react";
 import { pickMeasurementForType } from "@/lib/measurements";
-import type { MeasurementTypeId } from "@/lib/measurements";
 import {
   parseShopMeasurementsJson,
   shopMeasurementsToRecord,
@@ -42,24 +43,28 @@ export function ShopOrderCard({
   locale: Locale;
   onStatusUpdated?: (tabId: string) => void;
 }) {
-  const subjectName = orderSubjectName(order);
-  const designImg = order.design?.imagePath ?? null;
-  const customerDesignLabel = order.design?.title ?? t(locale, "customerOwnDesign");
+  const shopMeas = parseShopMeasurementsJson(order.shopMeasurementsJson);
+  const shopMeasureType = shopMeas?.type ?? "blouse";
+  const personMeasurement = order.person
+    ? pickMeasurementForType(order.person.measurements, shopMeasureType)
+    : null;
+
+  const favoriteDesigns = (order.orderFavorites ?? [])
+    .map((of) => (of.design ? { design: of.design, category: of.category as ServiceCategory } : null))
+    .filter((item): item is { design: DesignPreview; category: ServiceCategory } => item != null);
+
   const selectedDesigns =
-    (order.orderFavorites?.length ?? 0) > 0
-      ? order.orderFavorites!.map((of) => ({
-          design: of.design,
-          category: of.category as ServiceCategory,
-        }))
+    favoriteDesigns.length > 0
+      ? favoriteDesigns
       : order.design
         ? [{ design: order.design, category: order.category }]
         : [];
 
-  const shopMeas = parseShopMeasurementsJson(order.shopMeasurementsJson);
-  const shopMeasureType = (shopMeas?.type ?? "blouse") as MeasurementTypeId;
-  const personMeasurement = order.person
-    ? pickMeasurementForType(order.person.measurements, shopMeasureType)
-    : null;
+  const primaryDesignImage =
+    order.design?.imagePath ?? favoriteDesigns[0]?.design.imagePath ?? null;
+  const subjectName = orderSubjectName(order);
+  const customerDesignLabel =
+    order.design?.title ?? favoriteDesigns[0]?.design.title ?? t(locale, "customerOwnDesign");
 
   return (
     <article className="card-premium order-card-perf overflow-hidden">
@@ -114,10 +119,10 @@ export function ShopOrderCard({
                       {t(locale, "referencePhotos")}
                     </h3>
                     <div className="overflow-hidden rounded-2xl border-2 border-brand-gold/40 bg-white">
-                      {designImg ? (
+                      {primaryDesignImage ? (
                         <div className="relative aspect-[4/3] max-h-72 w-full">
                           <Image
-                            src={designImg}
+                            src={primaryDesignImage}
                             alt={customerDesignLabel}
                             fill
                             className="object-cover"
