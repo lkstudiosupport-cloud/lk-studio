@@ -11,9 +11,10 @@ import {
   shopStitchedDesignsWhere,
 } from "@/lib/design-access";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
+import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
 import { cachedAppCatalogDesigns } from "@/lib/cached-catalog-designs";
 import { DESIGN_CARD_SELECT } from "@/lib/design-queries";
-import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
+import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import Link from "next/link";
 import { shopRatingSummaries } from "@/lib/shop-rating";
 import { ShopRatingBadge } from "@/components/ShopRatingBadge";
@@ -108,7 +109,7 @@ async function CustomerShopStitchedPage({
 export default async function CustomerDesignsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; shopId?: string; size?: string }>;
+  searchParams: Promise<{ category?: string; shopId?: string; size?: string; part?: string }>;
 }) {
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
@@ -121,6 +122,9 @@ export default async function CustomerDesignsPage({
     rawSize === "SMALL" || rawSize === "MEDIUM" || rawSize === "BIG"
       ? (rawSize as DesignSizeTier)
       : undefined;
+  const rawPart = params.part?.toUpperCase();
+  const initialCatalogPart =
+    rawPart === "MAIN" || rawPart === "HAND_SLEEVES" ? (rawPart as CatalogPart) : undefined;
   const shopIdParam = params.shopId?.trim();
 
   if (shopIdParam) {
@@ -159,6 +163,9 @@ export default async function CustomerDesignsPage({
       initialCategory={category && CATALOG_CATEGORIES.includes(category) ? category : undefined}
       initialSizeTier={
         category && categoryHasSizeTiers(category) ? initialSizeTier : undefined
+      }
+      initialCatalogPart={
+        category && categoryHasCatalogParts(category) ? initialCatalogPart : undefined
       }
     />
   );

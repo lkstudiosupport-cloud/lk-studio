@@ -1,4 +1,4 @@
-import type { DesignSizeTier, PrismaClient, ServiceCategory } from "@prisma/client";
+import type { CatalogPart, DesignSizeTier, PrismaClient, ServiceCategory } from "@prisma/client";
 
 /** App-assigned design codes for catalog uploads (no size tier). */
 export const CATALOG_CODE_PREFIX: Partial<Record<ServiceCategory, string>> = {
@@ -25,6 +25,20 @@ export function tierCatalogCodePrefix(category: ServiceCategory, tier: DesignSiz
   return `${catalogCodePrefix(category)}-${TIER_LETTER[tier]}`;
 }
 
+
+/** BLU-B / BLU-H for blouse; DRS-D / DRS-H for dress (MAIN uses category-specific letter). */
+export function partCatalogCodePrefix(category: ServiceCategory, part: CatalogPart): string {
+  const base = catalogCodePrefix(category);
+  if (part === "HAND_SLEEVES") return `${base}-H`;
+  if (category === "BLOUSE_DESIGN") return `${base}-B`;
+  if (category === "DRESS_MODEL") return `${base}-D`;
+  throw new Error("This category does not use catalog parts");
+}
+
+function isAssignedSubgroupCode(catalogNumber: string): boolean {
+  return /^[A-Z]+-[A-Z]-\d{4}$/.test(catalogNumber);
+}
+
 function trailingCatalogIndex(catalogNumber: string): number | null {
   const match = catalogNumber.match(/(\d{4})$/);
   if (!match) return null;
@@ -47,8 +61,7 @@ export async function nextCatalogDesignNumber(
   for (const row of existing) {
     const cn = row.catalogNumber!;
     if (!cn.startsWith(`${prefix}-`)) continue;
-    // Skip tier codes MAG-S-0001 — only count flat MAG-0001 style
-    if (/^[A-Z]+-[SMB]-\d{4}$/.test(cn)) continue;
+    if (isAssignedSubgroupCode(cn)) continue;
     const index = trailingCatalogIndex(cn);
     if (index != null) max = Math.max(max, index);
   }
@@ -65,6 +78,29 @@ export async function nextTierCatalogDesignNumber(
   const prefix = tierCatalogCodePrefix(category, tier);
   const existing = await prisma.design.findMany({
     where: { category, sizeTier: tier, catalogNumber: { not: null } },
+    select: { catalogNumber: true },
+  });
+
+  let max = 0;
+  for (const row of existing) {
+    const cn = row.catalogNumber!;
+    if (!cn.startsWith(`${prefix}-`)) continue;
+    const index = trailingCatalogIndex(cn);
+    if (index != null) max = Math.max(max, index);
+  }
+
+  return `${prefix}-${String(max + 1).padStart(4, "0")}`;
+}
+
+/** Next part code e.g. BLU-B-0101, DRS-H-0042. */
+export async function nextPartCatalogDesignNumber(
+  prisma: Pick<PrismaClient, "design">,
+  category: ServiceCategory,
+  part: CatalogPart
+): Promise<string> {
+  const prefix = partCatalogCodePrefix(category, part);
+  const existing = await prisma.design.findMany({
+    where: { category, catalogPart: part, catalogNumber: { not: null } },
     select: { catalogNumber: true },
   });
 

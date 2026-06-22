@@ -10,8 +10,10 @@ import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import { MAX_CATALOG_BULK_UPLOAD } from "@/lib/limits";
 import { AdminDesignItem } from "@/components/AdminDesignItem";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
+import { CatalogPartButtons } from "@/components/CatalogPartButtons";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
-import type { DesignSizeTier } from "@prisma/client";
+import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
+import type { CatalogPart, DesignSizeTier } from "@prisma/client";
 import { compressImageFile } from "@/lib/compress-image";
 import { fetchApi, formatFetchError } from "@/lib/parse-api-response";
 import { Loader2, Plus } from "lucide-react";
@@ -31,6 +33,7 @@ export function AdminCatalogPanel({
   const fileRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState<ServiceCategory>(ADMIN_CATEGORIES[0]!.key);
   const [sizeTierFilter, setSizeTierFilter] = useState<DesignSizeTier | "UNASSIGNED">("UNASSIGNED");
+  const [catalogPartFilter, setCatalogPartFilter] = useState<CatalogPart | "UNASSIGNED">("UNASSIGNED");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [lastCode, setLastCode] = useState("");
@@ -46,6 +49,7 @@ export function AdminCatalogPanel({
 
   const activeCategory = ADMIN_CATEGORIES.find((c) => c.key === category)!;
   const hasSizeTiers = categoryHasSizeTiers(category);
+  const hasCatalogParts = categoryHasCatalogParts(category);
 
   const categoryDesigns = useMemo(() => {
     return designs
@@ -66,13 +70,31 @@ export function AdminCatalogPanel({
     return { ...counts, unassigned };
   }, [categoryDesigns]);
 
-  const visibleDesigns = useMemo(() => {
-    if (!hasSizeTiers) return categoryDesigns;
-    if (sizeTierFilter === "UNASSIGNED") {
-      return categoryDesigns.filter((d) => !d.sizeTier);
+  const partCounts = useMemo(() => {
+    const counts = { MAIN: 0, HAND_SLEEVES: 0 } as Record<CatalogPart, number>;
+    let unassigned = 0;
+    for (const d of categoryDesigns) {
+      if (!d.catalogPart) unassigned++;
+      else counts[d.catalogPart]++;
     }
-    return categoryDesigns.filter((d) => d.sizeTier === sizeTierFilter);
-  }, [categoryDesigns, hasSizeTiers, sizeTierFilter]);
+    return { ...counts, unassigned };
+  }, [categoryDesigns]);
+
+  const visibleDesigns = useMemo(() => {
+    if (hasSizeTiers) {
+      if (sizeTierFilter === "UNASSIGNED") {
+        return categoryDesigns.filter((d) => !d.sizeTier);
+      }
+      return categoryDesigns.filter((d) => d.sizeTier === sizeTierFilter);
+    }
+    if (hasCatalogParts) {
+      if (catalogPartFilter === "UNASSIGNED") {
+        return categoryDesigns.filter((d) => !d.catalogPart);
+      }
+      return categoryDesigns.filter((d) => d.catalogPart === catalogPartFilter);
+    }
+    return categoryDesigns;
+  }, [categoryDesigns, hasSizeTiers, hasCatalogParts, sizeTierFilter, catalogPartFilter]);
 
   async function uploadOne(file: File) {
     const fd = new FormData();
@@ -126,6 +148,7 @@ export function AdminCatalogPanel({
             onClick={() => {
               setCategory(c.key);
               setSizeTierFilter("UNASSIGNED");
+              setCatalogPartFilter("UNASSIGNED");
               setError("");
               setLastCode("");
             }}
@@ -155,6 +178,12 @@ export function AdminCatalogPanel({
               {t(locale, "adminCatalogSizeTierHint")}
             </>
           )}
+          {hasCatalogParts && (
+            <>
+              {" "}
+              {t(locale, "adminCatalogPartHint")}
+            </>
+          )}
         </p>
 
         {hasSizeTiers && (
@@ -171,6 +200,23 @@ export function AdminCatalogPanel({
             unassignedCount={tierCounts.unassigned}
             unassignedActive={sizeTierFilter === "UNASSIGNED"}
             onPickUnassigned={() => setSizeTierFilter("UNASSIGNED")}
+          />
+        )}
+
+        {hasCatalogParts && (
+          <CatalogPartButtons
+            locale={locale}
+            category={category}
+            active={catalogPartFilter === "UNASSIGNED" ? undefined : catalogPartFilter}
+            onPick={setCatalogPartFilter}
+            counts={{
+              MAIN: partCounts.MAIN,
+              HAND_SLEEVES: partCounts.HAND_SLEEVES,
+            }}
+            showUnassigned
+            unassignedCount={partCounts.unassigned}
+            unassignedActive={catalogPartFilter === "UNASSIGNED"}
+            onPickUnassigned={() => setCatalogPartFilter("UNASSIGNED")}
           />
         )}
 

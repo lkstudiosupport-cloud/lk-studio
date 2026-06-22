@@ -46,6 +46,12 @@ enum DesignSizeTier {
   BIG
 }
 
+/** Blouse / dress sub-groups (blouses vs hand sleeves, dress vs hand sleeves). */
+enum CatalogPart {
+  MAIN
+  HAND_SLEEVES
+}
+
 enum OrderStatus {
   PENDING
   MEASURING
@@ -300,6 +306,7 @@ model Design {
   isCatalog   Boolean         @default(false)
   catalogNumber String?       @unique
   sizeTier    DesignSizeTier?
+  catalogPart CatalogPart?
   uploadedByShopId String?
   title       String
   description String?
@@ -318,6 +325,7 @@ model Design {
   @@index([shopId, active, category])
   @@index([shopId, createdAt])
   @@index([isCatalog, category, sizeTier])
+  @@index([isCatalog, category, catalogPart])
 }
 
 model Order {

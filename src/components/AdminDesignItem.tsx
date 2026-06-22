@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Design, DesignSizeTier } from "@prisma/client";
+import type { CatalogPart, Design, DesignSizeTier } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { DesignImagesView } from "@/components/DesignImagesView";
+import { categoryHasCatalogParts, catalogPartLabelKey, CATALOG_PARTS } from "@/lib/design-catalog-part";
 import { categoryHasSizeTiers, sizeTierLabelKey } from "@/lib/design-size-tier";
 import { Trash2 } from "lucide-react";
 
@@ -16,6 +17,7 @@ export function AdminDesignItem({ design, locale }: { design: Design; locale: Lo
   const [assigning, setAssigning] = useState(false);
 
   const showTierAssign = categoryHasSizeTiers(design.category);
+  const showPartAssign = categoryHasCatalogParts(design.category);
 
   function onDelete() {
     if (!confirm("Delete this catalog design?")) return;
@@ -34,15 +36,14 @@ export function AdminDesignItem({ design, locale }: { design: Design; locale: Lo
     });
   }
 
-  async function assignTier(sizeTier: DesignSizeTier) {
-    if (design.sizeTier === sizeTier) return;
+  async function patchDesign(body: { sizeTier?: DesignSizeTier; catalogPart?: CatalogPart }) {
     setError("");
     setAssigning(true);
     try {
       const res = await fetch("/api/admin/designs", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: design.id, sizeTier }),
+        body: JSON.stringify({ id: design.id, ...body }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(data.error || "Move failed");
@@ -91,7 +92,7 @@ export function AdminDesignItem({ design, locale }: { design: Design; locale: Lo
                   key={tier}
                   type="button"
                   disabled={assigning || pending}
-                  onClick={() => void assignTier(tier)}
+                  onClick={() => void patchDesign({ sizeTier: tier })}
                   className={`rounded-lg px-1 py-1.5 text-[10px] font-bold transition disabled:opacity-50 ${
                     design.sizeTier === tier
                       ? "bg-brand-green text-brand-gold ring-2 ring-brand-gold"
@@ -99,6 +100,30 @@ export function AdminDesignItem({ design, locale }: { design: Design; locale: Lo
                   }`}
                 >
                   {t(locale, sizeTierLabelKey(tier))}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {showPartAssign && (
+          <div className="space-y-1">
+            <p className="text-center text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              {t(locale, "adminMoveToPart")}
+            </p>
+            <div className="grid grid-cols-2 gap-1">
+              {CATALOG_PARTS.map((part) => (
+                <button
+                  key={part}
+                  type="button"
+                  disabled={assigning || pending}
+                  onClick={() => void patchDesign({ catalogPart: part })}
+                  className={`rounded-lg px-1 py-1.5 text-[10px] font-bold leading-tight transition disabled:opacity-50 ${
+                    design.catalogPart === part
+                      ? "bg-brand-green text-brand-gold ring-2 ring-brand-gold"
+                      : "bg-brand-cream text-brand-green ring-1 ring-brand-green/20 hover:bg-brand-green/10"
+                  }`}
+                >
+                  {t(locale, catalogPartLabelKey(design.category, part))}
                 </button>
               ))}
             </div>

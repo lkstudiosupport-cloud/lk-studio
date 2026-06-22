@@ -530,6 +530,14 @@
   "adminMoveToSize": "साइज़ में ले जाएँ",
   "adminCatalogSizeTierHint": "अपलोड के बाद Unassigned खोलें और हर डिज़ाइन पर Small, Medium या Big चुनें।",
   "customerPickSizeTierHint": "डिज़ाइन देखने के लिए Small, Medium या Big चुनें।",
+  "catalogPart": {
+    "blouses": "ब्लाउज",
+    "handSleeves": "हाथ (आस्तीन)",
+    "dressDesign": "ड्रेस (डिज़ाइन)"
+  },
+  "adminMoveToPart": "समूह में ले जाएँ",
+  "adminCatalogPartHint": "अपलोड के बाद Unassigned खोलें और हर डिज़ाइन पर ब्लाउज या हाथ (आस्तीन) / ड्रेस (डिज़ाइन) चुनें।",
+  "customerPickCatalogPartHint": "डिज़ाइन देखने के लिए ऊपर एक समूह चुनें।",
   "status": {
     "pending": "लंबित",
     "measuring": "नाप लिया जा रहा है",

@@ -5,10 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { persistAdminCatalogDesign, isAdminCatalogCategory } from "@/lib/admin-design-upload";
 import { assignCatalogDesignSizeTier } from "@/lib/admin-assign-tier";
+import { assignCatalogDesignPart } from "@/lib/admin-assign-part";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import { parseDesignImages } from "@/lib/design-images";
 import { deleteStoredUpload } from "@/lib/storage";
-import type { DesignSizeTier, ServiceCategory } from "@prisma/client";
+import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -66,26 +67,41 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { id?: string; sizeTier?: DesignSizeTier };
+  let body: { id?: string; sizeTier?: DesignSizeTier; catalogPart?: CatalogPart };
   try {
-    body = (await req.json()) as { id?: string; sizeTier?: DesignSizeTier };
+    body = (await req.json()) as { id?: string; sizeTier?: DesignSizeTier; catalogPart?: CatalogPart };
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
   const id = body.id?.trim();
-  const sizeTier = body.sizeTier;
-  if (!id || !sizeTier || !["SMALL", "MEDIUM", "BIG"].includes(sizeTier)) {
-    return NextResponse.json({ error: "Design id and size tier (SMALL, MEDIUM, BIG) required" }, { status: 400 });
+  if (!id) {
+    return NextResponse.json({ error: "Design id required" }, { status: 400 });
   }
 
   try {
-    const result = await assignCatalogDesignSizeTier(id, sizeTier);
-    revalidatePath("/admin/designs");
-    revalidatePath("/shop/designs");
-    revalidatePath("/customer/designs");
-    revalidatePath("/customer/shops");
-    return NextResponse.json({ ok: true, catalogNumber: result.catalogNumber });
+    if (body.sizeTier && ["SMALL", "MEDIUM", "BIG"].includes(body.sizeTier)) {
+      const result = await assignCatalogDesignSizeTier(id, body.sizeTier);
+      revalidatePath("/admin/designs");
+      revalidatePath("/shop/designs");
+      revalidatePath("/customer/designs");
+      revalidatePath("/customer/shops");
+      return NextResponse.json({ ok: true, catalogNumber: result.catalogNumber });
+    }
+
+    if (body.catalogPart && ["MAIN", "HAND_SLEEVES"].includes(body.catalogPart)) {
+      const result = await assignCatalogDesignPart(id, body.catalogPart);
+      revalidatePath("/admin/designs");
+      revalidatePath("/shop/designs");
+      revalidatePath("/customer/designs");
+      revalidatePath("/customer/shops");
+      return NextResponse.json({ ok: true, catalogNumber: result.catalogNumber });
+    }
+
+    return NextResponse.json(
+      { error: "Provide sizeTier (SMALL, MEDIUM, BIG) or catalogPart (MAIN, HAND_SLEEVES)" },
+      { status: 400 }
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Update failed";
     return NextResponse.json({ error: message }, { status: 400 });

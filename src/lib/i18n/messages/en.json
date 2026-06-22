@@ -533,6 +533,14 @@
   "adminMoveToSize": "Move to size",
   "adminCatalogSizeTierHint": "After upload, open Unassigned and tap Small, Medium, or Big on each design.",
   "customerPickSizeTierHint": "Choose Small, Medium, or Big to view designs.",
+  "catalogPart": {
+    "blouses": "Blouses",
+    "handSleeves": "Hand (sleeves)",
+    "dressDesign": "Dress (design)"
+  },
+  "adminMoveToPart": "Move to group",
+  "adminCatalogPartHint": "After upload, open Unassigned and tap Blouses or Hand (sleeves) / Dress (design) on each design.",
+  "customerPickCatalogPartHint": "Choose a group above to view designs.",
   "status": {
     "pending": "Pending",
     "measuring": "Measuring",
