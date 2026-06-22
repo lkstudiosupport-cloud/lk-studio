@@ -9,7 +9,7 @@ import { allOrderImagePaths } from "@/lib/order-images";
 import { normalizeStoredImageUrl } from "@/lib/storage-url";
 import { openExternalUrl } from "@/lib/whatsapp";
 import { isCapacitorNative, isMobileWeb } from "@/lib/platform";
-import type { ShopOrderData } from "@/components/ShopOrderCard";
+import type { ShopOrderData } from "@/lib/shop-order-types";
 
 function fieldLabelForShare(locale: Locale, type: MeasurementTypeId, key: string): string {
   const typedKey = `measureLabel_${type}_${key}`;

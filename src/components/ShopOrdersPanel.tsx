@@ -6,7 +6,7 @@ import type { OrderStatus } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { ShopOrderCard } from "@/components/ShopOrderCard";
-import type { ShopOrderData } from "@/components/ShopOrderCard";
+import type { ShopOrderData } from "@/lib/shop-order-types";
 import type { ShopOrderTabCounts } from "@/lib/order-stats";
 import { useSwipeTabs } from "@/hooks/useSwipeTabs";
 

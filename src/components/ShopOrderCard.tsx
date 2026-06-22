@@ -5,6 +5,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { MeasurementListView } from "./MeasurementListView";
 import { OrderShareButton } from "./OrderShareButton";
+import { OrderStatusForm } from "./OrderStatusForm";
 import { OrderSelectedDesigns } from "./OrderSelectedDesigns";
 import { OrderImageGallery } from "./OrderImageGallery";
 import { UserRound, Shirt, Ruler, ChevronDown } from "lucide-react";
@@ -13,19 +14,10 @@ import {
   parseShopMeasurementsJson,
   shopMeasurementsToRecord,
 } from "@/lib/shop-measurements";
-import type { Design, Measurement, Order, Person, User, OrderImage, OrderFavorite, ServiceCategory } from "@prisma/client";
+import type { ServiceCategory } from "@prisma/client";
+import type { ShopOrderData, ShopOrderDesignItem } from "@/lib/shop-order-types";
 
-type DesignPreview = Pick<Design, "id" | "title" | "imagePath" | "category">;
-
-export type ShopOrderData = Order & {
-  customer: Pick<User, "id" | "name" | "phone">;
-  person: (Person & { measurements: Measurement[] }) | null;
-  design: DesignPreview | null;
-  images: OrderImage[];
-  orderFavorites: (OrderFavorite & {
-    design: DesignPreview;
-  })[];
-};
+export type { ShopOrderData } from "@/lib/shop-order-types";
 
 function orderSubjectName(order: ShopOrderData): string {
   if (order.person?.name) return order.person.name;
@@ -51,7 +43,7 @@ export function ShopOrderCard({
 
   const favoriteDesigns = (order.orderFavorites ?? [])
     .map((of) => (of.design ? { design: of.design, category: of.category as ServiceCategory } : null))
-    .filter((item): item is { design: DesignPreview; category: ServiceCategory } => item != null);
+    .filter((item): item is ShopOrderDesignItem => item != null);
 
   const selectedDesigns =
     favoriteDesigns.length > 0

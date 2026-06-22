@@ -6,7 +6,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { MeasurementRecord, MeasurementTypeId } from "@/lib/measurements";
 import { buildOrderWorkShareText, shareOrderWorkViaWhatsApp } from "@/lib/share-order-work";
-import type { ShopOrderData } from "@/components/ShopOrderCard";
+import type { ShopOrderData } from "@/lib/shop-order-types";
 
 export function OrderShareButton({
   locale,
