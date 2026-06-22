@@ -234,6 +234,7 @@
   "shareOrderWork": "वर्कर को शेयर",
   "shareOrderWorkHint": "सिलाई के लिए माप और फोटो WhatsApp पर भेजें",
   "shareOrderWorkFooter": "LK Studio सिलाई ऑर्डर",
+  "shareOrderWorkFailed": "ऑर्डर शेयर नहीं हो सका — फिर कोशिश करें",
   "printBill": "प्रिंट",
   "taxInvoice": "टैक्स इनवॉइस / बिल",
   "billNo": "बिल नं.",
