@@ -81,7 +81,7 @@ export default async function ShopDashboardPage() {
         status: o.status,
         category: o.category,
         customerName: o.customer.name,
-        personName: o.person.name,
+        personName: o.person?.name ?? o.customer.name,
         designTitle: o.design?.title ?? null,
       }))}
     />

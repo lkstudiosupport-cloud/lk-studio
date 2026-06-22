@@ -10,12 +10,17 @@ import { ShopRateForm } from "./ShopRateForm";
 import { OrderSelectedDesigns } from "./OrderSelectedDesigns";
 import { OrderImageGallery } from "./OrderImageGallery";
 import { measurementTypeForCategory, pickMeasurementForType } from "@/lib/measurements";
+import type { MeasurementTypeId } from "@/lib/measurements";
+import {
+  parseShopMeasurementsJson,
+  shopMeasurementsToRecord,
+} from "@/lib/shop-measurements";
 import type { Design, Measurement, Order, OrderImage, OrderFavorite, Person, ShopProfile, ShopRating, ServiceCategory } from "@prisma/client";
 
 type DesignPreview = Pick<Design, "id" | "title" | "imagePath" | "category">;
 
 type OrderView = Order & {
-  person: Person & { measurements: Measurement[] };
+  person: (Person & { measurements: Measurement[] }) | null;
   design: DesignPreview | null;
   images: OrderImage[];
   shop: Pick<ShopProfile, "id" | "shopName" | "phone" | "whatsapp">;
@@ -24,6 +29,13 @@ type OrderView = Order & {
     design: DesignPreview;
   })[];
 };
+
+function orderSubjectName(order: OrderView): string {
+  if (order.person?.name) return order.person.name;
+  const shopMeas = parseShopMeasurementsJson(order.shopMeasurementsJson);
+  if (shopMeas?.personName) return shopMeas.personName;
+  return "";
+}
 
 export function CustomerOrderCard({ order, locale }: { order: OrderView; locale: Locale }) {
   const designLabel = order.design?.title ?? t(locale, "customerOwnDesign");
@@ -38,7 +50,12 @@ export function CustomerOrderCard({ order, locale }: { order: OrderView; locale:
         : [];
 
   const measureType = measurementTypeForCategory(order.category);
-  const personMeasurement = pickMeasurementForType(order.person.measurements, measureType);
+  const shopMeas = parseShopMeasurementsJson(order.shopMeasurementsJson);
+  const shopMeasureType = (shopMeas?.type ?? measureType) as MeasurementTypeId;
+  const subjectName = orderSubjectName(order);
+  const personMeasurement = order.person
+    ? pickMeasurementForType(order.person.measurements, shopMeasureType)
+    : null;
 
   return (
     <article className="card-premium overflow-hidden">
@@ -46,7 +63,8 @@ export function CustomerOrderCard({ order, locale }: { order: OrderView; locale:
         <div>
           <p className="font-bold">{order.orderNumber}</p>
           <p className="text-sm text-white/90">
-            {order.shop.shopName} · {order.person.name}
+            {order.shop.shopName}
+            {subjectName ? ` · ${subjectName}` : ""}
           </p>
           <span className="mt-1 inline-block rounded-full bg-white/20 px-2 py-0.5 text-xs">
             {t(locale, workTypeLabelKey(order.workType))}
@@ -107,13 +125,22 @@ export function CustomerOrderCard({ order, locale }: { order: OrderView; locale:
 
         <section>
           <h3 className="mb-2 text-xs font-bold uppercase text-brand-green">
-            {t(locale, "measurementsList")} — {order.person.name}
+            {t(locale, "measurementsList")}
+            {subjectName ? ` — ${subjectName}` : ""}
           </h3>
-          <MeasurementListView
-            measurement={personMeasurement}
-            measurementType={measureType}
-            locale={locale}
-          />
+          {shopMeas ? (
+            <MeasurementListView
+              measurement={shopMeasurementsToRecord(shopMeas)}
+              measurementType={shopMeasureType}
+              locale={locale}
+            />
+          ) : (
+            <MeasurementListView
+              measurement={personMeasurement}
+              measurementType={shopMeasureType}
+              locale={locale}
+            />
+          )}
         </section>
 
         {order.clothImagePath && (

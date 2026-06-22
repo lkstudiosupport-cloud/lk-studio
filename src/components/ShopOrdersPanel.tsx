@@ -11,17 +11,31 @@ import type { ShopOrderTabCounts } from "@/lib/order-stats";
 import { useSwipeTabs } from "@/hooks/useSwipeTabs";
 
 const STATUS_TABS = [
-  { id: "all", labelKey: "allOrders", statuses: null as OrderStatus[] | null, countKey: "all" as const },
-  { id: "pending", labelKey: "status.pending", statuses: ["PENDING", "MEASURING"] as OrderStatus[], countKey: "pending" as const },
-  { id: "stitching", labelKey: "status.stitching", statuses: ["STITCHING"] as OrderStatus[], countKey: "stitching" as const },
-  { id: "ready", labelKey: "status.ready", statuses: ["READY"] as OrderStatus[], countKey: "ready" as const },
-  { id: "completed", labelKey: "dashboardCompleted", statuses: ["DELIVERED"] as OrderStatus[], countKey: "completed" as const },
+  {
+    id: "pending",
+    labelKey: "status.pending",
+    statuses: ["PENDING", "MEASURING", "STITCHING"] as OrderStatus[],
+    countKey: "pending" as const,
+  },
+  {
+    id: "ready",
+    labelKey: "status.readyToPick",
+    statuses: ["READY"] as OrderStatus[],
+    countKey: "ready" as const,
+  },
+  {
+    id: "completed",
+    labelKey: "dashboardCompleted",
+    statuses: ["DELIVERED"] as OrderStatus[],
+    countKey: "completed" as const,
+  },
 ];
 
 const TAB_IDS = STATUS_TABS.map((s) => s.id);
 
 function tabFromParam(value: string | null): string {
-  return value && TAB_IDS.includes(value) ? value : "all";
+  if (value && TAB_IDS.includes(value)) return value;
+  return "pending";
 }
 
 export function ShopOrdersPanel({
@@ -47,8 +61,7 @@ export function ShopOrdersPanel({
   const selectTab = useCallback(
     (id: string) => {
       setTab(id);
-      const next = id === "all" ? "/shop/orders" : `/shop/orders?tab=${id}`;
-      router.replace(next, { scroll: false });
+      router.replace(`/shop/orders?tab=${id}`, { scroll: false });
     },
     [router]
   );
@@ -56,8 +69,7 @@ export function ShopOrdersPanel({
   const active = STATUS_TABS.find((s) => s.id === tab)!;
 
   const filtered = useMemo(() => {
-    if (!active.statuses) return orders;
-    return orders.filter((o) => active.statuses!.includes(o.status));
+    return orders.filter((o) => active.statuses.includes(o.status));
   }, [orders, active]);
 
   const swipe = useSwipeTabs(TAB_IDS, tab, selectTab);
@@ -76,13 +88,13 @@ export function ShopOrdersPanel({
         {listHint && <p className="mt-1 text-xs text-zinc-500">{listHint}</p>}
       </div>
 
-      <div className="scroll-nav -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {STATUS_TABS.map((s) => (
           <button
             key={s.id}
             type="button"
             onClick={() => selectTab(s.id)}
-            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-semibold ${
+            className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${
               tab === s.id
                 ? "bg-brand-green text-brand-gold"
                 : "bg-white text-brand-green ring-1 ring-brand-green/15"

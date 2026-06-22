@@ -5,9 +5,16 @@ import { useState, useTransition } from "react";
 import type { OrderStatus } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { statusLabelKey, ORDER_STATUSES } from "@/lib/order-status";
+import { SHOP_ORDER_STATUSES, shopStatusLabelKey } from "@/lib/order-status";
 import { orderStatusTabId } from "@/lib/order-stats";
 import { updateOrderStatus } from "@/app/shop/actions";
+
+function normalizeShopStatus(status: OrderStatus): OrderStatus {
+  if (status === "MEASURING" || status === "STITCHING") return "PENDING";
+  if (status === "CANCELLED") return "PENDING";
+  if (SHOP_ORDER_STATUSES.includes(status)) return status;
+  return "PENDING";
+}
 
 export function OrderStatusForm({
   orderId,
@@ -22,7 +29,7 @@ export function OrderStatusForm({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>(status);
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>(normalizeShopStatus(status));
   const [error, setError] = useState("");
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -53,9 +60,9 @@ export function OrderStatusForm({
           onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
           className="rounded-lg border-0 bg-white/15 px-2 py-1.5 text-xs font-medium text-white"
         >
-          {ORDER_STATUSES.filter((s) => s !== "CANCELLED").map((s) => (
+          {SHOP_ORDER_STATUSES.map((s) => (
             <option key={s} value={s} className="text-brand-green">
-              {t(locale, statusLabelKey(s))}
+              {t(locale, shopStatusLabelKey(s))}
             </option>
           ))}
         </select>

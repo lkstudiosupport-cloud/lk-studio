@@ -21,8 +21,7 @@ export type DashboardOrder = {
 
 const STATUS_TABS = [
   { id: "pending", labelKey: "status.pending" },
-  { id: "stitching", labelKey: "status.stitching" },
-  { id: "ready", labelKey: "status.ready" },
+  { id: "ready", labelKey: "status.readyToPick" },
   { id: "completed", labelKey: "dashboardCompleted" },
 ] as const;
 
@@ -39,7 +38,6 @@ export function ShopDashboard({
   monthlyIncome: number;
   statusCounts: {
     pending: number;
-    stitching: number;
     ready: number;
     completed: number;
   };

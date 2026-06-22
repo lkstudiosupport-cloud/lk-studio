@@ -14,15 +14,29 @@ import { isShopActive, extendSubscriptionEnd, SHOP_MONTHLY_PRICE_INR } from "@/l
 import { findUserByPhone } from "@/lib/auth-user";
 import type { ActionState } from "@/lib/action-state";
 import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
-import { shopManageableDesignWhere, isShopUploadCategory } from "@/lib/design-access";
+import { CATALOG_CATEGORIES, shopManageableDesignWhere, isShopUploadCategory } from "@/lib/design-access";
+import { parseShopMeasurementsFromForm } from "@/lib/shop-measurements";
 
 const MAX_ORDER_DESIGN_PICKS = 3;
+
+export type ShopOrderCustomerFavorite = {
+  designId: string;
+  category: ServiceCategory;
+  design: {
+    id: string;
+    title: string;
+    imagePath: string;
+    imagesJson: string | null;
+    category: ServiceCategory;
+  };
+};
 
 export type ShopOrderCustomerLookup = {
   id: string;
   name: string;
   phone: string | null;
   whatsapp: string | null;
+  favorites: ShopOrderCustomerFavorite[];
   persons: {
     id: string;
     name: string;
@@ -64,7 +78,7 @@ export async function lookupShopOrderCustomer(input: {
   phone?: string;
   customerId?: string;
 }): Promise<{ ok: true; customer: ShopOrderCustomerLookup } | { ok: false; error: string }> {
-  await shopIdOnly();
+  const sid = await shopIdOnly();
 
   const phone = input.phone?.trim();
   const customerId = input.customerId?.trim();
@@ -85,6 +99,23 @@ export async function lookupShopOrderCustomer(input: {
       name: true,
       phone: true,
       whatsapp: true,
+      favorites: {
+        where: { shopId: sid },
+        orderBy: { createdAt: "desc" },
+        select: {
+          designId: true,
+          category: true,
+          design: {
+            select: {
+              id: true,
+              title: true,
+              imagePath: true,
+              imagesJson: true,
+              category: true,
+            },
+          },
+        },
+      },
       persons: {
         orderBy: { name: "asc" },
         select: {
@@ -109,23 +140,33 @@ export async function createShopOrder(
   try {
     const sid = await shopId();
     const customerId = String(formData.get("customerId") ?? "").trim();
-    const personId = String(formData.get("personId") ?? "").trim();
-    const category = (String(formData.get("category") ?? "MAGGAM") as ServiceCategory);
-    const workType = (String(formData.get("workType") ?? "STITCHING") as WorkType);
+    const personId = String(formData.get("personId") ?? "").trim() || null;
+    const measurementMode = String(formData.get("measurementMode") ?? "").trim();
     const notes = String(formData.get("notes") ?? "").trim() || null;
     const designIds = formData.getAll("designId").map(String).filter(Boolean);
+    const shopMeasurements = parseShopMeasurementsFromForm(formData);
 
-    if (!customerId || !personId) {
-      return { ok: false, error: "Select customer and person" };
+    if (!customerId) {
+      return { ok: false, error: "Select customer" };
     }
     if (designIds.length > MAX_ORDER_DESIGN_PICKS) {
       return { ok: false, error: `Select up to ${MAX_ORDER_DESIGN_PICKS} designs` };
     }
 
-    const person = await prisma.person.findFirst({
-      where: { id: personId, customerId },
-    });
-    if (!person) return { ok: false, error: "Select a person" };
+    if (measurementMode === "view") {
+      if (!personId) return { ok: false, error: "Select a person to view measurements" };
+      const person = await prisma.person.findFirst({ where: { id: personId, customerId } });
+      if (!person) return { ok: false, error: "Select a person" };
+    } else if (measurementMode === "manual") {
+      if (!shopMeasurements) return { ok: false, error: "Enter shop measurements" };
+    } else if (!personId && !shopMeasurements) {
+      return { ok: false, error: "Add measurements or select a person" };
+    }
+
+    if (personId) {
+      const person = await prisma.person.findFirst({ where: { id: personId, customerId } });
+      if (!person) return { ok: false, error: "Select a person" };
+    }
 
     const clothFile = formData.get("clothImage");
     let clothImagePath: string | undefined;
@@ -134,50 +175,36 @@ export async function createShopOrder(
     }
 
     const orderNumber = `ORD-${Date.now()}`;
-    const orderCategory = category;
+    let orderCategory: ServiceCategory = "MAGGAM";
+    let orderedDesigns: { id: string; category: ServiceCategory }[] = [];
 
     if (designIds.length > 0) {
       const designRows = await prisma.design.findMany({
-        where: { id: { in: designIds }, shopId: sid, active: true },
+        where: {
+          id: { in: designIds },
+          active: true,
+          OR: [
+            { shopId: sid, isCatalog: false },
+            { isCatalog: true, category: { in: CATALOG_CATEGORIES } },
+            { favorites: { some: { customerId, shopId: sid } } },
+          ],
+        },
+        select: { id: true, category: true },
       });
       const byId = new Map(designRows.map((d) => [d.id, d]));
-      const orderedDesigns = designIds
+      orderedDesigns = designIds
         .map((id) => byId.get(id))
         .filter((d): d is (typeof designRows)[number] => d != null);
       if (orderedDesigns.length !== designIds.length) {
         return { ok: false, error: "Some selected designs are not available" };
       }
-      const primaryDesignId = orderedDesigns[0]!.id;
-      const designCategory = orderedDesigns[0]!.category;
-
-      const order = await prisma.order.create({
-        data: {
-          orderNumber,
-          customerId,
-          shopId: sid,
-          personId,
-          designId: primaryDesignId,
-          workType,
-          category: designCategory,
-          notes,
-          status: "PENDING",
-          ...(clothImagePath ? { clothImagePath } : {}),
-          orderFavorites: {
-            create: orderedDesigns.map((d) => ({
-              designId: d.id,
-              category: d.category,
-            })),
-          },
-        },
-      });
-
-      const uploaded = await appendOrderImagesFromForm(order.id, formData, "SHOP", "orderImg");
-      void uploaded;
-
-      revalidatePath("/shop/orders");
-      revalidatePath("/customer/orders");
-      return { ok: true, message: "orderPlaced" };
+      orderCategory = orderedDesigns[0]!.category;
     }
+
+    const shopMeasurementsJson =
+      measurementMode === "manual" && shopMeasurements
+        ? JSON.stringify(shopMeasurements)
+        : null;
 
     const order = await prisma.order.create({
       data: {
@@ -185,22 +212,33 @@ export async function createShopOrder(
         customerId,
         shopId: sid,
         personId,
-        designId: null,
-        workType,
+        shopMeasurementsJson,
+        designId: orderedDesigns[0]?.id ?? null,
+        workType: "STITCHING",
         category: orderCategory,
         notes,
         status: "PENDING",
         ...(clothImagePath ? { clothImagePath } : {}),
+        ...(orderedDesigns.length > 0
+          ? {
+              orderFavorites: {
+                create: orderedDesigns.map((d) => ({
+                  designId: d.id,
+                  category: d.category,
+                })),
+              },
+            }
+          : {}),
       },
     });
 
     const uploaded = await appendOrderImagesFromForm(order.id, formData, "SHOP", "orderImg");
 
-    if (!clothImagePath && uploaded.length === 0) {
+    if (!clothImagePath && uploaded.length === 0 && orderedDesigns.length === 0) {
       await prisma.order.delete({ where: { id: order.id } });
       return {
         ok: false,
-        error: "Add cloth photo, pick shop designs, or upload photos from gallery",
+        error: "Pick customer favorites or upload reference photos",
       };
     }
 

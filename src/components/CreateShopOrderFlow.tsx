@@ -1,14 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, UserRound } from "lucide-react";
-import type { Design, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { CATEGORIES } from "@/lib/categories";
 import { parseDesignImages } from "@/lib/design-images";
 import {
   createShopOrder,
@@ -17,35 +15,36 @@ import {
 } from "@/app/shop/actions";
 import { initialActionState } from "@/lib/action-state";
 import { CustomerPhoneField } from "@/components/CustomerPhoneField";
-import { FormPhotoAdd } from "@/components/FormPhotoAdd";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { MeasurementListView } from "@/components/MeasurementListView";
-import { WorkTypeSelect } from "@/components/WorkTypeSelect";
-import { measurementTypeForCategory, pickMeasurementForType } from "@/lib/measurements";
+import { ShopManualMeasurementsForm } from "@/components/ShopManualMeasurementsForm";
+import { pickMeasurementForType } from "@/lib/measurements";
+import type { MeasurementTypeId } from "@/lib/measurements";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 
 type SavedCustomer = { id: string; name: string; phone: string | null; whatsapp: string | null };
-type DesignPick = Pick<Design, "id" | "title" | "category" | "imagePath" | "imagesJson">;
 
-const MAX_DESIGNS = 3;
+const MAX_FAVORITES = 3;
 const MAX_GALLERY = 3;
+
+type MeasurementMode = "view" | "manual";
 
 export function CreateShopOrderFlow({
   locale,
   customers,
-  designs,
 }: {
   locale: Locale;
   customers: SavedCustomer[];
-  designs: DesignPick[];
 }) {
   const router = useRouter();
+  const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [lookupError, setLookupError] = useState("");
   const [lookupPending, setLookupPending] = useState(false);
   const [customer, setCustomer] = useState<ShopOrderCustomerLookup | null>(null);
-  const [category, setCategory] = useState<ServiceCategory>("MAGGAM");
+  const [measurementMode, setMeasurementMode] = useState<MeasurementMode>("view");
   const [personId, setPersonId] = useState("");
+  const [viewMeasureType, setViewMeasureType] = useState<MeasurementTypeId>("blouse");
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
   const [state, formAction, pending] = useActionState(createShopOrder, initialActionState);
 
@@ -57,13 +56,6 @@ export function CreateShopOrderFlow({
       router.refresh();
     }
   }, [state.ok, router]);
-
-  const categoryDesigns = useMemo(
-    () => designs.filter((d) => d.category === category),
-    [designs, category]
-  );
-
-  const measureType = measurementTypeForCategory(category);
 
   async function findCustomer(byId?: string) {
     setLookupError("");
@@ -79,7 +71,10 @@ export function CreateShopOrderFlow({
         return;
       }
       setCustomer(result.customer);
-      setPersonId(result.customer.persons[0]?.id ?? "");
+      setCustomerName(result.customer.name);
+      const firstPerson = result.customer.persons[0];
+      setPersonId(firstPerson?.id ?? "");
+      setMeasurementMode(result.customer.persons.length > 0 ? "view" : "manual");
       setSelectedDesigns([]);
     } finally {
       setLookupPending(false);
@@ -89,10 +84,15 @@ export function CreateShopOrderFlow({
   function toggleDesign(id: string) {
     setSelectedDesigns((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= MAX_DESIGNS) return prev;
+      if (prev.length >= MAX_FAVORITES) return prev;
       return [...prev, id];
     });
   }
+
+  const canSubmit =
+    measurementMode === "view"
+      ? Boolean(personId) || customer!.persons.length === 0
+      : true;
 
   if (!customer) {
     return (
@@ -108,7 +108,24 @@ export function CreateShopOrderFlow({
         <h1 className="text-xl font-bold text-brand-green">{t(locale, "newShopOrder")}</h1>
         <p className="text-sm text-zinc-600">{t(locale, "newShopOrderHint")}</p>
 
-        <CustomerPhoneField locale={locale} value={phone} onChange={setPhone} />
+        <label className="block">
+          <span className="mb-1 block text-sm font-semibold text-brand-green">
+            {t(locale, "customerName")}
+          </span>
+          <input
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder={t(locale, "customerNamePlaceholder")}
+            className="input-premium w-full"
+          />
+        </label>
+
+        <CustomerPhoneField
+          locale={locale}
+          value={phone}
+          onChange={setPhone}
+          onNamePicked={setCustomerName}
+        />
 
         {customers.length > 0 && (
           <label className="block">
@@ -139,7 +156,7 @@ export function CreateShopOrderFlow({
 
         <button
           type="button"
-          disabled={lookupPending || !phone.trim()}
+          disabled={lookupPending || !phone.trim() || !customerName.trim()}
           onClick={() => void findCustomer()}
           className="btn-primary w-full py-3 disabled:opacity-60"
         >
@@ -148,6 +165,8 @@ export function CreateShopOrderFlow({
       </div>
     );
   }
+
+  const selectedPerson = customer.persons.find((p) => p.id === personId);
 
   return (
     <div className="space-y-5">
@@ -172,138 +191,159 @@ export function CreateShopOrderFlow({
         <div className="rounded-xl border border-brand-green/15 bg-brand-cream/60 p-4">
           <p className="flex items-center gap-2 text-sm font-bold text-brand-green">
             <UserRound className="h-4 w-4" />
-            {customer.name}
+            {customerName || customer.name}
           </p>
           {(customer.phone || customer.whatsapp) && (
             <p className="mt-1 text-sm text-zinc-600">{customer.phone || customer.whatsapp}</p>
           )}
         </div>
 
-        {customer.persons.length === 0 ? (
-          <p className="rounded-xl bg-amber-50 px-3 py-3 text-sm text-amber-900">
-            {t(locale, "addPersonFirst")}
-          </p>
-        ) : (
         <form action={formAction} encType="multipart/form-data" className="space-y-5">
           <input type="hidden" name="customerId" value={customer.id} />
+          <input type="hidden" name="measurementMode" value={measurementMode} />
 
-          <div>
-            <span className="mb-2 block text-sm font-semibold text-brand-green">
-              {t(locale, "orderCategory")}
-            </span>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {CATEGORIES.map((c) => (
+          <section className="space-y-3">
+            <h2 className="text-sm font-bold text-brand-green">{t(locale, "measurements")}</h2>
+
+            {customer.persons.length > 0 && (
+              <div className="flex gap-2">
                 <button
-                  key={c.key}
                   type="button"
-                  onClick={() => {
-                    setCategory(c.key);
-                    setSelectedDesigns([]);
-                  }}
-                  className={`rounded-xl px-2 py-2.5 text-xs font-semibold ${
-                    category === c.key ? "ring-2 ring-brand-gold ring-offset-1 " + c.color : c.color + " opacity-80"
+                  onClick={() => setMeasurementMode("view")}
+                  className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold ${
+                    measurementMode === "view"
+                      ? "bg-brand-green text-brand-gold"
+                      : "bg-white text-brand-green ring-1 ring-brand-green/15"
                   }`}
                 >
-                  {t(locale, c.labelKey)}
+                  {t(locale, "viewCustomerMeasurements")}
                 </button>
-              ))}
-            </div>
-            <input type="hidden" name="category" value={category} />
-          </div>
-
-          <WorkTypeSelect locale={locale} defaultValue="STITCHING" />
-
-          <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-brand-green">
-              {t(locale, "selectPersonForOrder")}
-            </span>
-            <select
-              name="personId"
-              required
-              value={personId}
-              onChange={(e) => setPersonId(e.target.value)}
-              className="input-premium w-full"
-            >
-              <option value="">{t(locale, "person")}</option>
-              {customer.persons.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                  {p.relation ? ` (${p.relation})` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {personId && (
-            <div className="rounded-xl border border-brand-green/10 bg-white p-3">
-              {customer.persons
-                .filter((p) => p.id === personId)
-                .map((p) => (
-                  <MeasurementListView
-                    key={p.id}
-                    locale={locale}
-                    measurementType={measureType}
-                    measurement={pickMeasurementForType(p.measurements, measureType)}
-                    compact
-                    showDiagram={false}
-                  />
-                ))}
-            </div>
-          )}
-
-          <div>
-            <span className="mb-1 block text-sm font-semibold text-brand-green">
-              {t(locale, "uploadClothPhoto")}
-            </span>
-            <p className="mb-2 text-xs text-zinc-500">{t(locale, "clothPhotoHint")}</p>
-            <FormPhotoAdd locale={locale} name="clothImage" />
-          </div>
-
-          <div>
-            <span className="mb-2 block text-sm font-semibold text-brand-green">
-              {t(locale, "pickShopDesigns")}
-            </span>
-            {categoryDesigns.length === 0 ? (
-              <p className="text-sm text-zinc-500">{t(locale, "noDesignsInCategory")}</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {categoryDesigns.map((d) => {
-                  const checked = selectedDesigns.includes(d.id);
-                  const thumb = parseDesignImages(d.imagesJson, d.imagePath)[0];
-                  return (
-                    <label
-                      key={d.id}
-                      className={`cursor-pointer overflow-hidden rounded-xl border-2 ${
-                        checked ? "border-brand-gold" : "border-transparent"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        name="designId"
-                        value={d.id}
-                        checked={checked}
-                        onChange={() => toggleDesign(d.id)}
-                        className="sr-only"
-                      />
-                      <div className="relative aspect-[3/4] bg-zinc-100">
-                        <Image src={thumb} alt={d.title} fill className="object-cover" unoptimized />
-                      </div>
-                      <p className="truncate px-2 py-1.5 text-center text-xs font-medium text-brand-green">
-                        {d.title}
-                      </p>
-                    </label>
-                  );
-                })}
+                <button
+                  type="button"
+                  onClick={() => setMeasurementMode("manual")}
+                  className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold ${
+                    measurementMode === "manual"
+                      ? "bg-brand-green text-brand-gold"
+                      : "bg-white text-brand-green ring-1 ring-brand-green/15"
+                  }`}
+                >
+                  {t(locale, "shopManualMeasurements")}
+                </button>
               </div>
             )}
-          </div>
 
-          <MultiImageUpload
-            namePrefix="orderImg"
-            label={t(locale, "photosFromGallery")}
-            locale={locale}
-            max={MAX_GALLERY}
-          />
+            {measurementMode === "view" && customer.persons.length > 0 ? (
+              <div className="space-y-3 rounded-xl border border-brand-green/10 bg-white p-3">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-semibold text-brand-green">
+                    {t(locale, "selectPersonForOrder")}
+                  </span>
+                  <select
+                    name="personId"
+                    required
+                    value={personId}
+                    onChange={(e) => setPersonId(e.target.value)}
+                    className="input-premium w-full"
+                  >
+                    <option value="">{t(locale, "person")}</option>
+                    {customer.persons.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                        {p.relation ? ` (${p.relation})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {selectedPerson && (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {(["blouse", "dress", "child"] as MeasurementTypeId[]).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setViewMeasureType(type)}
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            viewMeasureType === type
+                              ? "bg-brand-green text-brand-gold"
+                              : "bg-brand-cream text-brand-green"
+                          }`}
+                        >
+                          {t(locale, `measurementType_${type}`)}
+                        </button>
+                      ))}
+                    </div>
+                    <MeasurementListView
+                      locale={locale}
+                      measurementType={viewMeasureType}
+                      measurement={pickMeasurementForType(selectedPerson.measurements, viewMeasureType)}
+                      compact
+                      showDiagram={false}
+                    />
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-brand-green/10 bg-white p-3">
+                <p className="mb-3 text-xs text-zinc-500">{t(locale, "shopManualMeasurementsHint")}</p>
+                <ShopManualMeasurementsForm locale={locale} defaultPersonName={customerName} />
+              </div>
+            )}
+          </section>
+
+          <section>
+            <span className="mb-2 block text-sm font-semibold text-brand-green">
+              {t(locale, "referencePhotos")}
+            </span>
+
+            {customer.favorites.length > 0 && (
+              <div className="mb-4">
+                <p className="mb-2 text-xs text-zinc-500">{t(locale, "pickCustomerFavorites")}</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {customer.favorites.map((fav) => {
+                    const checked = selectedDesigns.includes(fav.designId);
+                    const thumb = parseDesignImages(fav.design.imagesJson, fav.design.imagePath)[0];
+                    return (
+                      <label
+                        key={fav.designId}
+                        className={`cursor-pointer overflow-hidden rounded-xl border-2 ${
+                          checked ? "border-brand-gold" : "border-transparent"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          name="designId"
+                          value={fav.designId}
+                          checked={checked}
+                          onChange={() => toggleDesign(fav.designId)}
+                          className="sr-only"
+                        />
+                        <div className="relative aspect-[3/4] bg-zinc-100">
+                          <Image
+                            src={thumb}
+                            alt={fav.design.title}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
+                        <p className="truncate px-2 py-1.5 text-center text-xs font-medium text-brand-green">
+                          {fav.design.title}
+                        </p>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <MultiImageUpload
+              namePrefix="orderImg"
+              label={t(locale, "photosFromGallery")}
+              locale={locale}
+              max={MAX_GALLERY}
+            />
+          </section>
 
           <textarea
             name="notes"
@@ -320,11 +360,14 @@ export function CreateShopOrderFlow({
             </p>
           )}
 
-          <button type="submit" disabled={pending || !personId} className="btn-primary w-full py-3">
+          <button
+            type="submit"
+            disabled={pending || (measurementMode === "view" && !personId)}
+            className="btn-primary w-full py-3 disabled:opacity-60"
+          >
             {pending ? "..." : t(locale, "saveOrderPending")}
           </button>
         </form>
-        )}
       </div>
     </div>
   );

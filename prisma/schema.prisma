@@ -335,8 +335,9 @@ model Order {
   customer            User            @relation("CustomerOrders", fields: [customerId], references: [id])
   shopId              String
   shop                ShopProfile     @relation("ShopOrders", fields: [shopId], references: [id])
-  personId            String
-  person              Person          @relation(fields: [personId], references: [id])
+  personId            String?
+  person              Person?         @relation(fields: [personId], references: [id])
+  shopMeasurementsJson String?
   designId            String?
   design              Design?         @relation(fields: [designId], references: [id])
   workType            WorkType        @default(STITCHING)

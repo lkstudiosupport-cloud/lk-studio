@@ -47,18 +47,6 @@ export default async function ShopOrdersPage() {
         >
           {t(locale, "newShopOrder")}
         </Link>
-        <Link
-          href="/shop/customer-favorites"
-          className="rounded-full bg-brand-gold/25 px-4 py-2 text-sm font-semibold text-brand-green"
-        >
-          {t(locale, "customerFavoritesTitle")}
-        </Link>
-        <Link
-          href="/shop/price-requests"
-          className="rounded-full bg-brand-cream px-4 py-2 text-sm font-semibold text-brand-green ring-1 ring-brand-green/15"
-        >
-          {t(locale, "priceRequestsTitle")}
-        </Link>
       </div>
       <ShopOrdersPanel
         locale={locale}

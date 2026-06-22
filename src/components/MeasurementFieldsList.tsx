@@ -31,6 +31,8 @@ type Props = {
   compact?: boolean;
   /** When set, inputs are rendered with this key prefix for form remounting. */
   inputKeyPrefix?: string;
+  /** Prefix for input `name` attributes (e.g. shopMeas → shopMeas_bust). */
+  fieldNamePrefix?: string;
 };
 
 export function MeasurementFieldsList({
@@ -42,6 +44,7 @@ export function MeasurementFieldsList({
   readOnly = false,
   compact = false,
   inputKeyPrefix = "",
+  fieldNamePrefix,
 }: Props) {
   const theme = MEASUREMENT_TYPE_THEMES[measurementType];
   const fields = fieldsForType(measurementType);
@@ -91,7 +94,7 @@ export function MeasurementFieldsList({
 
             {!readOnly && (
               <input
-                name={f.key}
+                name={fieldNamePrefix ? `${fieldNamePrefix}_${f.key}` : f.key}
                 defaultValue={value}
                 key={`${inputKeyPrefix}-${measurementType}-${f.key}-${value}`}
                 placeholder='14"'
