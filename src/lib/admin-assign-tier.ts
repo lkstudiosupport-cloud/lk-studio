@@ -21,6 +21,10 @@ export async function assignCatalogDesignSizeTier(
     throw new Error("This category does not use size tiers");
   }
 
+  if (design.sizeTier === sizeTier && design.catalogNumber) {
+    return { catalogNumber: design.catalogNumber };
+  }
+
   const catalogNumber = await nextTierCatalogDesignNumber(prisma, design.category, sizeTier);
 
   await prisma.design.update({

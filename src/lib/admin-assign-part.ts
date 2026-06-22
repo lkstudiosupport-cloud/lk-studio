@@ -21,6 +21,10 @@ export async function assignCatalogDesignPart(
     throw new Error("This category does not use catalog parts");
   }
 
+  if (design.catalogPart === catalogPart && design.catalogNumber) {
+    return { catalogNumber: design.catalogNumber };
+  }
+
   const catalogNumber = await nextPartCatalogDesignNumber(prisma, design.category, catalogPart);
 
   await prisma.design.update({
