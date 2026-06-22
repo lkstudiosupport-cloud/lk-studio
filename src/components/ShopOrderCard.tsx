@@ -4,7 +4,7 @@ import Image from "next/image";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { MeasurementListView } from "./MeasurementListView";
-import { OrderStatusForm } from "./OrderStatusForm";
+import { OrderShareButton } from "./OrderShareButton";
 import { OrderSelectedDesigns } from "./OrderSelectedDesigns";
 import { OrderImageGallery } from "./OrderImageGallery";
 import { UserRound, Shirt, Ruler, ChevronDown } from "lucide-react";
@@ -65,13 +65,25 @@ export function ShopOrderCard({
   const subjectName = orderSubjectName(order);
   const customerDesignLabel =
     order.design?.title ?? favoriteDesigns[0]?.design.title ?? t(locale, "customerOwnDesign");
+  const activeMeasurement = shopMeas
+    ? shopMeasurementsToRecord(shopMeas)
+    : personMeasurement;
 
   return (
     <article className="card-premium order-card-perf overflow-hidden">
-      <div className="border-b border-brand-green/10 bg-brand-green px-4 py-3 text-white">
-        <p className="font-bold">{order.orderNumber}</p>
-        <p className="mt-0.5 text-sm text-white/90">{subjectName}</p>
-        <p className="mt-0.5 text-xs text-white/75">{order.customer.name}</p>
+      <div className="flex items-start justify-between gap-3 border-b border-brand-green/10 bg-brand-green px-4 py-3 text-white">
+        <div className="min-w-0 flex-1">
+          <p className="font-bold">{order.orderNumber}</p>
+          <p className="mt-0.5 text-sm text-white/90">{subjectName}</p>
+          <p className="mt-0.5 text-xs text-white/75">{order.customer.name}</p>
+        </div>
+        <OrderShareButton
+          locale={locale}
+          order={order}
+          subjectName={subjectName}
+          shopMeasureType={shopMeasureType}
+          measurement={activeMeasurement}
+        />
       </div>
 
       <div className="p-4">
