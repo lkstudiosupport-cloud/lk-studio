@@ -234,6 +234,8 @@
   "shareOrderWork": "Share with worker",
   "shareOrderWorkHint": "Share measurements and photos on WhatsApp for stitching",
   "shareOrderWorkFooter": "Stitching order from LK Studio",
+  "sharingOrder": "Preparing order image…",
+  "shareOrderWorkFallback": "Order image saved. Open WhatsApp and attach the saved image.",
   "shareOrderWorkFailed": "Could not share order — try again",
   "printBill": "Print",
   "taxInvoice": "Tax invoice / Bill",

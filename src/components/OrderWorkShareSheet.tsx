@@ -4,8 +4,11 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { measurementEntries, type MeasurementRecord, type MeasurementTypeId } from "@/lib/measurements";
 import { allOrderImagePaths } from "@/lib/order-images";
+import { ORDER_WORK_SHARE_STYLES } from "@/lib/order-work-share-styles";
 import { normalizeStoredImageUrl } from "@/lib/storage-url";
 import type { ShopOrderData } from "@/lib/shop-order-types";
+
+export const ORDER_WORK_SHARE_CAPTURE_ID = "order-work-share-capture";
 
 export const orderWorkShareElementId = (orderId: string) => `order-work-share-${orderId}`;
 
@@ -13,6 +16,13 @@ function fieldLabel(locale: Locale, type: MeasurementTypeId, key: string): strin
   const typedKey = `measureLabel_${type}_${key}`;
   const typed = t(locale, typedKey);
   return typed !== typedKey ? typed : t(locale, key);
+}
+
+function absoluteImageUrl(path: string): string {
+  const normalized = normalizeStoredImageUrl(path);
+  if (typeof window === "undefined") return normalized;
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) return normalized;
+  return `${window.location.origin}${normalized.startsWith("/") ? "" : "/"}${normalized}`;
 }
 
 export function OrderWorkShareSheet({
@@ -28,79 +38,82 @@ export function OrderWorkShareSheet({
   shopMeasureType: MeasurementTypeId;
   measurement: MeasurementRecord | null;
 }) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
   const imagePaths = allOrderImagePaths(order.images, order.customerRefImages, {
     cloth: order.clothImagePath,
     workDesign: order.workDesignImagePath,
     design: order.design?.imagePath,
   });
-  const photoUrls = imagePaths.map((img) => `${origin}${normalizeStoredImageUrl(img.path)}`);
+  const photoUrls = imagePaths.map((img) => absoluteImageUrl(img.path));
   const measureRows = measurement ? measurementEntries(measurement, shopMeasureType) : [];
 
   return (
-    <div
-      id={orderWorkShareElementId(order.id)}
-      aria-hidden
-      className="pointer-events-none fixed left-[-10000px] top-0 z-[-1] w-[400px] overflow-hidden rounded-2xl border border-[#1a4d3e]/15 bg-white font-sans text-[#1a4d3e]"
-    >
-      <div className="bg-[#1a4d3e] px-4 py-3 text-white">
-        <p className="text-lg font-bold">{order.orderNumber}</p>
-        <p className="mt-1 text-sm text-white/90">
-          {t(locale, "orderForPerson")}: {subjectName}
-        </p>
-        <p className="text-sm text-white/80">
-          {t(locale, "customer")}: {order.customer.name}
-          {order.customer.phone ? ` · ${order.customer.phone}` : ""}
-        </p>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: ORDER_WORK_SHARE_STYLES }} />
+      <div
+        id={orderWorkShareElementId(order.id)}
+        aria-hidden
+        className="order-work-share"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          opacity: 0.01,
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      >
+        <div className="order-work-share-header">
+          <p className="order-work-share-title">{order.orderNumber}</p>
+          <p className="order-work-share-sub">
+            {t(locale, "orderForPerson")}: {subjectName}
+          </p>
+          <p className="order-work-share-meta">
+            {t(locale, "customer")}: {order.customer.name}
+            {order.customer.phone ? ` · ${order.customer.phone}` : ""}
+          </p>
+        </div>
+
+        <div className="order-work-share-body">
+          {measureRows.length > 0 && (
+            <section className="order-work-share-section">
+              <p className="order-work-share-label">
+                {t(locale, `measurementType_${shopMeasureType}`)} {t(locale, "measurements")}
+              </p>
+              <ul className="order-work-share-measures">
+                {measureRows.map((row) => (
+                  <li key={row.key}>
+                    <span className="name">{fieldLabel(locale, shopMeasureType, row.key)}</span>
+                    <span className="value">{row.value}&quot;</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {photoUrls.length > 0 && (
+            <section className="order-work-share-section">
+              <p className="order-work-share-label">{t(locale, "workPhotos")}</p>
+              <div className="order-work-share-photos">
+                {photoUrls.map((url, i) => (
+                  <div key={`${url}-${i}`} className="order-work-share-photo">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={`${t(locale, "workPhotos")} ${i + 1}`} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {order.notes?.trim() && (
+            <section className="order-work-share-section order-work-share-notes">
+              <p className="order-work-share-label">{t(locale, "notes")}</p>
+              <p className="note-body">{order.notes.trim()}</p>
+            </section>
+          )}
+
+          <p className="order-work-share-footer">{t(locale, "shareOrderWorkFooter")}</p>
+        </div>
       </div>
-
-      <div className="space-y-4 p-4">
-        {measureRows.length > 0 && (
-          <section>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1a4d3e]">
-              {t(locale, `measurementType_${shopMeasureType}`)} {t(locale, "measurements")}
-            </p>
-            <ul className="space-y-1 rounded-xl bg-[#faf6ef] p-3 text-sm">
-              {measureRows.map((row) => (
-                <li key={row.key} className="flex justify-between gap-2">
-                  <span className="text-zinc-600">{fieldLabel(locale, shopMeasureType, row.key)}</span>
-                  <span className="font-bold">{row.value}&quot;</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {photoUrls.length > 0 && (
-          <section>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#1a4d3e]">
-              {t(locale, "workPhotos")}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {photoUrls.map((url, i) => (
-                <div key={url} className="overflow-hidden rounded-xl border border-[#1a4d3e]/10 bg-zinc-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt={`${t(locale, "workPhotos")} ${i + 1}`}
-                    className="aspect-square w-full object-cover"
-                    crossOrigin="anonymous"
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {order.notes?.trim() && (
-          <section className="rounded-xl bg-zinc-50 p-3 text-sm">
-            <p className="font-semibold">{t(locale, "notes")}</p>
-            <p className="mt-1 text-zinc-700">{order.notes.trim()}</p>
-          </section>
-        )}
-
-        <p className="text-center text-xs text-zinc-500">{t(locale, "shareOrderWorkFooter")}</p>
-      </div>
-    </div>
+    </>
   );
 }

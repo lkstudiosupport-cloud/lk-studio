@@ -37,7 +37,8 @@ export function OrderShareButton({
     setSharing(true);
     setError("");
     try {
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await nextPaint();
+      await nextPaint();
       await shareOrderWork({
         order,
         locale,
@@ -54,7 +55,7 @@ export function OrderShareButton({
   }
 
   return (
-    <>
+    <div className="relative flex shrink-0 flex-col items-end">
       <OrderWorkShareSheet
         order={order}
         locale={locale}
@@ -66,13 +67,21 @@ export function OrderShareButton({
         type="button"
         onClick={(e) => void onShare(e)}
         disabled={sharing}
-        aria-label={t(locale, "shareOrderWork")}
-        title={t(locale, "shareOrderWorkHint")}
+        aria-label={sharing ? t(locale, "sharingOrder") : t(locale, "shareOrderWork")}
+        title={sharing ? t(locale, "sharingOrder") : t(locale, "shareOrderWorkHint")}
         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 disabled:opacity-60"
       >
-        <Share2 className="h-5 w-5" />
+        <Share2 className={`h-5 w-5 ${sharing ? "animate-pulse" : ""}`} />
       </button>
-      {error && <span className="sr-only">{error}</span>}
-    </>
+      {error && (
+        <p className="absolute right-0 top-full z-20 mt-1 max-w-[14rem] rounded-lg bg-red-600 px-2 py-1 text-xs text-white shadow-lg">
+          {error}
+        </p>
+      )}
+    </div>
   );
+}
+
+function nextPaint(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }

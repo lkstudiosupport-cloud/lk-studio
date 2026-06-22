@@ -24,6 +24,7 @@ export async function GET(
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=604800, immutable",
+        "Access-Control-Allow-Origin": "*",
       },
     });
   } catch (e) {
