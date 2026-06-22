@@ -65,31 +65,25 @@ export function ShopProfileForm({
       </label>
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "phone")}</span>
-        <div className="relative">
-          <Phone
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-green"
-            aria-hidden
-          />
+        <div className="input-premium flex items-center gap-3 px-3 py-2.5">
+          <Phone className="h-4 w-4 shrink-0 text-brand-green" aria-hidden />
           <input
             name="phone"
             type="tel"
             defaultValue={profile.phone ?? ""}
-            className="input-premium w-full pl-10"
+            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-brand-green shadow-none focus:outline-none focus:ring-0 sm:text-sm"
           />
         </div>
       </label>
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "whatsapp")}</span>
-        <div className="relative">
-          <MessageCircle
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600"
-            aria-hidden
-          />
+        <div className="input-premium flex items-center gap-3 px-3 py-2.5">
+          <MessageCircle className="h-4 w-4 shrink-0 text-green-600" aria-hidden />
           <input
             name="whatsapp"
             type="tel"
             defaultValue={profile.whatsapp ?? ""}
-            className="input-premium w-full pl-10"
+            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-brand-green shadow-none focus:outline-none focus:ring-0 sm:text-sm"
           />
         </div>
       </label>
