@@ -46,16 +46,35 @@ export function CreateShopOrderFlow({
   const [personId, setPersonId] = useState("");
   const [viewMeasureType, setViewMeasureType] = useState<MeasurementTypeId>("blouse");
   const [selectedDesigns, setSelectedDesigns] = useState<string[]>([]);
+  const [formKey, setFormKey] = useState(0);
+  const [ordersSavedCount, setOrdersSavedCount] = useState(0);
+  const [showPostSave, setShowPostSave] = useState(false);
   const [state, formAction, pending] = useActionState(createShopOrder, initialActionState);
 
   useSwipeNavBlock(true);
 
   useEffect(() => {
     if (state.ok) {
-      router.push("/shop/orders?tab=pending");
-      router.refresh();
+      setOrdersSavedCount((n) => n + 1);
+      setShowPostSave(true);
     }
-  }, [state.ok, router]);
+  }, [state.ok]);
+
+  function resetOrderForm() {
+    setSelectedDesigns([]);
+    setFormKey((k) => k + 1);
+    setShowPostSave(false);
+  }
+
+  function handleAddAnotherOrder() {
+    resetOrderForm();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleViewOrders() {
+    router.push("/shop/orders?tab=pending");
+    router.refresh();
+  }
 
   async function findCustomer(byId?: string) {
     setLookupError("");
@@ -172,6 +191,9 @@ export function CreateShopOrderFlow({
             onClick={() => {
               setCustomer(null);
               setLookupError("");
+              setOrdersSavedCount(0);
+              setShowPostSave(false);
+              setFormKey((k) => k + 1);
             }}
             className="inline-flex items-center gap-1 text-sm font-semibold text-brand-green"
           >
@@ -191,9 +213,39 @@ export function CreateShopOrderFlow({
           {(customer.phone || customer.whatsapp) && (
             <p className="mt-1 text-sm text-zinc-600">{customer.phone || customer.whatsapp}</p>
           )}
+          {ordersSavedCount > 0 && (
+            <p className="mt-2 text-xs font-medium text-brand-gold-dark">
+              {t(locale, "ordersSavedForCustomer", { n: ordersSavedCount })}
+            </p>
+          )}
         </div>
 
-        <form action={formAction} encType="multipart/form-data" className="space-y-5">
+        {showPostSave ? (
+          <div className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="flex items-center gap-2 font-semibold text-emerald-800">
+              <CheckCircle2 className="h-5 w-5 shrink-0" />
+              {t(locale, "orderPlaced")}
+            </p>
+            <p className="text-sm text-emerald-700">{t(locale, "addAnotherOrderHint")}</p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleAddAnotherOrder}
+                className="btn-primary flex-1 py-3"
+              >
+                {t(locale, "addAnotherOrder")}
+              </button>
+              <button
+                type="button"
+                onClick={handleViewOrders}
+                className="flex-1 rounded-xl border-2 border-brand-green/20 bg-white py-3 text-sm font-semibold text-brand-green"
+              >
+                {t(locale, "viewOrdersList")}
+              </button>
+            </div>
+          </div>
+        ) : (
+        <form key={formKey} action={formAction} encType="multipart/form-data" className="space-y-5">
           <input type="hidden" name="customerId" value={customer.id} />
           <input type="hidden" name="measurementMode" value={measurementMode} />
 
@@ -348,12 +400,6 @@ export function CreateShopOrderFlow({
           />
 
           {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-          {state.ok && (
-            <p className="flex items-center gap-1 text-sm text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" />
-              {t(locale, "orderPlaced")}
-            </p>
-          )}
 
           <button
             type="submit"
@@ -363,6 +409,7 @@ export function CreateShopOrderFlow({
             {pending ? "..." : t(locale, "saveOrderPending")}
           </button>
         </form>
+        )}
       </div>
     </div>
   );
