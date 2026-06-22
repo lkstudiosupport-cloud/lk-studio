@@ -7,16 +7,24 @@ import { MeasurementFieldsList } from "@/components/MeasurementFieldsList";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { MeasurementFieldKey } from "@/lib/measurements";
+import type { ShopMeasurementsData } from "@/lib/shop-measurements";
+import { shopMeasurementsToRecord } from "@/lib/shop-measurements";
 
 export function ShopManualMeasurementsForm({
   locale,
   defaultPersonName,
+  initialData,
 }: {
   locale: Locale;
   defaultPersonName?: string;
+  initialData?: ShopMeasurementsData;
 }) {
-  const [measureType, setMeasureType] = useState<MeasurementTypeId>("blouse");
+  const [measureType, setMeasureType] = useState<MeasurementTypeId>(
+    initialData?.type ?? "blouse"
+  );
   const [activeField, setActiveField] = useState<MeasurementFieldKey | null>(null);
+  const initialRecord = initialData ? shopMeasurementsToRecord(initialData) : null;
+  const personNameDefault = initialData?.personName ?? defaultPersonName ?? "";
 
   return (
     <div className="space-y-4">
@@ -26,7 +34,7 @@ export function ShopManualMeasurementsForm({
         </span>
         <input
           name="shopMeasurementPersonName"
-          defaultValue={defaultPersonName ?? ""}
+          defaultValue={personNameDefault}
           placeholder={t(locale, "person")}
           className="input-premium w-full"
         />
@@ -60,9 +68,10 @@ export function ShopManualMeasurementsForm({
       </div>
 
       <MeasurementFieldsList
-        key={measureType}
+        key={`${measureType}-${initialData ? "prefill" : "empty"}`}
         measurementType={measureType}
         locale={locale}
+        measurement={initialRecord}
         activeField={activeField}
         onActiveFieldChange={setActiveField}
         fieldNamePrefix="shopMeas"

@@ -76,3 +76,26 @@ export function buildShopMeasurementsJson(
     fields: cleaned,
   } satisfies ShopMeasurementsData);
 }
+
+export type LastMeasurementSnapshot =
+  | { mode: "view"; personId: string; viewMeasureType: MeasurementTypeId }
+  | { mode: "manual"; data: ShopMeasurementsData };
+
+export function captureMeasurementSnapshot(
+  formData: FormData,
+  clientMode: "view" | "manual",
+  personId: string,
+  viewMeasureType: MeasurementTypeId
+): LastMeasurementSnapshot | null {
+  const mode = String(formData.get("measurementMode") ?? clientMode);
+  if (mode === "view") {
+    const pid = String(formData.get("personId") ?? personId).trim();
+    if (!pid) return null;
+    return { mode: "view", personId: pid, viewMeasureType };
+  }
+  const manual = parseShopMeasurementsFromForm(formData);
+  if (manual) return { mode: "manual", data: manual };
+  const pid = String(formData.get("personId") ?? personId).trim();
+  if (pid) return { mode: "view", personId: pid, viewMeasureType };
+  return null;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -20,6 +20,12 @@ import { MeasurementListView } from "@/components/MeasurementListView";
 import { ShopManualMeasurementsForm } from "@/components/ShopManualMeasurementsForm";
 import { pickMeasurementForType } from "@/lib/measurements";
 import type { MeasurementTypeId } from "@/lib/measurements";
+import {
+  buildShopMeasurementsJson,
+  captureMeasurementSnapshot,
+  shopMeasurementsToRecord,
+  type LastMeasurementSnapshot,
+} from "@/lib/shop-measurements";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 
 type SavedCustomer = { id: string; name: string; phone: string | null; whatsapp: string | null };
@@ -28,6 +34,7 @@ const MAX_FAVORITES = 3;
 const MAX_GALLERY = 3;
 
 type MeasurementMode = "view" | "manual";
+type MeasurementReuseChoice = "same" | "different";
 
 export function CreateShopOrderFlow({
   locale,
@@ -49,12 +56,20 @@ export function CreateShopOrderFlow({
   const [formKey, setFormKey] = useState(0);
   const [ordersSavedCount, setOrdersSavedCount] = useState(0);
   const [showPostSave, setShowPostSave] = useState(false);
+  const [lastMeasurementSnapshot, setLastMeasurementSnapshot] =
+    useState<LastMeasurementSnapshot | null>(null);
+  const [measurementReuseChoice, setMeasurementReuseChoice] =
+    useState<MeasurementReuseChoice>("different");
+  const pendingSnapshotRef = useRef<LastMeasurementSnapshot | null>(null);
   const [state, formAction, pending] = useActionState(createShopOrder, initialActionState);
 
   useSwipeNavBlock(true);
 
   useEffect(() => {
     if (state.ok) {
+      if (pendingSnapshotRef.current) {
+        setLastMeasurementSnapshot(pendingSnapshotRef.current);
+      }
       setOrdersSavedCount((n) => n + 1);
       setShowPostSave(true);
     }
@@ -64,11 +79,47 @@ export function CreateShopOrderFlow({
     setSelectedDesigns([]);
     setFormKey((k) => k + 1);
     setShowPostSave(false);
+    setMeasurementReuseChoice("same");
   }
 
   function handleAddAnotherOrder() {
     resetOrderForm();
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function applySnapshotToForm(formData: FormData, snap: LastMeasurementSnapshot) {
+    if (snap.mode === "view") {
+      formData.set("measurementMode", "view");
+      formData.set("personId", snap.personId);
+      formData.delete("shopMeasurementsJson");
+      return;
+    }
+    formData.set("measurementMode", "manual");
+    formData.delete("personId");
+    formData.set("shopMeasurementsJson", buildShopMeasurementsJson(snap.data.type, snap.data.fields, snap.data.personName));
+  }
+
+  async function submitOrder(formData: FormData) {
+    if (measurementReuseChoice === "same" && lastMeasurementSnapshot) {
+      applySnapshotToForm(formData, lastMeasurementSnapshot);
+    }
+    pendingSnapshotRef.current = captureMeasurementSnapshot(
+      formData,
+      measurementMode,
+      personId,
+      viewMeasureType
+    );
+    return formAction(formData);
+  }
+
+  function applySnapshotToUi(snap: LastMeasurementSnapshot) {
+    if (snap.mode === "view") {
+      setMeasurementMode("view");
+      setPersonId(snap.personId);
+      setViewMeasureType(snap.viewMeasureType);
+      return;
+    }
+    setMeasurementMode("manual");
   }
 
   function handleViewOrders() {
@@ -181,6 +232,47 @@ export function CreateShopOrderFlow({
   }
 
   const selectedPerson = customer.persons.find((p) => p.id === personId);
+  const reuseSameMeasurements =
+    lastMeasurementSnapshot != null && measurementReuseChoice === "same";
+  const manualPrefill =
+    lastMeasurementSnapshot?.mode === "manual" ? lastMeasurementSnapshot.data : undefined;
+
+  function renderSnapshotSummary(snap: LastMeasurementSnapshot) {
+    if (snap.mode === "view") {
+      const person = customer.persons.find((p) => p.id === snap.personId);
+      const measurement = person
+        ? pickMeasurementForType(person.measurements, snap.viewMeasureType)
+        : null;
+      return (
+        <div className="space-y-2 rounded-xl border border-brand-green/10 bg-brand-cream/40 p-3">
+          <p className="text-sm font-semibold text-brand-green">
+            {person?.name ?? t(locale, "person")} · {t(locale, `measurementType_${snap.viewMeasureType}`)}
+          </p>
+          <MeasurementListView
+            locale={locale}
+            measurementType={snap.viewMeasureType}
+            measurement={measurement}
+            compact
+            showDiagram={false}
+          />
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-2 rounded-xl border border-brand-green/10 bg-brand-cream/40 p-3">
+        {snap.data.personName && (
+          <p className="text-sm font-semibold text-brand-green">{snap.data.personName}</p>
+        )}
+        <MeasurementListView
+          locale={locale}
+          measurementType={snap.data.type}
+          measurement={shopMeasurementsToRecord(snap.data)}
+          compact
+          showDiagram={false}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -193,6 +285,8 @@ export function CreateShopOrderFlow({
               setLookupError("");
               setOrdersSavedCount(0);
               setShowPostSave(false);
+              setLastMeasurementSnapshot(null);
+              setMeasurementReuseChoice("different");
               setFormKey((k) => k + 1);
             }}
             className="inline-flex items-center gap-1 text-sm font-semibold text-brand-green"
@@ -245,96 +339,158 @@ export function CreateShopOrderFlow({
             </div>
           </div>
         ) : (
-        <form key={formKey} action={formAction} encType="multipart/form-data" className="space-y-5">
+        <form key={formKey} action={submitOrder} encType="multipart/form-data" className="space-y-5">
           <input type="hidden" name="customerId" value={customer.id} />
-          <input type="hidden" name="measurementMode" value={measurementMode} />
 
           <section className="space-y-3">
             <h2 className="text-sm font-bold text-brand-green">{t(locale, "measurements")}</h2>
 
-            {customer.persons.length > 0 && (
+            {lastMeasurementSnapshot && (
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setMeasurementMode("view")}
+                  onClick={() => setMeasurementReuseChoice("same")}
                   className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold ${
-                    measurementMode === "view"
+                    measurementReuseChoice === "same"
                       ? "bg-brand-green text-brand-gold"
                       : "bg-white text-brand-green ring-1 ring-brand-green/15"
                   }`}
                 >
-                  {t(locale, "viewCustomerMeasurements")}
+                  {t(locale, "sameMeasurementsAsPrevious")}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMeasurementMode("manual")}
+                  onClick={() => {
+                    setMeasurementReuseChoice("different");
+                    applySnapshotToUi(lastMeasurementSnapshot);
+                  }}
                   className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold ${
-                    measurementMode === "manual"
+                    measurementReuseChoice === "different"
                       ? "bg-brand-green text-brand-gold"
                       : "bg-white text-brand-green ring-1 ring-brand-green/15"
                   }`}
                 >
-                  {t(locale, "shopManualMeasurements")}
+                  {t(locale, "differentMeasurements")}
                 </button>
               </div>
             )}
 
-            {measurementMode === "view" && customer.persons.length > 0 ? (
-              <div className="space-y-3 rounded-xl border border-brand-green/10 bg-white p-3">
-                <label className="block">
-                  <span className="mb-1 block text-sm font-semibold text-brand-green">
-                    {t(locale, "selectPersonForOrder")}
-                  </span>
-                  <select
-                    name="personId"
-                    required
-                    value={personId}
-                    onChange={(e) => setPersonId(e.target.value)}
-                    className="input-premium w-full"
-                  >
-                    <option value="">{t(locale, "person")}</option>
-                    {customer.persons.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                        {p.relation ? ` (${p.relation})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {selectedPerson && (
+            {reuseSameMeasurements && lastMeasurementSnapshot ? (
+              <>
+                {lastMeasurementSnapshot.mode === "view" ? (
                   <>
-                    <div className="flex flex-wrap gap-2">
-                      {(["blouse", "dress", "child"] as MeasurementTypeId[]).map((type) => (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => setViewMeasureType(type)}
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            viewMeasureType === type
-                              ? "bg-brand-green text-brand-gold"
-                              : "bg-brand-cream text-brand-green"
-                          }`}
-                        >
-                          {t(locale, `measurementType_${type}`)}
-                        </button>
-                      ))}
-                    </div>
-                    <MeasurementListView
-                      locale={locale}
-                      measurementType={viewMeasureType}
-                      measurement={pickMeasurementForType(selectedPerson.measurements, viewMeasureType)}
-                      compact
-                      showDiagram={false}
+                    <input type="hidden" name="measurementMode" value="view" />
+                    <input type="hidden" name="personId" value={lastMeasurementSnapshot.personId} />
+                  </>
+                ) : (
+                  <>
+                    <input type="hidden" name="measurementMode" value="manual" />
+                    <input
+                      type="hidden"
+                      name="shopMeasurementsJson"
+                      value={buildShopMeasurementsJson(
+                        lastMeasurementSnapshot.data.type,
+                        lastMeasurementSnapshot.data.fields,
+                        lastMeasurementSnapshot.data.personName
+                      )}
                     />
                   </>
                 )}
-              </div>
+                {renderSnapshotSummary(lastMeasurementSnapshot)}
+              </>
             ) : (
-              <div className="rounded-xl border border-brand-green/10 bg-white p-3">
-                <p className="mb-3 text-xs text-zinc-500">{t(locale, "shopManualMeasurementsHint")}</p>
-                <ShopManualMeasurementsForm locale={locale} defaultPersonName={customerName} />
-              </div>
+              <>
+                <input type="hidden" name="measurementMode" value={measurementMode} />
+
+                {customer.persons.length > 0 && (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMeasurementMode("view")}
+                      className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold ${
+                        measurementMode === "view"
+                          ? "bg-brand-green text-brand-gold"
+                          : "bg-white text-brand-green ring-1 ring-brand-green/15"
+                      }`}
+                    >
+                      {t(locale, "viewCustomerMeasurements")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMeasurementMode("manual")}
+                      className={`flex-1 rounded-xl px-3 py-2.5 text-xs font-semibold ${
+                        measurementMode === "manual"
+                          ? "bg-brand-green text-brand-gold"
+                          : "bg-white text-brand-green ring-1 ring-brand-green/15"
+                      }`}
+                    >
+                      {t(locale, "shopManualMeasurements")}
+                    </button>
+                  </div>
+                )}
+
+                {measurementMode === "view" && customer.persons.length > 0 ? (
+                  <div className="space-y-3 rounded-xl border border-brand-green/10 bg-white p-3">
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-semibold text-brand-green">
+                        {t(locale, "selectPersonForOrder")}
+                      </span>
+                      <select
+                        name="personId"
+                        required
+                        value={personId}
+                        onChange={(e) => setPersonId(e.target.value)}
+                        className="input-premium w-full"
+                      >
+                        <option value="">{t(locale, "person")}</option>
+                        {customer.persons.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                            {p.relation ? ` (${p.relation})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {selectedPerson && (
+                      <>
+                        <div className="flex flex-wrap gap-2">
+                          {(["blouse", "dress", "child"] as MeasurementTypeId[]).map((type) => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => setViewMeasureType(type)}
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                viewMeasureType === type
+                                  ? "bg-brand-green text-brand-gold"
+                                  : "bg-brand-cream text-brand-green"
+                              }`}
+                            >
+                              {t(locale, `measurementType_${type}`)}
+                            </button>
+                          ))}
+                        </div>
+                        <MeasurementListView
+                          locale={locale}
+                          measurementType={viewMeasureType}
+                          measurement={pickMeasurementForType(selectedPerson.measurements, viewMeasureType)}
+                          compact
+                          showDiagram={false}
+                        />
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-brand-green/10 bg-white p-3">
+                    <p className="mb-3 text-xs text-zinc-500">{t(locale, "shopManualMeasurementsHint")}</p>
+                    <ShopManualMeasurementsForm
+                      locale={locale}
+                      defaultPersonName={customerName}
+                      initialData={manualPrefill}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </section>
 
@@ -403,7 +559,10 @@ export function CreateShopOrderFlow({
 
           <button
             type="submit"
-            disabled={pending || (measurementMode === "view" && !personId)}
+            disabled={
+              pending ||
+              (!reuseSameMeasurements && measurementMode === "view" && !personId)
+            }
             className="btn-primary w-full py-3 disabled:opacity-60"
           >
             {pending ? "..." : t(locale, "saveOrderPending")}
