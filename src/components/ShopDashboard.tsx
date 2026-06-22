@@ -5,15 +5,13 @@ import { IndianRupee, TrendingUp } from "lucide-react";
 import type { OrderStatus } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { categoryLabelKey } from "@/lib/categories";
-import type { ServiceCategory } from "@prisma/client";
+import { shopDashboardStatusLabelKey } from "@/lib/order-status";
 import { orderStatusTabId } from "@/lib/order-stats";
 
 export type DashboardOrder = {
   id: string;
   orderNumber: string;
   status: OrderStatus;
-  category: ServiceCategory;
   customerName: string;
   personName: string;
   designTitle: string | null;
@@ -110,7 +108,7 @@ export function ShopDashboard({
                 )}
               </div>
               <span className="rounded-full bg-brand-cream px-2.5 py-1 text-xs font-semibold text-brand-green">
-                {t(locale, categoryLabelKey(order.category))}
+                {t(locale, shopDashboardStatusLabelKey(order.status))}
               </span>
             </div>
           </Link>

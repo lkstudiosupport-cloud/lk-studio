@@ -15,7 +15,7 @@ import { findUserByPhone } from "@/lib/auth-user";
 import type { ActionState } from "@/lib/action-state";
 import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
 import { CATALOG_CATEGORIES, shopManageableDesignWhere, isShopUploadCategory } from "@/lib/design-access";
-import { parseShopMeasurementsFromForm } from "@/lib/shop-measurements";
+import { parseShopMeasurementsFromForm, inferOrderCategoryFromMeasurements } from "@/lib/shop-measurements";
 
 const MAX_ORDER_DESIGN_PICKS = 3;
 
@@ -175,7 +175,6 @@ export async function createShopOrder(
     }
 
     const orderNumber = `ORD-${Date.now()}`;
-    let orderCategory: ServiceCategory = "MAGGAM";
     let orderedDesigns: { id: string; category: ServiceCategory }[] = [];
 
     if (designIds.length > 0) {
@@ -198,8 +197,22 @@ export async function createShopOrder(
       if (orderedDesigns.length !== designIds.length) {
         return { ok: false, error: "Some selected designs are not available" };
       }
-      orderCategory = orderedDesigns[0]!.category;
     }
+
+    const personMeasurements = personId
+      ? (
+          await prisma.person.findFirst({
+            where: { id: personId, customerId },
+            select: { measurements: { select: { type: true } } },
+          })
+        )?.measurements ?? null
+      : null;
+
+    const orderCategory = inferOrderCategoryFromMeasurements(
+      orderedDesigns,
+      shopMeasurements,
+      personMeasurements
+    );
 
     const shopMeasurementsJson =
       measurementMode === "manual" && shopMeasurements

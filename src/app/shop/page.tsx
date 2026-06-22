@@ -25,8 +25,6 @@ export default async function ShopDashboardPage() {
 
         status: true,
 
-        category: true,
-
         customer: { select: { name: true } },
 
         person: { select: { name: true } },
@@ -79,7 +77,6 @@ export default async function ShopDashboardPage() {
         id: o.id,
         orderNumber: o.orderNumber,
         status: o.status,
-        category: o.category,
         customerName: o.customer.name,
         personName: o.person?.name ?? o.customer.name,
         designTitle: o.design?.title ?? null,

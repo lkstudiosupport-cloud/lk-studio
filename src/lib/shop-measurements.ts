@@ -81,6 +81,31 @@ export type LastMeasurementSnapshot =
   | { mode: "view"; personId: string; viewMeasureType: MeasurementTypeId }
   | { mode: "manual"; data: ShopMeasurementsData };
 
+import type { Measurement, ServiceCategory } from "@prisma/client";
+
+export function serviceCategoryFromMeasurementType(type: MeasurementTypeId): ServiceCategory {
+  if (type === "dress") return "DRESS_MODEL";
+  if (type === "child") return "CHILDREN_WEAR";
+  return "BLOUSE_DESIGN";
+}
+
+/** Pick order category from reference designs or garment measurements — never a random default. */
+export function inferOrderCategoryFromMeasurements(
+  orderedDesigns: { category: ServiceCategory }[],
+  shopMeasurements: { type: MeasurementTypeId } | null,
+  personMeasurements: Pick<Measurement, "type">[] | null
+): ServiceCategory {
+  if (orderedDesigns.length > 0) return orderedDesigns[0]!.category;
+  if (shopMeasurements?.type) return serviceCategoryFromMeasurementType(shopMeasurements.type);
+  if (personMeasurements?.length) {
+    const types = new Set(personMeasurements.map((m) => m.type));
+    if (types.has("DRESS")) return "DRESS_MODEL";
+    if (types.has("CHILD")) return "CHILDREN_WEAR";
+    if (types.has("BLOUSE")) return "BLOUSE_DESIGN";
+  }
+  return "STITCHED_DESIGNS";
+}
+
 export function captureMeasurementSnapshot(
   formData: FormData,
   clientMode: "view" | "manual",
