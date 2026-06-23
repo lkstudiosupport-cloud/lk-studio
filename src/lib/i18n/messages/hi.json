@@ -30,6 +30,8 @@
   "sendLoginCode": "OTP भेजें",
   "sendWhatsAppCode": "OTP भेजें",
   "otpCodeSent": "अपना 6-अंकीय OTP फ़ोन पर देखें।",
+  "otpSmsFallback": "SMS नहीं भेजा जा सका। पासवर्ड लॉगिन करें या सपोर्ट से संपर्क करें। डेमो नंबरों पर कोड स्क्रीन पर दिखेगा।",
+  "otpSendFailed": "OTP नहीं भेजा जा सका। फिर कोशिश करें या पासवर्ड लॉगिन करें।",
   "loginCodeSent": "अपना 6-अंकीय OTP फ़ोन पर देखें।",
   "whatsappCodeSent": "अपना 6-अंकीय OTP फ़ोन पर देखें।",
   "otpCode": "6-अंकीय OTP",

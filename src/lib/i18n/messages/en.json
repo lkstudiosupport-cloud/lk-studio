@@ -30,6 +30,8 @@
   "sendLoginCode": "Send OTP",
   "sendWhatsAppCode": "Send OTP",
   "otpCodeSent": "Check your phone for the 6-digit OTP.",
+  "otpSmsFallback": "SMS could not be delivered. Use Password login, or contact support. Demo numbers show the code on screen.",
+  "otpSendFailed": "Could not send OTP. Try again or use Password login.",
   "loginCodeSent": "Check your phone for the 6-digit OTP.",
   "whatsappCodeSent": "Check your phone for the 6-digit OTP.",
   "otpCode": "6-digit OTP",

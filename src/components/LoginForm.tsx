@@ -8,7 +8,7 @@ import { PhoneInput } from "@/components/PhoneInput";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
-import { showDemoLoginUI, showDemoOtpOnScreenUI } from "@/lib/demo-ui";
+import { showDemoLoginUI } from "@/lib/demo-ui";
 
 type LoginMode = "password" | "otp";
 
@@ -27,6 +27,7 @@ export function LoginForm({
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [demoCode, setDemoCode] = useState("");
+  const [otpInfo, setOtpInfo] = useState("");
 
   function authPayload(extra: Record<string, unknown> = {}) {
     return { phone, role, deviceId: getOrCreateDeviceId(), ...extra };
@@ -91,12 +92,14 @@ export function LoginForm({
       setLoading(false);
 
       if (!res.ok) {
-        setError(String(data.error ?? "Could not send code"));
+        const key = typeof data.errorKey === "string" ? data.errorKey : null;
+        setError(key ? t(locale, key) : String(data.error ?? "Could not send OTP"));
         return;
       }
 
       setOtpSent(true);
-      if (showDemoOtpOnScreenUI() && data.demoCode) setDemoCode(String(data.demoCode));
+      setOtpInfo(data.smsDelivered === false ? t(locale, "otpSmsFallback") : "");
+      if (data.demoCode) setDemoCode(String(data.demoCode));
     } catch {
       setLoading(false);
       setError("Cannot reach server. Keep mobile:dev running on PC.");
@@ -141,6 +144,7 @@ export function LoginForm({
     setInfo("");
     setOtpSent(false);
     setDemoCode("");
+    setOtpInfo("");
   }
 
   return (
@@ -208,7 +212,10 @@ export function LoginForm({
           ) : (
             <>
               <p className="text-sm text-brand-green-soft">{t(locale, "otpCodeSent")}</p>
-              {showDemoOtpOnScreenUI() && demoCode && (
+              {otpInfo && (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{otpInfo}</p>
+              )}
+              {demoCode && (
                 <p className="rounded-lg bg-brand-gold/20 px-3 py-2 text-sm text-brand-green">
                   {t(locale, "demoOtpCode")}: <strong>{demoCode}</strong>
                 </p>

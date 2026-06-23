@@ -4,7 +4,6 @@ import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { findUserByPhone } from "@/lib/auth-user";
 import { isValidPhone, resolvePhoneE164, INVALID_PHONE_MESSAGE } from "@/lib/phone";
 import { zodErrorMessage, formString } from "@/lib/zod-error-message";
-import { allowDemoOtpOnScreen } from "@/lib/production";
 import { sendLoginOtp } from "@/lib/supabase-otp";
 
 const schema = z.object({
@@ -55,13 +54,11 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       expiresAt: result.expiresAt.toISOString(),
-      ...(result.demoMode && allowDemoOtpOnScreen() && result.demoCode
-        ? { demoCode: result.demoCode }
-        : {}),
+      smsDelivered: result.smsDelivered,
+      ...(result.demoMode && result.demoCode ? { demoCode: result.demoCode } : {}),
     });
   } catch (err) {
     console.error("OTP send error:", err);
-    const message = err instanceof Error ? err.message : "Server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ errorKey: "otpSendFailed" }, { status: 500 });
   }
 }

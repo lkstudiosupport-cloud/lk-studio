@@ -10,7 +10,6 @@ import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { TermsAcceptanceField } from "@/components/TermsAcceptanceField";
 import { SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
-import { showDemoOtpOnScreenUI } from "@/lib/demo-ui";
 
 type RegisterMode = "password" | "otp";
 
@@ -29,12 +28,22 @@ export function RegisterForm({ locale }: { locale: Locale }) {
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [demoCode, setDemoCode] = useState("");
+  const [otpInfo, setOtpInfo] = useState("");
 
   function switchMode(next: RegisterMode) {
     setMode(next);
     setError("");
     setOtpSent(false);
     setDemoCode("");
+    setOtpInfo("");
+  }
+
+  function switchRole(next: "SHOP" | "CUSTOMER") {
+    setRole(next);
+    setError("");
+    setOtpSent(false);
+    setDemoCode("");
+    setOtpInfo("");
   }
 
   async function sendOtp() {
@@ -59,7 +68,8 @@ export function RegisterForm({ locale }: { locale: Locale }) {
       }
 
       setOtpSent(true);
-      if (showDemoOtpOnScreenUI() && data.demoCode) setDemoCode(String(data.demoCode));
+      setOtpInfo(data.smsDelivered === false ? t(locale, "otpSmsFallback") : "");
+      if (data.demoCode) setDemoCode(String(data.demoCode));
     } catch {
       setLoading(false);
       setError("Cannot reach server. Keep mobile:dev running on PC.");
@@ -136,7 +146,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
-          onClick={() => setRole("CUSTOMER")}
+          onClick={() => switchRole("CUSTOMER")}
           className={`flex-1 rounded-lg px-2 py-2.5 text-xs font-semibold sm:text-sm ${
             role === "CUSTOMER" ? "bg-brand-gold text-brand-green" : "bg-brand-green/10 text-brand-green"
           }`}
@@ -145,7 +155,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
         </button>
         <button
           type="button"
-          onClick={() => setRole("SHOP")}
+          onClick={() => switchRole("SHOP")}
           className={`flex-1 rounded-lg px-2 py-2.5 text-xs font-semibold sm:text-sm ${
             role === "SHOP" ? "bg-brand-green text-brand-gold" : "bg-brand-green/10 text-brand-green"
           }`}
@@ -211,7 +221,10 @@ export function RegisterForm({ locale }: { locale: Locale }) {
           ) : (
             <>
               <p className="text-sm text-brand-green-soft">{t(locale, "otpCodeSent")}</p>
-              {showDemoOtpOnScreenUI() && demoCode && (
+              {otpInfo && (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{otpInfo}</p>
+              )}
+              {demoCode && (
                 <p className="rounded-lg bg-brand-gold/20 px-3 py-2 text-sm text-brand-green">
                   {t(locale, "demoOtpCode")}: <strong>{demoCode}</strong>
                 </p>
