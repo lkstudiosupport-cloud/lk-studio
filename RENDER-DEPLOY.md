@@ -113,7 +113,8 @@ npm run db:seed
 | `RAZORPAY_KEY_SECRET` | If live autopay | Server-only; from same API key pair |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` | If live autopay | Same Key Id as `RAZORPAY_KEY_ID` |
 | `RAZORPAY_WEBHOOK_SECRET` | If webhooks | Razorpay webhook signing secret |
-| `WHATSAPP_*` | If OTP on production | |
+| `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | SMS login OTP | Enable Phone provider in Supabase Auth |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional OTP routes | Server-only; never expose in client |
 
 \* Without S3, file uploads fail in production (ephemeral disk). The API returns a clear error: *File storage not configured…*
 

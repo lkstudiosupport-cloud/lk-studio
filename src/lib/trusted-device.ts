@@ -30,6 +30,13 @@ export async function trustDevice(
   });
 }
 
+export async function untrustDevice(userId: string, deviceId: string): Promise<void> {
+  const deviceHash = hashDeviceId(deviceId);
+  await prisma.trustedDevice.deleteMany({
+    where: { userId, deviceHash },
+  });
+}
+
 export async function touchTrustedDevice(userId: string, deviceId: string): Promise<void> {
   const deviceHash = hashDeviceId(deviceId);
   await prisma.trustedDevice.updateMany({

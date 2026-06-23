@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -8,12 +9,18 @@ import { trustDevice } from "@/lib/trusted-device";
 import { generateShopCode, trialEndDate, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { checkPhoneRegistration, phoneFieldsForRegister } from "@/lib/auth-user";
-import { isValidPhone, INVALID_PHONE_MESSAGE } from "@/lib/phone";
+import { isValidPhone, resolvePhoneE164, INVALID_PHONE_MESSAGE } from "@/lib/phone";
 import { internalEmailForUser } from "@/lib/internal-email";
-import { zodErrorMessage, formString, formOptionalString, formOptionalNumber } from "@/lib/zod-error-message";
+import {
+  zodErrorMessage,
+  formString,
+  formCode,
+  formOptionalString,
+  formOptionalNumber,
+} from "@/lib/zod-error-message";
+import { verifyLoginOtp } from "@/lib/supabase-otp";
 
-const schema = z.object({
-  password: formString(6),
+const registerBase = {
   name: formString(1),
   phone: formString(1),
   role: z.enum(["SHOP", "CUSTOMER"]),
@@ -26,7 +33,20 @@ const schema = z.object({
   acceptTerms: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Terms of Service and Privacy Policy" }),
   }),
-});
+};
+
+const schema = z.discriminatedUnion("authMethod", [
+  z.object({
+    authMethod: z.literal("password"),
+    password: formString(6),
+    ...registerBase,
+  }),
+  z.object({
+    authMethod: z.literal("otp"),
+    otpCode: formCode(),
+    ...registerBase,
+  }),
+]);
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
@@ -51,8 +71,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
     }
 
-    const { password, name, phone, role, deviceId, shopName, latitude, longitude, address, locationLink } =
-      parsed.data;
+    const data = parsed.data;
+    const { name, phone, role, deviceId, shopName, latitude, longitude, address, locationLink } =
+      data;
+
     if (!isValidPhone(phone)) {
       return NextResponse.json({ error: INVALID_PHONE_MESSAGE }, { status: 400 });
     }
@@ -67,7 +89,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ errorKey }, { status: 409 });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    if (data.authMethod === "otp") {
+      const e164 = resolvePhoneE164(phone);
+      if (!e164) {
+        return NextResponse.json({ error: INVALID_PHONE_MESSAGE }, { status: 400 });
+      }
+      const otpOk = await verifyLoginOtp(e164, role, data.otpCode.trim());
+      if (!otpOk) {
+        return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 401 });
+      }
+    }
+
+    const plainPassword =
+      data.authMethod === "password" ? data.password : randomBytes(32).toString("hex");
+    const passwordHash = await bcrypt.hash(plainPassword, 10);
     const displayShopName = shopName?.trim() || name;
     const phoneFields = phoneFieldsForRegister(phone);
     const email = internalEmailForUser(phoneFields.phoneNormalized, role);
@@ -134,8 +169,7 @@ export async function POST(req: Request) {
       sessionVersion,
     });
 
-    const redirectTo = "/register/autopay";
-    return NextResponse.json({ ok: true, redirect: redirectTo });
+    return NextResponse.json({ ok: true, redirect: "/register/autopay" });
   } catch (err) {
     console.error("Register error:", err);
     const message = err instanceof Error ? err.message : "Server error";

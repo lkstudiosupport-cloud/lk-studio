@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { findUserByPhone } from "@/lib/auth-user";
-import { consumeLoginOtp, finishLogin } from "@/lib/login-session";
+import { finishLogin } from "@/lib/login-session";
 import { isValidPhone, resolvePhoneE164, INVALID_PHONE_MESSAGE } from "@/lib/phone";
 import {
   zodErrorMessage,
@@ -12,6 +12,7 @@ import {
   formOptionalNumber,
 } from "@/lib/zod-error-message";
 import { deviceIdSchema, requestUserAgent } from "@/lib/auth-device";
+import { verifyLoginOtp } from "@/lib/supabase-otp";
 
 const schema = z.object({
   phone: formString(1),
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: INVALID_PHONE_MESSAGE }, { status: 400 });
     }
 
-    const ok = await consumeLoginOtp(e164, role, code.trim());
+    const ok = await verifyLoginOtp(e164, role, code.trim());
     if (!ok) {
       return NextResponse.json({ error: "Invalid or expired code" }, { status: 401 });
     }

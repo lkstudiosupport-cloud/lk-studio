@@ -8,8 +8,7 @@ import { saveUserLocation, type LocationPayload } from "@/lib/save-location";
 import type { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hashOtp, verifyOtp } from "@/lib/auth-user";
-import { sendWhatsAppOtp } from "@/lib/whatsapp-otp";
-import { touchTrustedDevice, trustDevice } from "@/lib/trusted-device";
+import { trustDevice } from "@/lib/trusted-device";
 
 type UserWithShop = {
   id: string;
@@ -62,8 +61,10 @@ export async function finishTrustedPasswordLogin(
   location?: LocationPayload,
   userAgent?: string | null
 ) {
-  await touchTrustedDevice(user.id, deviceId);
-  return finishLogin(user, role, location, { bumpSession: true });
+  return finishLogin(user, role, location, {
+    bumpSession: false,
+    trustDevice: { deviceId, userAgent },
+  });
 }
 
 export async function storeLoginOtp(phone: string, role: UserRole, code: string) {
@@ -90,9 +91,4 @@ export async function consumeLoginOtp(phone: string, role: UserRole, code: strin
 
   await prisma.loginOtp.delete({ where: { id: row.id } });
   return true;
-}
-
-/** Send OTP on WhatsApp (Cloud API, webhook, or demo log). */
-export async function deliverLoginOtpWhatsApp(e164Digits: string, code: string) {
-  return sendWhatsAppOtp(e164Digits, code);
 }

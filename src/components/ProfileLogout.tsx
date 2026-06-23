@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { parseApiResponse } from "@/lib/parse-api-response";
+import { getOrCreateDeviceId } from "@/lib/device-id";
 
 export function ProfileLogout({ locale }: { locale: Locale }) {
   const router = useRouter();
@@ -18,8 +19,12 @@ export function ProfileLogout({ locale }: { locale: Locale }) {
     try {
       const res = await fetch("/api/auth/logout", {
         method: "POST",
-        headers: { Accept: "application/json" },
-        credentials: "same-origin",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ deviceId: getOrCreateDeviceId() }),
       });
       const data = await parseApiResponse(res);
       if (data.error) {

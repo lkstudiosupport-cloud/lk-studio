@@ -10,7 +10,7 @@ import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { showDemoLoginUI, showDemoOtpOnScreenUI } from "@/lib/demo-ui";
 
-type LoginMode = "password" | "whatsapp";
+type LoginMode = "password" | "otp";
 
 export function LoginForm({
   locale,
@@ -58,10 +58,12 @@ export function LoginForm({
       }
 
       if (data.requireOtp) {
-        setMode("whatsapp");
+        setMode("otp");
         setInfo(t(locale, "deviceVerificationRequired"));
         setOtpSent(false);
         setDemoCode("");
+        setLoading(false);
+        await sendOtp();
         return;
       }
 
@@ -157,14 +159,14 @@ export function LoginForm({
         </button>
         <button
           type="button"
-          onClick={() => switchMode("whatsapp")}
+          onClick={() => switchMode("otp")}
           className={`flex-1 rounded-lg px-2 py-2.5 text-xs font-semibold sm:text-sm ${
-            mode === "whatsapp"
+            mode === "otp"
               ? "bg-brand-green text-brand-gold"
               : "bg-brand-green/10 text-brand-green"
           }`}
         >
-          {t(locale, "loginWithWhatsApp")}
+          {t(locale, "loginWithOtp")}
         </button>
       </div>
 
@@ -201,11 +203,11 @@ export function LoginForm({
               onClick={sendOtp}
               className="btn-primary w-full py-3"
             >
-              {loading ? "..." : t(locale, "sendWhatsAppCode")}
+              {loading ? "..." : t(locale, "sendOtpCode")}
             </button>
           ) : (
             <>
-              <p className="text-sm text-brand-green-soft">{t(locale, "whatsappCodeSent")}</p>
+              <p className="text-sm text-brand-green-soft">{t(locale, "otpCodeSent")}</p>
               {showDemoOtpOnScreenUI() && demoCode && (
                 <p className="rounded-lg bg-brand-gold/20 px-3 py-2 text-sm text-brand-green">
                   {t(locale, "demoOtpCode")}: <strong>{demoCode}</strong>
@@ -218,7 +220,7 @@ export function LoginForm({
                 autoComplete="one-time-code"
                 required
                 maxLength={6}
-                placeholder={t(locale, "loginCode")}
+                placeholder={t(locale, "otpCode")}
                 className="input-premium w-full tracking-widest"
               />
               <button type="submit" disabled={loading} className="btn-primary w-full py-3">

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { findUserByPhone } from "@/lib/auth-user";
+import { checkPhoneRegistration } from "@/lib/auth-user";
 import { isValidPhone, resolvePhoneE164, INVALID_PHONE_MESSAGE } from "@/lib/phone";
 import { zodErrorMessage, formString } from "@/lib/zod-error-message";
 import { allowDemoOtpOnScreen } from "@/lib/production";
@@ -14,7 +14,7 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
-  const limited = rateLimit(`login-otp-send:${ip}`, 10);
+  const limited = rateLimit(`register-otp-send:${ip}`, 10);
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Too many code requests — try again shortly" },
@@ -45,9 +45,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: INVALID_PHONE_MESSAGE }, { status: 400 });
     }
 
-    const user = await findUserByPhone(role, phone);
-    if (!user) {
-      return NextResponse.json({ error: "No account found for this mobile number" }, { status: 404 });
+    const phoneConflict = await checkPhoneRegistration(role, phone);
+    if (phoneConflict?.kind === "same_role") {
+      return NextResponse.json({ errorKey: "phoneAlreadyRegistered" }, { status: 409 });
+    }
+    if (phoneConflict?.kind === "other_role") {
+      const errorKey =
+        phoneConflict.existingRole === "SHOP" ? "phoneAlreadyShop" : "phoneAlreadyCustomer";
+      return NextResponse.json({ errorKey }, { status: 409 });
     }
 
     const result = await sendLoginOtp(e164, role);
@@ -60,7 +65,7 @@ export async function POST(req: Request) {
         : {}),
     });
   } catch (err) {
-    console.error("OTP send error:", err);
+    console.error("Register OTP send error:", err);
     const message = err instanceof Error ? err.message : "Server error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

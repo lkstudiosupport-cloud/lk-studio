@@ -16,7 +16,7 @@ export const privacySectionsEn: LegalSection[] = [
     title: "Information we collect",
     body: [
       "Account details: name, mobile number, email (if provided), shop name, and profile information you enter.",
-      "Phone numbers: used for login, WhatsApp OTP verification, order updates, and billing communication between shops and customers.",
+      "Phone numbers: used for login, SMS OTP verification, order updates, and billing communication between shops and customers.",
       "Photos and images: profile photos, design catalog images, order reference photos, measurement diagrams, bill receipts, and UPI QR codes you upload.",
       "Some catalog design reference images (for example maggam and embroidery samples) are AI-generated illustrations provided for inspiration; see our Terms of Service for how we handle reports and removal.",
       "Location: address text, map links, and GPS coordinates when you choose “use my location” for delivery or shop directions.",
@@ -29,7 +29,7 @@ export const privacySectionsEn: LegalSection[] = [
     title: "How we use your information",
     body: [
       "Provide login, orders, measurements, bills, subscriptions, and shop–customer messaging features.",
-      "Send WhatsApp login codes when you request them.",
+      "Send mobile OTP login codes when you request them.",
       "Process subscription payments through Razorpay when configured.",
       "Improve reliability, prevent abuse, and comply with legal obligations.",
     ],
