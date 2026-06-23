@@ -61,6 +61,14 @@ export function isCustomerActive(
   return isSubscriptionActive(status, endsAt, accountCreatedAt);
 }
 
+export function canCustomerBrowseDesigns(
+  status: SubscriptionStatus,
+  endsAt: Date | null,
+  accountCreatedAt?: Date | null
+) {
+  return isCustomerActive(status, endsAt, accountCreatedAt);
+}
+
 export function trialEndDate(from = new Date()) {
   return addCalendarMonths(from, TRIAL_CALENDAR_MONTHS);
 }

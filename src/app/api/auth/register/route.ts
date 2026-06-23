@@ -83,8 +83,8 @@ export async function POST(req: Request) {
         role,
         ...(role === "CUSTOMER"
           ? {
-              subscriptionStatus: "ACTIVE",
-              subscriptionEndsAt: null,
+              subscriptionStatus: "TRIAL",
+              subscriptionEndsAt: trialEndDate(),
               ...(latitude != null && longitude != null
                 ? {
                     latitude,
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
       sessionVersion,
     });
 
-    const redirectTo = role === "SHOP" ? "/register/autopay" : "/customer/designs";
+    const redirectTo = "/register/autopay";
     return NextResponse.json({ ok: true, redirect: redirectTo });
   } catch (err) {
     console.error("Register error:", err);

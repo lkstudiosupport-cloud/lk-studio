@@ -19,6 +19,9 @@ import Link from "next/link";
 import { shopRatingSummaries } from "@/lib/shop-rating";
 import { ShopRatingBadge } from "@/components/ShopRatingBadge";
 import { SaveShopButton } from "@/components/SaveShopButton";
+import { CustomerDesignPaywall } from "@/components/CustomerDesignPaywall";
+import { canCustomerBrowseDesigns } from "@/lib/subscription";
+import { isDemoAccountUser } from "@/lib/demo-accounts";
 
 /** Shop stitched designs only — after picking a shop from Find Shops. */
 async function CustomerShopStitchedPage({
@@ -114,6 +117,28 @@ export default async function CustomerDesignsPage({
   const session = await requireSession(["CUSTOMER"]);
   const locale = await getLocale();
   const params = await searchParams;
+
+  const customer = await prisma.user.findUniqueOrThrow({
+    where: { id: session!.id },
+    select: {
+      subscriptionStatus: true,
+      subscriptionEndsAt: true,
+      createdAt: true,
+      phone: true,
+      phoneNormalized: true,
+    },
+  });
+  const designAccess =
+    isDemoAccountUser(customer) ||
+    canCustomerBrowseDesigns(
+      customer.subscriptionStatus,
+      customer.subscriptionEndsAt,
+      customer.createdAt
+    );
+  if (!designAccess) {
+    return <CustomerDesignPaywall locale={locale} />;
+  }
+
   const rawCategory = params.category as ServiceCategory | undefined;
   const category =
     rawCategory && isCatalogCategory(rawCategory) ? rawCategory : undefined;

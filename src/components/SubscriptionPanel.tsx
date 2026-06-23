@@ -101,16 +101,30 @@ export function SubscriptionPanel({
           )}
         </dl>
 
+        {trial && !autopayEnabled && (
+          <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+            {t(locale, "subRule1")}
+          </p>
+        )}
+
         {!autopayEnabled && (
           <div className="border-t border-zinc-100 pt-4">
-            <p className="mb-3 text-sm font-semibold text-red-700">
-              {role === "CUSTOMER"
-                ? blocked
-                  ? t(locale, "customerSubExpired")
-                  : t(locale, "customerSubUnlockDesigns")
-                : blocked
-                  ? t(locale, "subEnableAutopayNow")
-                  : t(locale, "subAutopayRequired")}
+            <p
+              className={`mb-3 text-sm font-semibold ${
+                blocked ? "text-red-700" : trial ? "text-amber-800" : "text-red-700"
+              }`}
+            >
+              {trial
+                ? role === "CUSTOMER"
+                  ? t(locale, "customerSubTrialHint")
+                  : t(locale, "subTrialAutopayHint")
+                : role === "CUSTOMER"
+                  ? blocked
+                    ? t(locale, "customerSubExpired")
+                    : t(locale, "customerSubUnlockDesigns")
+                  : blocked
+                    ? t(locale, "subEnableAutopayNow")
+                    : t(locale, "subAutopayRequired")}
             </p>
             <AutoPayPanel
               locale={locale}
