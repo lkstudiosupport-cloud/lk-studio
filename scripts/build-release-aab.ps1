@@ -73,6 +73,8 @@ if (Test-Path $varsFile) {
 Write-Host "Syncing Capacitor..."
 npx.cmd cap sync android
 
+& (Join-Path $root "scripts\patch-android-release.ps1")
+
 $gradlew = Join-Path $root "android\gradlew.bat"
 if (-not (Test-Path $gradlew)) {
     Write-Error "Run first: npx.cmd cap add android"

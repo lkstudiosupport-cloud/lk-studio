@@ -33,6 +33,7 @@
     "build:apk": "powershell -ExecutionPolicy Bypass -File scripts/build-apk.ps1",
     "build:apk:share": "powershell -ExecutionPolicy Bypass -File scripts/build-apk-share.ps1",
     "build:aab:release": "powershell -ExecutionPolicy Bypass -File scripts/build-release-aab.ps1",
+    "launch:check": "powershell -ExecutionPolicy Bypass -File scripts/launch-check.ps1",
     "mobile:dev": "powershell -ExecutionPolicy Bypass -File scripts/start-mobile-dev.ps1",
     "mobile:fix": "powershell -ExecutionPolicy Bypass -File scripts/fix-mobile-network.ps1",
     "mobile:hotspot": "powershell -ExecutionPolicy Bypass -File scripts/use-pc-hotspot.ps1"
