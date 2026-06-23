@@ -23,6 +23,9 @@ const schema = z.object({
   longitude: formOptionalNumber(),
   address: formOptionalString(),
   locationLink: formOptionalString(),
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the Terms of Service and Privacy Policy" }),
+  }),
 });
 
 export async function POST(req: Request) {

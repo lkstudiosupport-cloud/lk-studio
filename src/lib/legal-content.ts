@@ -18,6 +18,7 @@ export const privacySectionsEn: LegalSection[] = [
       "Account details: name, mobile number, email (if provided), shop name, and profile information you enter.",
       "Phone numbers: used for login, WhatsApp OTP verification, order updates, and billing communication between shops and customers.",
       "Photos and images: profile photos, design catalog images, order reference photos, measurement diagrams, bill receipts, and UPI QR codes you upload.",
+      "Some catalog design reference images (for example maggam and embroidery samples) are AI-generated illustrations provided for inspiration; see our Terms of Service for how we handle reports and removal.",
       "Location: address text, map links, and GPS coordinates when you choose “use my location” for delivery or shop directions.",
       "Voice input: when you use voice-to-text for notes, audio may be processed on your device or sent to speech services you enable; we store the resulting text you save.",
       "Payment-related data: subscription status, Razorpay payment references, UPI IDs you display to customers, and bill payment records. We do not store full card numbers.",
@@ -78,7 +79,8 @@ export const termsSectionsEn: LegalSection[] = [
   {
     title: "Agreement",
     body: [
-      "By using LK Studio you agree to these Terms of Service. If you do not agree, do not use the app.",
+      "By registering for or using LK Studio you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use the app.",
+      "You must accept these terms, including the AI-generated catalog images policy below, before creating an account.",
       `Support: ${LEGAL_CONTACT_EMAIL}`,
     ],
   },
@@ -102,6 +104,18 @@ export const termsSectionsEn: LegalSection[] = [
     body: [
       "You retain ownership of photos and content you upload. You grant us a license to host and display that content to provide the service.",
       "Do not upload unlawful, infringing, or harmful content.",
+    ],
+  },
+  {
+    title: "AI-generated catalog images",
+    body: [
+      "Some design reference images shown in the LK Studio catalog (for example maggam work and embroidery samples) are created using artificial intelligence (AI). They are provided for illustration and inspiration only.",
+      "We do not intentionally copy or use any real person's identity, portrait, likeness, or personal data in these AI-generated images.",
+      "If you believe any catalog image infringes your copyright, trademark, privacy, or other rights—or wrongly depicts you or your work—contact us at " +
+        LEGAL_CONTACT_EMAIL +
+        " with reasonable proof (for example, links to your original work, registration documents, or other supporting evidence).",
+      "After we receive your report and verify it in good faith, we will remove or replace the disputed image within seven (7) calendar days.",
+      "By creating an account and continuing to use LK Studio, you acknowledge and accept this AI-generated images policy.",
     ],
   },
   {
@@ -181,6 +195,7 @@ export const termsSectionTitlesHi: Record<string, string> = {
   Service: "सेवा",
   Accounts: "खाते",
   "Shop and customer content": "दुकान और ग्राहक सामग्री",
+  "AI-generated catalog images": "AI द्वारा बनाई कैटलॉग तस्वीरें",
   "Payments and subscriptions": "भुगतान और सदस्यता",
   "Acceptable use": "स्वीकार्य उपयोग",
   Disclaimer: "अस्वीकरण",
@@ -195,6 +210,7 @@ export const termsSectionTitlesTe: Record<string, string> = {
   Service: "సేవ",
   Accounts: "ఖాతాలు",
   "Shop and customer content": "షాప్ మరియు కస్టమర్ కంటెంట్",
+  "AI-generated catalog images": "AI సృష్టించిన క్యాటలాగ్ చిత్రాలు",
   "Payments and subscriptions": "చెల్లింపులు మరియు సబ్‌స్క్రిప్షన్‌లు",
   "Acceptable use": "అనుమతించిన వినియోగం",
   Disclaimer: "నిరాకరణ",

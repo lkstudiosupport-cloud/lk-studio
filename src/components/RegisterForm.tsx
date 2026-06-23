@@ -8,9 +8,8 @@ import { PhoneInput } from "@/components/PhoneInput";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
-import {
-  SHOP_MONTHLY_PRICE_INR,
-} from "@/lib/subscription";
+import { TermsAcceptanceField } from "@/components/TermsAcceptanceField";
+import { SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
 
 function formVal(fd: FormData, key: string): string {
   const v = fd.get(key);
@@ -22,10 +21,15 @@ export function RegisterForm({ locale }: { locale: Locale }) {
   const [error, setError] = useState("");
   const [role, setRole] = useState<"SHOP" | "CUSTOMER">("CUSTOMER");
   const [phone, setPhone] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    if (!acceptTerms) {
+      setError(t(locale, "acceptTermsRequired"));
+      return;
+    }
     const fd = new FormData(e.currentTarget);
 
     try {
@@ -40,6 +44,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
           deviceId: getOrCreateDeviceId(),
           ...(role === "SHOP" ? { shopName: formVal(fd, "shopName") } : {}),
           role,
+          acceptTerms: true,
         }),
       });
       const data = await parseApiResponse(res);
@@ -95,6 +100,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
         placeholder={t(locale, "password")}
         className="input-premium w-full"
       />
+      <TermsAcceptanceField locale={locale} checked={acceptTerms} onChange={setAcceptTerms} />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button type="submit" className="btn-primary w-full py-3">
         {role === "SHOP" ? t(locale, "registerContinueAutopay") : t(locale, "registerContinue")}

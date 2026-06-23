@@ -16,7 +16,7 @@ export default async function TermsPage() {
     <LegalPage
       locale={locale}
       title={t(locale, "termsOfService")}
-      lastUpdated="8 June 2026"
+      lastUpdated="22 June 2026"
       sections={termsSectionsEn}
       kind="terms"
     />

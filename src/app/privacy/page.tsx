@@ -16,7 +16,7 @@ export default async function PrivacyPage() {
     <LegalPage
       locale={locale}
       title={t(locale, "privacyPolicy")}
-      lastUpdated="8 June 2026"
+      lastUpdated="22 June 2026"
       sections={privacySectionsEn}
       kind="privacy"
     />
