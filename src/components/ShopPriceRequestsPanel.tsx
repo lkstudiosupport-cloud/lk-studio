@@ -1,23 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { replyPriceRequest } from "@/app/shop/actions";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { categoryLabelKey } from "@/lib/categories";
-import type { Design, PriceRequest, PriceRequestStatus, ServiceCategory, User } from "@prisma/client";
-
-type Row = PriceRequest & {
-  customer: Pick<User, "id" | "name" | "phone">;
-  design: Pick<Design, "id" | "title" | "imagePath"> | null;
-};
+import type { ShopPriceRequestRow } from "@/lib/shop-price-request-types";
+import type { PriceRequestStatus, ServiceCategory } from "@prisma/client";
 
 function statusLabel(locale: Locale, status: PriceRequestStatus) {
   return status === "QUOTED" ? t(locale, "priceQuoted") : t(locale, "pricePending");
 }
 
-export function ShopPriceRequestsPanel({ locale, requests }: { locale: Locale; requests: Row[] }) {
+export function ShopPriceRequestsPanel({ locale, requests }: { locale: Locale; requests: ShopPriceRequestRow[] }) {
   if (requests.length === 0) {
     return (
       <p className="card-premium p-8 text-center text-zinc-500">{t(locale, "noPriceRequestsYet")}</p>
@@ -33,8 +30,10 @@ export function ShopPriceRequestsPanel({ locale, requests }: { locale: Locale; r
   );
 }
 
-function ShopPriceRequestCard({ locale, request }: { locale: Locale; request: Row }) {
-  const [pending, setPending] = useState(false);
+function ShopPriceRequestCard({ locale, request }: { locale: Locale; request: ShopPriceRequestRow }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
 
   return (
     <article className="card-premium overflow-hidden">
@@ -116,12 +115,20 @@ function ShopPriceRequestCard({ locale, request }: { locale: Locale; request: Ro
 
         {request.status === "PENDING" && (
           <form
-            action={async (fd) => {
-              setPending(true);
-              await replyPriceRequest(fd);
-              setPending(false);
-            }}
             className="space-y-2 border-t border-brand-green/10 pt-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setError("");
+              const fd = new FormData(e.currentTarget);
+              startTransition(async () => {
+                try {
+                  await replyPriceRequest(fd);
+                  router.refresh();
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : t(locale, "sendQuoteFailed"));
+                }
+              });
+            }}
           >
             <input type="hidden" name="requestId" value={request.id} />
             <label className="block">
@@ -145,8 +152,9 @@ function ShopPriceRequestCard({ locale, request }: { locale: Locale; request: Ro
               placeholder={t(locale, "shopReplyPlaceholder")}
             />
             <button type="submit" disabled={pending} className="btn-primary w-full text-sm">
-              {pending ? "..." : t(locale, "sendQuote")}
+              {pending ? t(locale, "sendingQuote") : t(locale, "sendQuote")}
             </button>
+            {error && <p className="text-xs text-red-600">{error}</p>}
           </form>
         )}
       </div>

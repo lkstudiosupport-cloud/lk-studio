@@ -659,6 +659,7 @@ export async function replyPriceRequest(formData: FormData) {
     },
   });
 
+  revalidatePath("/shop/orders");
   revalidatePath("/shop/price-requests");
   revalidatePath("/customer/price-requests");
 }

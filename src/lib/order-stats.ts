@@ -5,6 +5,7 @@ export type ShopOrderTabCounts = {
   pending: number;
   ready: number;
   completed: number;
+  priceQuotesPending: number;
 };
 
 const PENDING: OrderStatus[] = ["PENDING", "MEASURING", "STITCHING"];
@@ -38,7 +39,11 @@ export async function shopOrderTabCounts(shopId: string): Promise<ShopOrderTabCo
   const ready = byStatus.READY ?? 0;
   const completed = COMPLETED.reduce((s, st) => s + (byStatus[st] ?? 0), 0);
 
-  return { pending, ready, completed };
+  const priceQuotesPending = await prisma.priceRequest.count({
+    where: { shopId, status: "PENDING" },
+  });
+
+  return { pending, ready, completed, priceQuotesPending };
 }
 
 export async function shopDashboardStatusCounts(shopId: string) {

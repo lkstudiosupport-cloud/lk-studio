@@ -16,7 +16,7 @@ export default async function ShopOrdersPage() {
   const locale = await cachedLocale();
   const shopId = session!.shopId!;
 
-  const [orders, tabCounts, totalActive] = await Promise.all([
+  const [orders, priceRequests, tabCounts, totalActive] = await Promise.all([
     prisma.order.findMany({
       where: { shopId, status: { not: "CANCELLED" } },
       include: {
@@ -32,6 +32,15 @@ export default async function ShopOrdersPage() {
       },
       orderBy: { createdAt: "desc" },
       take: LIST_PAGE_SIZE,
+    }),
+    prisma.priceRequest.findMany({
+      where: { shopId },
+      include: {
+        customer: { select: { id: true, name: true, phone: true } },
+        design: { select: { id: true, title: true, imagePath: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
     }),
     shopOrderTabCounts(shopId),
     prisma.order.count({ where: { shopId, status: { not: "CANCELLED" } } }),
@@ -51,6 +60,7 @@ export default async function ShopOrdersPage() {
       <ShopOrdersPanel
         locale={locale}
         orders={orders}
+        priceRequests={priceRequests}
         tabCounts={tabCounts}
         listHint={truncated ? t(locale, "showingLatestOrders").replace("{n}", String(LIST_PAGE_SIZE)) : undefined}
       />

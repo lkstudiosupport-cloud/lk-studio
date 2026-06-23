@@ -442,6 +442,7 @@ export async function askPrice(_prev: ActionState, formData: FormData): Promise<
       if (created === 0) return { ok: false, error: "Design not found" };
 
       revalidatePath("/customer/price-requests");
+      revalidatePath("/shop/orders");
       revalidatePath("/shop/price-requests");
       revalidatePath("/customer/designs");
       revalidatePath("/customer/favorites");
@@ -487,6 +488,7 @@ export async function askPrice(_prev: ActionState, formData: FormData): Promise<
     });
 
     revalidatePath("/customer/price-requests");
+    revalidatePath("/shop/orders");
     revalidatePath("/shop/price-requests");
     revalidatePath("/customer/designs");
     revalidatePath("/customer/favorites");
