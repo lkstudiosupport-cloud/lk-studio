@@ -12,18 +12,24 @@ import {
   formOptionalNumber,
 } from "@/lib/zod-error-message";
 import { deviceIdSchema, requestUserAgent } from "@/lib/auth-device";
-import { verifyLoginOtp } from "@/lib/supabase-otp";
+import { verifyLoginOtp, verifyMsg91WidgetLogin } from "@/lib/login-otp";
 
-const schema = z.object({
-  phone: formString(1),
-  code: formCode(),
-  role: z.enum(["SHOP", "CUSTOMER"]),
-  deviceId: deviceIdSchema,
-  latitude: formOptionalNumber(),
-  longitude: formOptionalNumber(),
-  address: formOptionalString(),
-  locationLink: formOptionalString(),
-});
+const schema = z
+  .object({
+    phone: formString(1),
+    code: formCode().optional(),
+    accessToken: formString(20).optional(),
+    role: z.enum(["SHOP", "CUSTOMER"]),
+    deviceId: deviceIdSchema,
+    latitude: formOptionalNumber(),
+    longitude: formOptionalNumber(),
+    address: formOptionalString(),
+    locationLink: formOptionalString(),
+  })
+  .refine((d) => Boolean(d.code?.trim() || d.accessToken?.trim()), {
+    message: "OTP code or MSG91 access token required",
+    path: ["code"],
+  });
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
@@ -48,8 +54,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
     }
 
-    const { phone, code, role, deviceId, latitude, longitude, address, locationLink } =
-      parsed.data;
+    const {
+      phone,
+      code,
+      accessToken,
+      role,
+      deviceId,
+      latitude,
+      longitude,
+      address,
+      locationLink,
+    } = parsed.data;
     if (!isValidPhone(phone)) {
       return NextResponse.json({ error: INVALID_PHONE_MESSAGE }, { status: 400 });
     }
@@ -59,7 +74,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: INVALID_PHONE_MESSAGE }, { status: 400 });
     }
 
-    const ok = await verifyLoginOtp(e164, role, code.trim());
+    const ok = accessToken
+      ? await verifyMsg91WidgetLogin(e164, accessToken)
+      : await verifyLoginOtp(e164, role, code!.trim());
+
     if (!ok) {
       return NextResponse.json({ error: "Invalid or expired code" }, { status: 401 });
     }

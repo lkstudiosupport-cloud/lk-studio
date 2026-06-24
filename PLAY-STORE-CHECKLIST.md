@@ -36,7 +36,7 @@ Assets and copy live in [`play-store/`](./play-store/). See [`play-store/ASSETS.
 - [ ] `SKIP_DEMO_SEED=true`
 - [ ] **Do not** set `LOGIN_OTP_DEMO=true` or `NEXT_PUBLIC_SHOW_DEMO_LOGIN=true` in production
 - [ ] S3 (or R2) configured for photo uploads — see [RENDER-DEPLOY.md](./RENDER-DEPLOY.md)
-- [ ] WhatsApp OTP or trusted-device login tested on real devices
+- [ ] MSG91 OTP or trusted-device login tested on real devices
 - [ ] Razorpay keys if subscriptions are live
 
 ## Content rating & declarations

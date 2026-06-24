@@ -39,7 +39,10 @@ export default async function CustomerProfilePage({
 
   return (
     <div className="space-y-6">
-      <CustomerProfileHeader locale={locale} />
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <CustomerProfileHeader locale={locale} />
+        <DeleteAccountSection locale={locale} position="inline" />
+      </div>
 
       <Link
         href="/customer"
@@ -71,7 +74,6 @@ export default async function CustomerProfilePage({
         <ProfileLogout locale={locale} />
       </div>
       <LegalFooter locale={locale} className="pt-2" />
-      <DeleteAccountSection locale={locale} aboveBottomNav />
     </div>
   );
 }

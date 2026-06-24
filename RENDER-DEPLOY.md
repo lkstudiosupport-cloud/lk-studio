@@ -113,10 +113,31 @@ npm run db:seed
 | `RAZORPAY_KEY_SECRET` | If live autopay | Server-only; from same API key pair |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` | If live autopay | Same Key Id as `RAZORPAY_KEY_ID` |
 | `RAZORPAY_WEBHOOK_SECRET` | If webhooks | Razorpay webhook signing secret |
-| `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | SMS login OTP | Enable Phone provider in Supabase Auth |
-| `SUPABASE_SERVICE_ROLE_KEY` | Optional OTP routes | Server-only; never expose in client |
+| `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Database / storage | Supabase API keys |
+| `MSG91_AUTH_KEY` | **Production OTP** | Server-only; verifies widget `access-token` |
+| `NEXT_PUBLIC_MSG91_WIDGET_ID` | **MSG91 Widget** | From MSG91 OTP widget settings |
+| `NEXT_PUBLIC_MSG91_WIDGET_TOKEN` | **MSG91 Widget** | Widget auth token (not authkey) |
+| `MSG91_TEMPLATE_ID` | Optional | Server Flow SMS if not using widget |
+| `MSG91_OTP_VARIABLE` | Optional | Template variable name (default `OTP`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional | Server-only; never expose in client |
 
 \* Without S3, file uploads fail in production (ephemeral disk). The API returns a clear error: *File storage not configured…*
+
+### MSG91 OTP (production)
+
+**Recommended — OTP Widget**
+
+1. MSG91 Dashboard → **OTP** → create **Widget** → copy **Widget ID** and **Auth Token**
+2. MSG91 → **API** → copy **Authkey** (server only)
+3. On Render:
+   - `NEXT_PUBLIC_MSG91_WIDGET_ID` = widget ID
+   - `NEXT_PUBLIC_MSG91_WIDGET_TOKEN` = widget token
+   - `MSG91_AUTH_KEY` = authkey
+4. Redeploy. Login/register sends OTP via MSG91 widget; your server calls `verifyAccessToken` with the JWT.
+
+**Alternative — server Flow API** (no widget): set `MSG91_AUTH_KEY` + `MSG91_TEMPLATE_ID` instead of widget public vars.
+
+You can disable Supabase Phone provider — it is not used for OTP.
 
 
 ### Razorpay (test mode for staging)

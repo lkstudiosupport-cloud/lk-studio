@@ -25,10 +25,13 @@ export default async function ShopProfilePage({
 
   return (
     <div className="space-y-6">
-      <h1 className="page-title flex items-center gap-2">
-        <Store className="h-8 w-8 text-brand-green" />
-        {t(locale, "shopProfileTitle")}
-      </h1>
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <h1 className="page-title flex items-center gap-2">
+          <Store className="h-8 w-8 text-brand-green" />
+          {t(locale, "shopProfileTitle")}
+        </h1>
+        <DeleteAccountSection locale={locale} position="inline" />
+      </div>
       <ShopProfileForm locale={locale} profile={profile} />
       <ProfileSubscriptionSection
         locale={locale}
@@ -47,7 +50,6 @@ export default async function ShopProfilePage({
         <ProfileLogout locale={locale} />
       </div>
       <LegalFooter locale={locale} className="pt-2" />
-      <DeleteAccountSection locale={locale} aboveBottomNav />
     </div>
   );
 }

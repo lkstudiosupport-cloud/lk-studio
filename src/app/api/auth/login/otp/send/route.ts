@@ -4,7 +4,7 @@ import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { findUserByPhone } from "@/lib/auth-user";
 import { isValidPhone, resolvePhoneE164, INVALID_PHONE_MESSAGE } from "@/lib/phone";
 import { zodErrorMessage, formString } from "@/lib/zod-error-message";
-import { sendLoginOtp } from "@/lib/supabase-otp";
+import { sendLoginOtp } from "@/lib/login-otp";
 
 const schema = z.object({
   phone: formString(1),

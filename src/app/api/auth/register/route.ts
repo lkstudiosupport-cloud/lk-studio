@@ -18,7 +18,7 @@ import {
   formOptionalString,
   formOptionalNumber,
 } from "@/lib/zod-error-message";
-import { verifyLoginOtp } from "@/lib/supabase-otp";
+import { verifyLoginOtp, verifyMsg91WidgetLogin } from "@/lib/login-otp";
 
 const registerBase = {
   name: formString(1),
@@ -35,18 +35,25 @@ const registerBase = {
   }),
 };
 
-const schema = z.discriminatedUnion("authMethod", [
-  z.object({
-    authMethod: z.literal("password"),
-    password: formString(6),
-    ...registerBase,
-  }),
-  z.object({
-    authMethod: z.literal("otp"),
-    otpCode: formCode(),
-    ...registerBase,
-  }),
-]);
+const passwordSchema = z.object({
+  authMethod: z.literal("password"),
+  password: formString(6),
+  ...registerBase,
+});
+
+const otpSchema = z.object({
+  authMethod: z.literal("otp"),
+  otpCode: formCode().optional(),
+  accessToken: formString(20).optional(),
+  ...registerBase,
+});
+
+const schema = z
+  .discriminatedUnion("authMethod", [passwordSchema, otpSchema])
+  .refine((d) => d.authMethod !== "otp" || Boolean(d.otpCode?.trim() || d.accessToken?.trim()), {
+    message: "OTP code or MSG91 access token required",
+    path: ["otpCode"],
+  });
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
@@ -94,7 +101,9 @@ export async function POST(req: Request) {
       if (!e164) {
         return NextResponse.json({ error: INVALID_PHONE_MESSAGE }, { status: 400 });
       }
-      const otpOk = await verifyLoginOtp(e164, role, data.otpCode.trim());
+      const otpOk = data.accessToken
+        ? await verifyMsg91WidgetLogin(e164, data.accessToken)
+        : await verifyLoginOtp(e164, role, data.otpCode!.trim());
       if (!otpOk) {
         return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 401 });
       }

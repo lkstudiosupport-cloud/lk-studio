@@ -55,7 +55,7 @@ npm run db:seed
 |------|--------|
 | `DATABASE_URL` | Your Neon `postgresql://...` URL |
 | `JWT_SECRET` | Long random text (e.g. 32+ characters) |
-| `LOGIN_OTP_DEMO` | `true` (so login works without WhatsApp for testing) |
+| `LOGIN_OTP_DEMO` | `true` (show OTP on screen for demo numbers when MSG91 is not configured) |
 
 4. Click **Deploy**
 5. Copy your live URL, e.g. `https://lk-studio-xxxx.vercel.app`
