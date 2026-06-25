@@ -2,6 +2,7 @@ import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { randomBytes } from "crypto";
 import { MAX_UPLOAD_BYTES } from "@/lib/limits";
+import { isImageUpload, normalizeImageForStorage } from "@/lib/normalize-image";
 import { storageKeyFromStoredUrl, storedUrlForKey, normalizeStoredImageUrl } from "@/lib/storage-url";
 import { remoteFileStorageConfigured, storageBackend } from "@/lib/storage-backend";
 
@@ -86,18 +87,27 @@ function guessContentType(ext: string): string {
 
 /** Save upload to S3/R2 when configured, else local public/uploads (dev only). */
 export async function saveUpload(file: File, subfolder: string): Promise<string> {
-  if (file.size > MAX_UPLOAD_BYTES) {
+  const bytes = await file.arrayBuffer();
+  let buffer = Buffer.from(bytes);
+  let ext = path.extname(file.name) || ".bin";
+  let contentType = file.type || guessContentType(ext);
+
+  if (isImageUpload(file.name, contentType)) {
+    const normalized = await normalizeImageForStorage(buffer, contentType);
+    buffer = normalized.buffer;
+    ext = normalized.ext;
+    contentType = normalized.contentType;
+  }
+
+  if (buffer.length > MAX_UPLOAD_BYTES) {
     throw new Error(`File too large (max ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB)`);
   }
 
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  const ext = path.extname(file.name) || ".bin";
   const name = `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`;
   const key = `uploads/${subfolder}/${name}`;
 
   if (remoteStorageConfigured()) {
-    return saveToRemote(buffer, key, file.type || guessContentType(ext));
+    return saveToRemote(buffer, key, contentType);
   }
 
   if (isProductionHosting()) {

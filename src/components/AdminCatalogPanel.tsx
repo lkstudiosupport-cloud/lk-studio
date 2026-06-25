@@ -170,7 +170,15 @@ export function AdminCatalogPanel({
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
       setUploadProgress(`Compressing ${Math.min(i + batch.length, files.length)}/${files.length}`);
-      const batchCompressed = await Promise.all(batch.map((f) => compressImageFile(f)));
+      const batchCompressed = await Promise.all(
+        batch.map(async (f) => {
+          try {
+            return await compressImageFile(f);
+          } catch {
+            return f;
+          }
+        })
+      );
       compressed.push(...batchCompressed);
     }
     return compressed;
