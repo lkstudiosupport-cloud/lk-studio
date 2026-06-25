@@ -12,6 +12,7 @@ import {
   razorpayErrorMessage,
   razorpayKeyId,
 } from "@/lib/razorpay-subscription";
+import { RAZORPAY_MANDATE_AUTH_PAISE } from "@/lib/razorpay-config";
 
 async function payerForRole(role: AutopayRole, session: { id: string; email: string; shopId?: string }) {
   if (role === "SHOP") {
@@ -143,6 +144,7 @@ export async function POST(req: Request) {
         entityId: payer.entityId,
       },
       startAt: trialBillingStart,
+      mandateAuthPaise: trialBillingStart ? RAZORPAY_MANDATE_AUTH_PAISE : null,
     });
 
     if (role === "SHOP") {
@@ -161,6 +163,9 @@ export async function POST(req: Request) {
       ok: true,
       keyId: razorpayKeyId(),
       subscriptionId: subscription.id,
+      trialActive: Boolean(trialBillingStart),
+      mandateAuthInr: trialBillingStart ? RAZORPAY_MANDATE_AUTH_PAISE / 100 : null,
+      billingStartsAt: trialBillingStart?.toISOString() ?? null,
     });
   } catch (err) {
     console.error("Autopay start error:", err);

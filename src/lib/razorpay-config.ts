@@ -1,6 +1,8 @@
 import type { UserRole } from "@prisma/client";
 import { CUSTOMER_MONTHLY_PRICE_INR, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
 
+export const RAZORPAY_MANDATE_AUTH_PAISE = 100; // ₹1 UPI mandate verification during free trial
+
 export function isRazorpayConfigured() {
   return Boolean(
     process.env.RAZORPAY_KEY_ID?.trim() && process.env.RAZORPAY_KEY_SECRET?.trim()

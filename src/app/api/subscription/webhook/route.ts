@@ -7,12 +7,13 @@ import {
   markSubscriptionPastDue,
 } from "@/lib/subscription-autopay";
 import { verifyWebhookSignature } from "@/lib/razorpay-subscription";
+import { subscriptionAmountPaise } from "@/lib/razorpay-config";
 
 type WebhookPayload = {
   event?: string;
   payload?: {
     subscription?: { entity?: { id?: string; notes?: Record<string, string> } };
-    payment?: { entity?: { id?: string } };
+    payment?: { entity?: { id?: string; amount?: number } };
   };
 };
 
@@ -49,9 +50,16 @@ export async function POST(req: Request) {
         await grantSubscriptionPeriod(role, entityId);
       }
       break;
-    case "subscription.charged":
-      await grantSubscriptionPeriod(role, entityId);
+    case "subscription.charged": {
+      const paymentAmount = payload.payload?.payment?.entity?.amount;
+      const fullPaise = subscriptionAmountPaise(role);
+      if (typeof paymentAmount === "number" && paymentAmount >= fullPaise) {
+        await grantSubscriptionPeriod(role, entityId);
+      } else if (subscriptionId) {
+        await activateAutopay(role, entityId, { razorpaySubscriptionId: subscriptionId });
+      }
       break;
+    }
     case "subscription.cancelled":
     case "subscription.halted":
       await deactivateAutopay(role, entityId);

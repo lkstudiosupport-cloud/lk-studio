@@ -54,12 +54,28 @@ export async function createRazorpaySubscription(input: {
   planId: string;
   customerId: string;
   notes: Record<string, string>;
+  /** When set, first billing cycle starts on this date (free trial until then). */
   startAt?: Date | null;
+  /** Upfront auth amount in paise (e.g. 100 = ₹1 mandate verification during trial). */
+  mandateAuthPaise?: number | null;
 }): Promise<{ id: string }> {
   const rz = client();
   const startAtUnix =
     input.startAt && input.startAt.getTime() > Date.now()
       ? Math.floor(input.startAt.getTime() / 1000)
+      : undefined;
+
+  const addons =
+    input.mandateAuthPaise != null && input.mandateAuthPaise > 0
+      ? [
+          {
+            item: {
+              name: "UPI mandate verification",
+              amount: input.mandateAuthPaise,
+              currency: "INR",
+            },
+          },
+        ]
       : undefined;
 
   const subscription = await rz.subscriptions.create({
@@ -69,6 +85,7 @@ export async function createRazorpaySubscription(input: {
     customer_notify: 1,
     notes: input.notes,
     ...(startAtUnix ? { start_at: startAtUnix } : {}),
+    ...(addons ? { addons } : {}),
   } as Parameters<typeof rz.subscriptions.create>[0]);
   return subscription as { id: string };
 }
