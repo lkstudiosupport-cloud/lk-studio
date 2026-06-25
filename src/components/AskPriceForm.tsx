@@ -143,7 +143,6 @@ export function AskPriceOwnDesignCard({
   return (
     <div className="card-premium space-y-3 p-4">
       <h3 className="font-bold text-brand-green">{t(locale, "askPriceOwnDesign")}</h3>
-      <p className="text-sm text-zinc-600">{t(locale, "askPriceOwnDesignHint")}</p>
       <AskPriceForm
         locale={locale}
         shopId={shopId}

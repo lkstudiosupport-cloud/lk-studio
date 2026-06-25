@@ -227,9 +227,6 @@ export default async function CustomerShopsPage({
     <div className="space-y-5">
       <div>
         <h1 className="page-title">{t(locale, "browseShops")}</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          {hasCustomerLocation ? t(locale, "nearestShopsHint") : t(locale, "browseShopsHint")}
-        </p>
       </div>
 
       <ShopCodeSearch locale={locale} initialCode={params.code} />
