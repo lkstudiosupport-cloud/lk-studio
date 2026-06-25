@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Design, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
@@ -11,8 +11,11 @@ import { MAX_CATALOG_BULK_UPLOAD } from "@/lib/limits";
 import { AdminDesignItem } from "@/components/AdminDesignItem";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { CatalogPartButtons } from "@/components/CatalogPartButtons";
-import { categoryHasSizeTiers } from "@/lib/design-size-tier";
-import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
+import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
+import {
+  categoryHasCatalogParts,
+  defaultCatalogPartForCategory,
+} from "@/lib/design-catalog-part";
 import type { CatalogPart, DesignSizeTier } from "@prisma/client";
 import { compressImageFile } from "@/lib/compress-image";
 import { fetchApi, formatFetchError } from "@/lib/parse-api-response";
@@ -38,6 +41,22 @@ export function AdminCatalogPanel({
   const [error, setError] = useState("");
   const [lastCode, setLastCode] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [uploadSizeTier, setUploadSizeTier] = useState<DesignSizeTier | undefined>();
+  const [uploadCatalogPart, setUploadCatalogPart] = useState<CatalogPart | undefined>();
+
+  const activeCategory = ADMIN_CATEGORIES.find((c) => c.key === category)!;
+  const hasSizeTiers = categoryHasSizeTiers(category);
+  const hasCatalogParts = categoryHasCatalogParts(category);
+  const needsUploadTarget = hasSizeTiers || hasCatalogParts;
+
+  useEffect(() => {
+    setUploadSizeTier(defaultSizeTierForCategory(category));
+    setUploadCatalogPart(defaultCatalogPartForCategory(category));
+    setPendingFiles([]);
+    setSizeTierFilter(defaultSizeTierForCategory(category) ?? "UNASSIGNED");
+    setCatalogPartFilter(defaultCatalogPartForCategory(category) ?? "UNASSIGNED");
+  }, [category]);
 
   const counts = useMemo(() => {
     const map = {} as Record<string, number>;
@@ -46,10 +65,6 @@ export function AdminCatalogPanel({
     }
     return map;
   }, [designs]);
-
-  const activeCategory = ADMIN_CATEGORIES.find((c) => c.key === category)!;
-  const hasSizeTiers = categoryHasSizeTiers(category);
-  const hasCatalogParts = categoryHasCatalogParts(category);
 
   const categoryDesigns = useMemo(() => {
     return designs
@@ -100,26 +115,37 @@ export function AdminCatalogPanel({
     const fd = new FormData();
     fd.set("category", category);
     fd.set("designImage0", file);
+    if (hasSizeTiers && uploadSizeTier) {
+      fd.set("sizeTier", uploadSizeTier);
+    }
+    if (hasCatalogParts && uploadCatalogPart) {
+      fd.set("catalogPart", uploadCatalogPart);
+    }
     const { res, data } = await fetchApi("/api/admin/designs", { method: "POST", body: fd });
     if (!res.ok) throw new Error(String(data.error ?? "Upload failed"));
     return String(data.catalogNumber ?? "");
   }
 
-  async function uploadFiles(raw: FileList | null) {
-    if (!raw?.length) return;
+  async function runUpload(files: File[]) {
+    if (!files.length) return;
     setError("");
     setLastCode("");
     setUploadProgress("");
     setPending(true);
     try {
-      const picked = Array.from(raw).slice(0, MAX_CATALOG_BULK_UPLOAD);
       let last = "";
-      for (let i = 0; i < picked.length; i++) {
-        setUploadProgress(`${i + 1}/${picked.length}`);
-        const compressed = await compressImageFile(picked[i]!);
-        last = await uploadOne(compressed);
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgress(`${i + 1}/${files.length}`);
+        last = await uploadOne(files[i]!);
       }
       if (last) setLastCode(last);
+      if (hasSizeTiers && uploadSizeTier) {
+        setSizeTierFilter(uploadSizeTier);
+      }
+      if (hasCatalogParts && uploadCatalogPart) {
+        setCatalogPartFilter(uploadCatalogPart);
+      }
+      setPendingFiles([]);
       router.refresh();
     } catch (e) {
       setError(formatFetchError(e, "Upload failed"));
@@ -129,6 +155,32 @@ export function AdminCatalogPanel({
       if (fileRef.current) fileRef.current.value = "";
     }
   }
+
+  async function pickFiles(raw: FileList | null) {
+    if (!raw?.length) return;
+    setError("");
+    setPending(true);
+    try {
+      const picked = Array.from(raw).slice(0, MAX_CATALOG_BULK_UPLOAD);
+      const compressed = await Promise.all(picked.map((f) => compressImageFile(f)));
+      if (needsUploadTarget) {
+        setPendingFiles(compressed);
+      } else {
+        await runUpload(compressed);
+      }
+    } catch (e) {
+      setError(formatFetchError(e, "Upload failed"));
+    } finally {
+      setPending(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  const canConfirmUpload =
+    pendingFiles.length > 0 &&
+    ((!hasSizeTiers && !hasCatalogParts) ||
+      (hasSizeTiers && uploadSizeTier) ||
+      (hasCatalogParts && uploadCatalogPart));
 
   return (
     <div className="space-y-6">
@@ -147,8 +199,6 @@ export function AdminCatalogPanel({
             type="button"
             onClick={() => {
               setCategory(c.key);
-              setSizeTierFilter("UNASSIGNED");
-              setCatalogPartFilter("UNASSIGNED");
               setError("");
               setLastCode("");
             }}
@@ -171,22 +221,56 @@ export function AdminCatalogPanel({
         </div>
 
         <p className="text-sm text-zinc-600">
-          Tap + and select many images from your computer — one design code per photo.
-          {hasSizeTiers && (
-            <>
-              {" "}
-              {t(locale, "adminCatalogSizeTierHint")}
-            </>
-          )}
-          {hasCatalogParts && (
-            <>
-              {" "}
-              {t(locale, "adminCatalogPartHint")}
-            </>
-          )}
+          {needsUploadTarget
+            ? t(locale, "adminCatalogBulkUploadHint")
+            : t(locale, "adminCatalogSimpleUploadHint")}
         </p>
 
-        {hasSizeTiers && (
+        {pendingFiles.length > 0 && (
+          <div className="card-premium space-y-3 p-4">
+            <p className="text-sm font-semibold text-brand-green">
+              {t(locale, "adminUploadPhotosSelected", { count: pendingFiles.length })}
+            </p>
+            <p className="text-xs text-zinc-600">{t(locale, "adminUploadPickTargetHint")}</p>
+            {hasSizeTiers && (
+              <SizeTierButtons
+                locale={locale}
+                active={uploadSizeTier}
+                onPick={setUploadSizeTier}
+              />
+            )}
+            {hasCatalogParts && (
+              <CatalogPartButtons
+                locale={locale}
+                category={category}
+                active={uploadCatalogPart}
+                onPick={setUploadCatalogPart}
+              />
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={pending || !canConfirmUpload}
+                onClick={() => void runUpload(pendingFiles)}
+                className="btn-primary px-4 py-2 text-sm disabled:opacity-60"
+              >
+                {pending
+                  ? t(locale, "autopayStarting")
+                  : t(locale, "adminUploadConfirm", { count: pendingFiles.length })}
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => setPendingFiles([])}
+                className="btn-secondary px-4 py-2 text-sm disabled:opacity-60"
+              >
+                {t(locale, "cancel")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {hasSizeTiers && !pendingFiles.length && (
           <SizeTierButtons
             locale={locale}
             active={sizeTierFilter === "UNASSIGNED" ? undefined : sizeTierFilter}
@@ -203,7 +287,7 @@ export function AdminCatalogPanel({
           />
         )}
 
-        {hasCatalogParts && (
+        {hasCatalogParts && !pendingFiles.length && (
           <CatalogPartButtons
             locale={locale}
             category={category}
@@ -259,7 +343,7 @@ export function AdminCatalogPanel({
         accept="image/*"
         multiple
         className="sr-only"
-        onChange={(e) => void uploadFiles(e.target.files)}
+        onChange={(e) => void pickFiles(e.target.files)}
       />
     </div>
   );

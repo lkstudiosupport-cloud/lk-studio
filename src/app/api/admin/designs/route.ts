@@ -47,7 +47,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Add a design photo" }, { status: 400 });
     }
 
-    const result = await persistAdminCatalogDesign(category, file, title);
+    const rawSizeTier = String(form.get("sizeTier") ?? "").toUpperCase();
+    const sizeTier =
+      rawSizeTier === "SMALL" || rawSizeTier === "MEDIUM" || rawSizeTier === "BIG"
+        ? (rawSizeTier as DesignSizeTier)
+        : null;
+    const rawPart = String(form.get("catalogPart") ?? "").toUpperCase();
+    const catalogPart =
+      rawPart === "MAIN" || rawPart === "HAND_SLEEVES" ? (rawPart as CatalogPart) : null;
+
+    const result = await persistAdminCatalogDesign(category, file, {
+      title,
+      sizeTier,
+      catalogPart,
+    });
     revalidatePath("/admin/designs");
     revalidatePath("/shop/designs");
     revalidatePath("/customer/designs");

@@ -569,6 +569,11 @@
   "sizeTierUnassigned": "असाइन नहीं",
   "adminMoveToSize": "साइज़ में ले जाएँ",
   "adminCatalogSizeTierHint": "अपलोड के बाद Unassigned खोलें और हर डिज़ाइन पर Small, Medium या Big चुनें।",
+  "adminCatalogBulkUploadHint": "+ दबाकर कई फोटो चुनें, फिर Small, Medium या Big चुनकर अपलोड करें।",
+  "adminCatalogSimpleUploadHint": "+ दबाकर कई फोटो चुनें — हर फोटो को एक डिज़ाइन कोड मिलेगा।",
+  "adminUploadPhotosSelected": "{count} फोटो चुने",
+  "adminUploadPickTargetHint": "ये डिज़ाइन कहाँ जाएँ चुनें, फिर Upload दबाएँ।",
+  "adminUploadConfirm": "{count} फोटो अपलोड करें",
   "customerPickSizeTierHint": "डिज़ाइन देखने के लिए Small, Medium या Big चुनें।",
   "catalogPart": {
     "blouses": "ब्लाउज",
