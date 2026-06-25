@@ -27,11 +27,11 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     isDemoAccountUser(user) || isDemoAccountUser({ phone: profile?.phone });
 
   const navLinks = [
-    { href: "/shop", label: t(locale, "dashboard") },
-    { href: "/shop/designs", label: t(locale, "designs") },
-    { href: "/shop/orders", label: t(locale, "orders") },
-    { href: "/shop/bills", label: t(locale, "payments") },
-    { href: "/shop/workers", label: t(locale, "workers") },
+    { href: "/shop", label: t(locale, "dashboard"), shortLabel: t(locale, "navShortHome") },
+    { href: "/shop/designs", label: t(locale, "designs"), shortLabel: t(locale, "navShortDesigns") },
+    { href: "/shop/orders", label: t(locale, "orders"), shortLabel: t(locale, "navShortOrders") },
+    { href: "/shop/bills", label: t(locale, "payments"), shortLabel: t(locale, "navShortPayments") },
+    { href: "/shop/workers", label: t(locale, "workers"), shortLabel: t(locale, "navShortWorkers") },
   ];
 
   return (

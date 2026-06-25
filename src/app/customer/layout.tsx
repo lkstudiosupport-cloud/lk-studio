@@ -23,11 +23,19 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   const demoBypass = isDemoAccountUser(user);
 
   const navLinks = [
-    { href: "/customer/designs", label: t(locale, "designs") },
-    { href: "/customer/shops", label: t(locale, "browseShops") },
-    { href: "/customer/price-requests", label: t(locale, "myPriceQuotes") },
-    { href: "/customer/persons", label: t(locale, "measurements") },
-    { href: "/customer/bills", label: t(locale, "myBills") },
+    { href: "/customer/designs", label: t(locale, "designs"), shortLabel: t(locale, "navShortDesigns") },
+    { href: "/customer/shops", label: t(locale, "browseShops"), shortLabel: t(locale, "navShortShops") },
+    {
+      href: "/customer/price-requests",
+      label: t(locale, "myPriceQuotes"),
+      shortLabel: t(locale, "navShortQuotes"),
+    },
+    {
+      href: "/customer/persons",
+      label: t(locale, "measurements"),
+      shortLabel: t(locale, "navShortMeasure"),
+    },
+    { href: "/customer/bills", label: t(locale, "myBills"), shortLabel: t(locale, "navShortBills") },
   ];
 
   return (

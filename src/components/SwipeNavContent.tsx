@@ -36,7 +36,7 @@ export function SwipeNavContent({
 
   return (
     <div
-      className="min-h-[50vh] w-full min-w-0 touch-pan-y"
+      className="app-scroll-body-with-bottom-nav w-full min-w-0 touch-pan-y"
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
     >

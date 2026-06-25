@@ -30,7 +30,7 @@ export function SizeTierButtons({
           onClick={onPickUnassigned}
           className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
             unassignedActive
-              ? "bg-amber-500 text-white ring-2 ring-brand-gold ring-offset-2"
+              ? "bg-amber-500 text-white ring-2 ring-inset ring-brand-gold"
               : "bg-amber-50 text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100"
           }`}
         >
@@ -42,9 +42,9 @@ export function SizeTierButtons({
           key={tier}
           type="button"
           onClick={() => onPick(tier)}
-          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition sm:px-4 sm:py-2 sm:text-sm ${
             active === tier
-              ? "bg-brand-green text-brand-gold ring-2 ring-brand-gold ring-offset-2"
+              ? "bg-brand-green text-brand-gold ring-2 ring-inset ring-brand-gold"
               : "bg-brand-cream text-brand-green ring-1 ring-brand-green/15 hover:bg-brand-green/10"
           }`}
         >

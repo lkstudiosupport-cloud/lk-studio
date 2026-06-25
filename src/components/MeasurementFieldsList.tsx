@@ -61,7 +61,7 @@ export function MeasurementFieldsList({
   }
 
   return (
-    <ul className={`flex flex-col gap-1.5 ${compact ? "" : "max-h-[min(70vh,520px)] overflow-y-auto pr-1"}`}>
+    <ul className={`flex flex-col gap-1.5 ${compact ? "" : "measurement-fields-scroll pr-1"}`}>
       {visibleFields.map((f) => {
         const isActive = activeField === f.key;
         const value = measurement?.[f.key]?.trim() ?? "";

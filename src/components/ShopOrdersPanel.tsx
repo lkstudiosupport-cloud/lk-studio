@@ -99,15 +99,15 @@ export function ShopOrdersPanel({
         {listHint && <p className="mt-1 text-xs text-zinc-500">{listHint}</p>}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="panel-tab-bar">
         {ORDER_STATUS_TABS.map((s) => (
           <button
             key={s.id}
             type="button"
             onClick={() => selectTab(s.id)}
-            className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${
+            className={`panel-tab-pill ${
               tab === s.id
-                ? "bg-brand-green text-brand-gold"
+                ? "bg-brand-green text-brand-gold ring-1 ring-brand-green"
                 : "bg-white text-brand-green ring-1 ring-brand-green/15"
             }`}
           >
@@ -118,9 +118,9 @@ export function ShopOrdersPanel({
         <button
           type="button"
           onClick={() => selectTab(PRICE_QUOTES_TAB.id)}
-          className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${
+          className={`panel-tab-pill ${
             tab === PRICE_QUOTES_TAB.id
-              ? "bg-brand-green text-brand-gold"
+              ? "bg-brand-green text-brand-gold ring-1 ring-brand-green"
               : "bg-white text-brand-green ring-1 ring-brand-green/15"
           }`}
         >

@@ -152,9 +152,9 @@ export function AdminCatalogPanel({
               setError("");
               setLastCode("");
             }}
-            className={`min-h-[4.5rem] rounded-2xl p-3 text-center text-sm font-semibold shadow-md transition active:scale-[0.98] ${
+            className={`min-h-[4rem] rounded-2xl p-2.5 text-center text-xs font-semibold shadow-md transition active:scale-[0.98] sm:min-h-[4.5rem] sm:p-3 sm:text-sm ${
               c.color
-            } ${category === c.key ? "ring-4 ring-brand-gold ring-offset-2" : "opacity-90 hover:opacity-100"}`}
+            } ${category === c.key ? "category-tab-active" : "opacity-90 hover:opacity-100"}`}
           >
             <span className="block leading-tight">{t(locale, c.labelKey)}</span>
             <span className="mt-1 block text-xs opacity-90">{counts[c.key] ?? 0}</span>

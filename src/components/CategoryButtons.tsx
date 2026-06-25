@@ -28,9 +28,9 @@ export function CategoryButtons({
           <Link
             key={c.key}
             href={withQueryParam(basePath, "category", c.key)}
-            className={`min-h-[4.5rem] rounded-2xl p-3 text-center text-sm font-semibold shadow-md transition hover:opacity-90 ${
+            className={`min-h-[4rem] rounded-2xl p-2.5 text-center text-xs font-semibold shadow-md transition hover:opacity-90 sm:min-h-[4.5rem] sm:p-3 sm:text-sm ${
               c.color
-            } ${active === c.key ? "ring-4 ring-brand-gold ring-offset-2" : ""}`}
+            } ${active === c.key ? "category-tab-active" : ""}`}
           >
             <span className="block leading-tight">{t(locale, c.labelKey)}</span>
           </Link>

@@ -9,7 +9,7 @@ import { t } from "@/lib/i18n";
 import { BrandLogoMark } from "./BrandLogo";
 import { BrandNameTagline } from "./BrandNameTagline";
 
-type LinkItem = { href: string; label: string };
+type LinkItem = { href: string; label: string; shortLabel?: string };
 
 function isNavActive(href: string, pathname: string) {
   if (href === "/shop" || href === "/customer") {
@@ -21,16 +21,20 @@ function isNavActive(href: string, pathname: string) {
 function NavPill({
   href,
   label,
+  shortLabel,
   active,
   onNavigate,
   compact,
 }: {
   href: string;
   label: string;
+  shortLabel?: string;
   active: boolean;
   onNavigate: (href: string) => void;
   compact?: boolean;
 }) {
+  const displayLabel = compact ? (shortLabel ?? label) : label;
+
   return (
     <button
       type="button"
@@ -38,6 +42,8 @@ function NavPill({
         if (!active) onNavigate(href);
       }}
       aria-current={active ? "page" : undefined}
+      aria-label={compact && shortLabel ? label : undefined}
+      title={compact && shortLabel ? label : undefined}
       className={
         compact
           ? active
@@ -48,13 +54,7 @@ function NavPill({
             : "brand-nav-pill"
       }
     >
-      {compact ? (
-        <span className="max-w-[min(5rem,20vw)] truncate text-[0.6875rem] leading-tight sm:max-w-[5rem] sm:text-xs">
-          {label}
-        </span>
-      ) : (
-        label
-      )}
+      {compact ? <span className="brand-bottom-nav-label">{displayLabel}</span> : displayLabel}
     </button>
   );
 }
@@ -106,6 +106,7 @@ export function NavShell({
         key={l.href}
         href={l.href}
         label={l.label}
+        shortLabel={l.shortLabel}
         active={active}
         onNavigate={navigate}
         compact={navPosition === "bottom"}
@@ -116,17 +117,17 @@ export function NavShell({
   return (
     <>
       <header className="brand-header sticky top-0 z-20">
-        <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-1 px-2.5 py-2 sm:gap-2 sm:px-4 sm:py-3.5 md:py-4">
-          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-1 px-2 py-2 sm:gap-2 sm:px-4 sm:py-3.5 md:py-4">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
             <BrandLogoMark locale={locale} />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <BrandNameTagline locale={locale} variant="header" />
               {title.trim() && title !== t(locale, "appName") && (
                 <p className="mt-0.5 truncate text-xs font-medium text-white/70 sm:text-sm">{title}</p>
               )}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
             <LocaleLocationBar locale={locale} />
             <ProfileMenu
               locale={locale}
@@ -144,8 +145,8 @@ export function NavShell({
       </header>
 
       {!hideNav && navPosition === "bottom" && (
-        <nav className="brand-bottom-nav fixed inset-x-0 bottom-0 z-30">
-          <div className="mx-auto flex w-full min-w-0 max-w-5xl items-stretch justify-around gap-0.5 px-1 pt-1 sm:px-2">
+        <nav className="brand-bottom-nav fixed inset-x-0 bottom-0 z-30" aria-label={t(locale, "appName")}>
+          <div className="mx-auto flex w-full min-w-0 max-w-5xl items-stretch justify-around gap-0 px-0.5 pt-0.5 sm:gap-0.5 sm:px-2 sm:pt-1">
             {navItems}
           </div>
         </nav>
