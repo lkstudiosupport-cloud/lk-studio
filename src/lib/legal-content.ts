@@ -80,7 +80,7 @@ export const termsSectionsEn: LegalSection[] = [
     title: "Agreement",
     body: [
       "By registering for or using LK Studio you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use the app.",
-      "You must accept these terms, including the AI-generated catalog images policy below, before creating an account.",
+      "You must accept these terms, including the AI-generated catalog images policy and the shop stitched designs policy below, before creating an account.",
       `Support: ${LEGAL_CONTACT_EMAIL}`,
     ],
   },
@@ -104,6 +104,19 @@ export const termsSectionsEn: LegalSection[] = [
     body: [
       "You retain ownership of photos and content you upload. You grant us a license to host and display that content to provide the service.",
       "Do not upload unlawful, infringing, or harmful content.",
+    ],
+  },
+  {
+    title: "Shop stitched designs in the app catalog",
+    body: [
+      "When a shop uploads stitched design photos to LK Studio (under Stitched designs or similar shop-owned galleries), the shop retains ownership of those photos.",
+      "The shop also grants LK Studio a non-exclusive, royalty-free license to use, reproduce, and display those shop-uploaded designs within the LK Studio app—for example in the shared design catalog, browse screens, inspiration sections, or related in-app features—so customers and other shops can discover tailoring work through the platform.",
+      "LK Studio may apply reasonable modifications when featuring shop-uploaded designs, including but not limited to: watermarks, the uploading shop’s name or shop code, resizing, cropping, compression, category or size grouping, and presentation alongside LK Studio admin catalog designs.",
+      "Attribution will identify the source shop where practicable. This license is limited to operating and promoting LK Studio; we do not claim ownership of your original photos.",
+      "If a shop does not want a particular uploaded design used in this way, the shop may delete it from their gallery or contact us at " +
+        LEGAL_CONTACT_EMAIL +
+        " to request removal from app-wide catalog use.",
+      "By uploading stitched designs as a shop, you confirm you have the right to share those images and agree to this catalog-use license.",
     ],
   },
   {
@@ -195,6 +208,7 @@ export const termsSectionTitlesHi: Record<string, string> = {
   Service: "सेवा",
   Accounts: "खाते",
   "Shop and customer content": "दुकान और ग्राहक सामग्री",
+  "Shop stitched designs in the app catalog": "ऐप कैटलॉग में दुकान की सिली हुई डिज़ाइन",
   "AI-generated catalog images": "AI द्वारा बनाई कैटलॉग तस्वीरें",
   "Payments and subscriptions": "भुगतान और सदस्यता",
   "Acceptable use": "स्वीकार्य उपयोग",
@@ -210,6 +224,7 @@ export const termsSectionTitlesTe: Record<string, string> = {
   Service: "సేవ",
   Accounts: "ఖాతాలు",
   "Shop and customer content": "షాప్ మరియు కస్టమర్ కంటెంట్",
+  "Shop stitched designs in the app catalog": "యాప్ క్యాటలాగ్‌లో షాప్ కుట్టిన డిజైన్‌లు",
   "AI-generated catalog images": "AI సృష్టించిన క్యాటలాగ్ చిత్రాలు",
   "Payments and subscriptions": "చెల్లింపులు మరియు సబ్‌స్క్రిప్షన్‌లు",
   "Acceptable use": "అనుమతించిన వినియోగం",
