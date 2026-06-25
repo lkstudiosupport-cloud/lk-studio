@@ -1,7 +1,7 @@
 /** Seeded demo mobiles — safe to skip OTP for showroom / APK demos. */
 export const DEMO_SHOP_PHONE = "9876543210";
 export const DEMO_SHOP2_PHONE = "9988776655";
-export const DEMO_CUSTOMER_PHONE = "9123456789";
+export const DEMO_CUSTOMER_PHONE = "9876543219";
 export const DEMO_ADMIN_PHONE = "9000000001";
 export const DEMO_PASSWORD = "demo123";
 export const DEMO_ADMIN_PASSWORD = "lkstudio123";
