@@ -80,7 +80,7 @@ if (-not (Test-Path $gradlew)) {
     Write-Error "Run first: npx.cmd cap add android"
 }
 
-Write-Host "Building release AAB (first time may take 10–20 min)..."
+Write-Host "Building release AAB (first time may take 10-20 min)..."
 Set-Location (Join-Path $root "android")
 & .\gradlew.bat bundleRelease
 

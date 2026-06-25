@@ -184,6 +184,12 @@ export async function readSessionToken(): Promise<{
 
 
 
+/** JWT-only session read — no DB round trip (public pages, redirect checks). */
+export async function getSessionFromCookie(): Promise<SessionUser | null> {
+  const read = await readSessionToken();
+  return read?.session ?? null;
+}
+
 export async function getSession(): Promise<SessionUser | null> {
 
   const read = await readSessionToken();

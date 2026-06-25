@@ -25,7 +25,6 @@ export function SessionRefresh() {
       }
     }
 
-    refresh();
     const interval = setInterval(refresh, REFRESH_INTERVAL_MS);
 
     function onVisible() {

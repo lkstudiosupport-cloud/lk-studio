@@ -38,5 +38,6 @@ LK-Studio-release.apk
 LK-Studio-release.aab
 *.keystore
 *.jks
+KEYSTORE-BACKUP.local.txt
 keystore.properties
 android/keystore.properties

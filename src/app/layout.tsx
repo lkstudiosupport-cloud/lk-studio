@@ -1,12 +1,12 @@
 import { Poppins } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
 
 const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "600", "700"],
   variable: "--font-brand",
+  display: "swap",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://lk-studio-1.onrender.com";
@@ -42,7 +42,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${poppins.variable} min-h-dvh antialiased font-[family-name:var(--font-brand)]`}>
-        <style dangerouslySetInnerHTML={{ __html: BILL_RECEIPT_STYLES }} />
         {children}
       </body>
     </html>

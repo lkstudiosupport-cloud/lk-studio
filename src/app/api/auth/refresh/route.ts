@@ -14,6 +14,14 @@ export async function POST() {
     }
 
     const { session, issuedAtSec } = read;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (
+      issuedAtSec != null &&
+      nowSec - issuedAtSec < SESSION_REFRESH_MIN_INTERVAL_SEC
+    ) {
+      return NextResponse.json({ ok: true, refreshed: false });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: session.id },
       select: { sessionVersion: true, role: true, email: true, name: true, shopProfile: { select: { id: true } } },
@@ -24,14 +32,6 @@ export async function POST() {
     }
     if ((session.sessionVersion ?? 0) !== user.sessionVersion) {
       return NextResponse.json({ ok: false, reason: "session_revoked" }, { status: 401 });
-    }
-
-    const nowSec = Math.floor(Date.now() / 1000);
-    if (
-      issuedAtSec != null &&
-      nowSec - issuedAtSec < SESSION_REFRESH_MIN_INTERVAL_SEC
-    ) {
-      return NextResponse.json({ ok: true, refreshed: false });
     }
 
     await refreshSession({

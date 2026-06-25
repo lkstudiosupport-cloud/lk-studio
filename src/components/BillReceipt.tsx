@@ -6,6 +6,7 @@ import Image from "next/image";
 import { BillCornerMark } from "@/components/BillCornerMark";
 import type { BillReceiptData } from "@/lib/bill-receipt-text";
 import { BILL_RECEIPT_CAPTURE_ID } from "@/lib/bill-receipt-capture";
+import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
 
 function formatReceiptDate(d: Date) {
   return d.toLocaleString("en-IN", {
@@ -28,7 +29,9 @@ export function BillReceipt({ bill, locale }: { bill: BillReceiptData; locale: L
   const fullyPaid = bill.paid && pending <= 0.01;
 
   return (
-    <div className="bill-receipt">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: BILL_RECEIPT_STYLES }} />
+      <div className="bill-receipt">
       <div id={BILL_RECEIPT_CAPTURE_ID} className="bill-receipt-paper">
         <div className="bill-receipt-corners" aria-hidden>
           {(["tl", "tr", "bl", "br"] as const).map((pos) => (
@@ -155,5 +158,6 @@ export function BillReceipt({ bill, locale }: { bill: BillReceiptData; locale: L
         </div>
       </div>
     </div>
+    </>
   );
 }

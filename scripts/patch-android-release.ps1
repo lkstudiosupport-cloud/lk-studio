@@ -44,6 +44,7 @@ buildTypes {
 }
 
 # Launch version — bump versionCode for each Play Store upload.
+$content = $content -replace 'signingConfig signingConfigs\.release\s+minifyEnabled', "signingConfig signingConfigs.release`n            minifyEnabled"
 $content = $content -replace 'versionCode \d+', 'versionCode 1'
 $content = $content -replace 'versionName "[^"]*"', 'versionName "1.0.0"'
 

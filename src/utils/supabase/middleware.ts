@@ -1,6 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+function hasSupabaseAuthCookies(request: NextRequest): boolean {
+  return request.cookies.getAll().some((cookie) => cookie.name.startsWith("sb-"));
+}
+
 export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -10,6 +14,11 @@ export async function updateSession(request: NextRequest) {
 
   // API routes use JWT cookies, not Supabase Auth — skip refresh to avoid upload timeouts.
   if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next({ request });
+  }
+
+  // App login uses lk_session JWT only. Skip network auth unless Supabase cookies exist.
+  if (!hasSupabaseAuthCookies(request)) {
     return NextResponse.next({ request });
   }
 
