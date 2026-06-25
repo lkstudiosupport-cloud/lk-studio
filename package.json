@@ -24,6 +24,7 @@
     "db:fix": "tsx scripts/fix-db.ts && prisma db push",
     "db:fix-trial": "tsx scripts/fix-trial-ends.ts",
     "db:reset-demo": "tsx scripts/reset-demo-accounts.ts",
+    "db:purge-demo-admin": "tsx scripts/purge-demo-admin-accounts.ts",
     "measurement-icons:generate": "node scripts/crop-reference-measurement-icons.mjs",
     "measurement-icons:import-hd": "node scripts/import-hd-measurement-icons.mjs blouse",
     "measurement-icons:import-hd:dress": "node scripts/import-hd-measurement-icons.mjs dress",

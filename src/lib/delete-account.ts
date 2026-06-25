@@ -53,11 +53,22 @@ export async function deleteShopAccount(userId: string, shopId: string) {
     await tx.design.deleteMany({ where: { shopId } });
     await tx.shopProfile.delete({ where: { id: shopId } });
 
-    const user = await tx.user.findUnique({ where: { id: userId }, select: { phoneNormalized: true, role: true } });
-    if (user?.phoneNormalized) {
-      await tx.loginOtp.deleteMany({ where: { phone: user.phoneNormalized, role: UserRole.SHOP } });
-    }
+    await tx.user.delete({ where: { id: userId } });
+  });
+}
 
+/** Permanently delete admin user (no shop/customer data). */
+export async function deleteAdminAccount(userId: string) {
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { phoneNormalized: true, role: true },
+    });
+    if (user?.phoneNormalized) {
+      await tx.loginOtp.deleteMany({
+        where: { phone: user.phoneNormalized, role: UserRole.ADMIN },
+      });
+    }
     await tx.user.delete({ where: { id: userId } });
   });
 }

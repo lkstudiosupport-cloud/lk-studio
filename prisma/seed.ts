@@ -140,15 +140,24 @@ async function upsertAdmin() {
 
 async function main() {
   await seedCatalogDesigns(prisma);
-  await upsertAdmin();
-  console.log("Admin account ready: mobile 9000000001 | password lkstudio123 | /login/admin");
 
-  if (process.env.SKIP_DEMO_SEED === "true") {
-    console.log("SKIP_DEMO_SEED=true — demo accounts not created.");
-    return;
+  const isProduction = process.env.NODE_ENV === "production";
+  const skipDemo =
+    process.env.SKIP_DEMO_SEED === "true" ||
+    (isProduction && process.env.ALLOW_DEMO_SEED !== "true");
+  const skipAdmin =
+    process.env.SKIP_ADMIN_SEED === "true" ||
+    (isProduction && process.env.ALLOW_ADMIN_SEED !== "true");
+
+  if (skipAdmin) {
+    console.log("Admin seed skipped (production or SKIP_ADMIN_SEED). Use npm run db:seed-admin locally if needed.");
+  } else {
+    await upsertAdmin();
+    console.log("Admin account ready: mobile 9000000001 | password lkstudio123 | /login/admin");
   }
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "true") {
-    console.log("Production: skipping demo seed. Set ALLOW_DEMO_SEED=true only for staging.");
+
+  if (skipDemo) {
+    console.log("Demo seed skipped (SKIP_DEMO_SEED or production without ALLOW_DEMO_SEED).");
     return;
   }
 
