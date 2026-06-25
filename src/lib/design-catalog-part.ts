@@ -9,6 +9,13 @@ export function categoryHasCatalogParts(category: ServiceCategory): boolean {
   return CATALOG_PART_CATEGORIES.includes(category);
 }
 
+/** Default part — blouses for model blouse, dress design for dress model. */
+export function defaultCatalogPartForCategory(
+  category: ServiceCategory
+): CatalogPart | undefined {
+  return categoryHasCatalogParts(category) ? "MAIN" : undefined;
+}
+
 export function catalogPartLabelKey(category: ServiceCategory, part: CatalogPart): string {
   if (part === "HAND_SLEEVES") return "catalogPart.handSleeves";
   if (category === "BLOUSE_DESIGN") return "catalogPart.blouses";

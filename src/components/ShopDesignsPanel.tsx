@@ -14,8 +14,8 @@ import { MAX_DESIGN_IMAGES } from "@/lib/limits";
 import { ShopDesignItem } from "@/components/ShopDesignItem";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { CatalogPartButtons } from "@/components/CatalogPartButtons";
-import { categoryHasSizeTiers } from "@/lib/design-size-tier";
-import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
+import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
+import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
 import { compressImageFile } from "@/lib/compress-image";
 import { Loader2, Plus } from "lucide-react";
 
@@ -39,8 +39,12 @@ export function ShopDesignsPanel({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
-  const [sizeTier, setSizeTier] = useState<DesignSizeTier | undefined>();
-  const [catalogPart, setCatalogPart] = useState<CatalogPart | undefined>();
+  const [sizeTier, setSizeTier] = useState<DesignSizeTier | undefined>(() =>
+    defaultSizeTierForCategory(category)
+  );
+  const [catalogPart, setCatalogPart] = useState<CatalogPart | undefined>(() =>
+    defaultCatalogPartForCategory(category)
+  );
 
   const canUpload = isCategoryShopUpload(category);
   const activeCategory = CATEGORIES.find((c) => c.key === category)!;
@@ -82,8 +86,8 @@ export function ShopDesignsPanel({
   }, [designs, hasSizeTiers, hasCatalogParts, sizeTier, catalogPart]);
 
   useEffect(() => {
-    setSizeTier(undefined);
-    setCatalogPart(undefined);
+    setSizeTier(defaultSizeTierForCategory(category));
+    setCatalogPart(defaultCatalogPartForCategory(category));
   }, [category]);
 
   const subgroupReady =

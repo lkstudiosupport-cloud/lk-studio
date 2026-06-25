@@ -9,6 +9,13 @@ export function categoryHasSizeTiers(category: ServiceCategory): boolean {
   return SIZE_TIER_CATEGORIES.includes(category);
 }
 
+/** Default tier when opening maggam / embroidery — show small designs first. */
+export function defaultSizeTierForCategory(
+  category: ServiceCategory
+): DesignSizeTier | undefined {
+  return categoryHasSizeTiers(category) ? "SMALL" : undefined;
+}
+
 export function sizeTierLabelKey(tier: DesignSizeTier): string {
   const map: Record<DesignSizeTier, string> = {
     SMALL: "sizeTier.small",
