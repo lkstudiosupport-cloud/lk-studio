@@ -1,10 +1,7 @@
 export default function CustomerDesignsLoading() {
   return (
     <div className="animate-pulse space-y-6">
-      <div className="space-y-2">
-        <div className="h-8 w-40 rounded-lg bg-zinc-200" />
-        <div className="h-4 w-full max-w-md rounded bg-zinc-100" />
-      </div>
+      <div className="h-8 w-40 rounded-lg bg-zinc-200" />
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="min-h-[4.5rem] rounded-2xl bg-zinc-200" />
