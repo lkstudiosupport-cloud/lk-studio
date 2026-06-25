@@ -13,8 +13,8 @@ export const CATALOG_LIST_LIMIT = 500;
 /** Max photos per shop design (cover + gallery). */
 export const MAX_DESIGN_IMAGES = 2;
 
-/** Max photos per bulk catalog upload (one design code each). */
-export const MAX_CATALOG_BULK_UPLOAD = 100;
+/** Admin catalog uploads per IP per minute (one request per photo). */
+export const ADMIN_CATALOG_UPLOAD_RATE_PER_MINUTE = 2000;
 
 /** Max reference photos per person profile. */
 export const MAX_PERSON_PHOTOS = 3;

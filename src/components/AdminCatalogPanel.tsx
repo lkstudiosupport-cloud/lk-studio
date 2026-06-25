@@ -7,7 +7,6 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES } from "@/lib/categories";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
-import { MAX_CATALOG_BULK_UPLOAD } from "@/lib/limits";
 import { AdminDesignItem } from "@/components/AdminDesignItem";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { CatalogPartButtons } from "@/components/CatalogPartButtons";
@@ -156,13 +155,24 @@ export function AdminCatalogPanel({
     }
   }
 
+  async function compressFilesInBatches(files: File[], batchSize = 12): Promise<File[]> {
+    const compressed: File[] = [];
+    for (let i = 0; i < files.length; i += batchSize) {
+      const batch = files.slice(i, i + batchSize);
+      setUploadProgress(`Compressing ${Math.min(i + batch.length, files.length)}/${files.length}`);
+      const batchCompressed = await Promise.all(batch.map((f) => compressImageFile(f)));
+      compressed.push(...batchCompressed);
+    }
+    return compressed;
+  }
+
   async function pickFiles(raw: FileList | null) {
     if (!raw?.length) return;
     setError("");
     setPending(true);
     try {
-      const picked = Array.from(raw).slice(0, MAX_CATALOG_BULK_UPLOAD);
-      const compressed = await Promise.all(picked.map((f) => compressImageFile(f)));
+      const picked = Array.from(raw);
+      const compressed = await compressFilesInBatches(picked);
       if (needsUploadTarget) {
         setPendingFiles(compressed);
       } else {
@@ -172,6 +182,7 @@ export function AdminCatalogPanel({
       setError(formatFetchError(e, "Upload failed"));
     } finally {
       setPending(false);
+      setUploadProgress("");
       if (fileRef.current) fileRef.current.value = "";
     }
   }

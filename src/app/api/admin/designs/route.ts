@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ADMIN_CATALOG_UPLOAD_RATE_PER_MINUTE } from "@/lib/limits";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { persistAdminCatalogDesign, isAdminCatalogCategory } from "@/lib/admin-design-upload";
 import { assignCatalogDesignSizeTier } from "@/lib/admin-assign-tier";
@@ -20,7 +21,7 @@ function requireAdmin() {
 export async function POST(req: Request) {
   try {
     const ip = clientIp(req);
-    const limited = rateLimit(`admin-upload:${ip}`, 120);
+    const limited = rateLimit(`admin-upload:${ip}`, ADMIN_CATALOG_UPLOAD_RATE_PER_MINUTE);
     if (!limited.ok) {
       return NextResponse.json({ error: "Too many uploads — wait a minute" }, { status: 429 });
     }
