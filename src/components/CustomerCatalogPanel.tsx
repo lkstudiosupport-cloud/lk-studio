@@ -118,12 +118,6 @@ export function CustomerCatalogPanel({
     <div className="space-y-6">
       <div>
         <h1 className="page-title">{t(locale, "designs")}</h1>
-        <p className="mt-1 text-sm text-zinc-600">{t(locale, "customerCatalogDesignsHint")}</p>
-        {category && subgroupReady && (
-          <p className="mt-1 text-sm text-zinc-500">
-            {categoryDesigns.length} {t(locale, "collectionItems")}
-          </p>
-        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
