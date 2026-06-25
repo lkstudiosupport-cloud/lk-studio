@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
@@ -18,7 +17,7 @@ export function AutopayOnboardingPage({
   razorpayConfigured,
   payeeLabel,
   homePath,
-  allowSkip = false,
+  inTrial = true,
 }: {
   locale: Locale;
   role: AutopayRole;
@@ -26,8 +25,8 @@ export function AutopayOnboardingPage({
   razorpayConfigured: boolean;
   payeeLabel: string;
   homePath: string;
-  /** Free trial active — user may enter the app without mandate for now. */
-  allowSkip?: boolean;
+  /** Trial signup — only ₹1 mandate today, full price after 1 month. */
+  inTrial?: boolean;
 }) {
   const router = useRouter();
 
@@ -47,13 +46,13 @@ export function AutopayOnboardingPage({
             <div>
               <h1 className="text-xl font-bold text-brand-green">{t(locale, "autopayOnboardingTitle")}</h1>
               <p className="mt-1 text-sm text-zinc-600">
-                {allowSkip ? t(locale, "autopayOnboardingHintTrial") : t(locale, "autopayOnboardingHint")}
+                {inTrial ? t(locale, "autopayOnboardingHintTrial") : t(locale, "autopayOnboardingHint")}
               </p>
             </div>
           </div>
 
           <ul className="space-y-2 rounded-xl bg-brand-cream/60 p-4 text-sm text-zinc-700">
-            {allowSkip && (
+            {inTrial && (
               <>
                 <li>• {t(locale, "autopayOnboardingTrial")}</li>
                 <li>• {t(locale, "autopayOnboardingAfterTrial", { amount: amountInr })}</li>
@@ -70,6 +69,7 @@ export function AutopayOnboardingPage({
             razorpayConfigured={razorpayConfigured}
             payeeLabel={payeeLabel}
             onboarding
+            inTrial={inTrial}
             onSuccess={() => {
               router.push(homePath);
               router.refresh();
@@ -77,14 +77,6 @@ export function AutopayOnboardingPage({
           />
 
           <div className="space-y-3 border-t border-zinc-200 pt-4 text-center text-sm">
-            {allowSkip && (
-              <Link
-                href={homePath}
-                className="block font-semibold text-brand-green underline-offset-2 hover:underline"
-              >
-                {t(locale, "autopaySkipForNow")}
-              </Link>
-            )}
             <ProfileLogout locale={locale} />
           </div>
         </div>

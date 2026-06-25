@@ -134,6 +134,7 @@ export function SubscriptionPanel({
               razorpayConfigured={razorpayConfigured}
               payeeLabel={payeeLabel}
               embedded
+              inTrial={trial}
             />
           </div>
         )}

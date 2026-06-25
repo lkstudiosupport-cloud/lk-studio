@@ -9,7 +9,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { TermsAcceptanceField } from "@/components/TermsAcceptanceField";
-import { SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
+import { SHOP_MONTHLY_PRICE_INR, CUSTOMER_MONTHLY_PRICE_INR } from "@/lib/subscription";
 
 type RegisterMode = "password" | "otp";
 
@@ -163,6 +163,12 @@ export function RegisterForm({ locale }: { locale: Locale }) {
           {t(locale, "registerRoleBusiness", { amount: SHOP_MONTHLY_PRICE_INR })}
         </button>
       </div>
+
+      <p className="rounded-lg bg-brand-cream/60 px-3 py-2 text-xs text-zinc-700">
+        {t(locale, "registerTrialNote", {
+          amount: role === "SHOP" ? SHOP_MONTHLY_PRICE_INR : CUSTOMER_MONTHLY_PRICE_INR,
+        })}
+      </p>
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <button

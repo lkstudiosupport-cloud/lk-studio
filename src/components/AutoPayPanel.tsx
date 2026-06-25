@@ -6,6 +6,7 @@ import { CreditCard, ShieldCheck } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { AutopayRole } from "@/lib/subscription-autopay";
+import { TRIAL_MANDATE_AUTH_INR } from "@/lib/subscription";
 import { enableAutopayDemo } from "@/app/subscription-autopay-actions";
 import { readApiJson } from "@/lib/api-json";
 
@@ -51,6 +52,7 @@ export function AutoPayPanel({
   payeeLabel,
   embedded = false,
   onboarding = false,
+  inTrial = false,
   onSuccess,
 }: {
   locale: Locale;
@@ -61,6 +63,8 @@ export function AutoPayPanel({
   payeeLabel: string;
   embedded?: boolean;
   onboarding?: boolean;
+  /** Active free trial — checkout charges ₹1 mandate only until trial ends. */
+  inTrial?: boolean;
   onSuccess?: () => void;
 }) {
   const router = useRouter();
@@ -88,11 +92,18 @@ export function AutoPayPanel({
         error?: string;
         keyId?: string;
         subscriptionId?: string;
+        trialActive?: boolean;
+        mandateAuthInr?: number;
       }>(res);
       if (!res.ok) throw new Error(data.error ?? "Could not start autopay");
       if (!data.keyId || !data.subscriptionId) {
         throw new Error(data.error ?? "Could not start autopay");
       }
+
+      const checkoutInTrial = data.trialActive ?? inTrial;
+      const payTodayInr = checkoutInTrial
+        ? (data.mandateAuthInr ?? TRIAL_MANDATE_AUTH_INR)
+        : amountInr;
 
       const loaded = await loadRazorpayScript();
       if (!loaded || !window.Razorpay) throw new Error(t(locale, "autopayScriptFailed"));
@@ -102,7 +113,12 @@ export function AutoPayPanel({
           key: data.keyId,
           subscription_id: data.subscriptionId,
           name: t(locale, "appName"),
-          description: t(locale, "autopayDescription", { amount: amountInr }),
+          description: checkoutInTrial
+            ? t(locale, "autopayDescriptionTrial", {
+                today: payTodayInr,
+                monthly: amountInr,
+              })
+            : t(locale, "autopayDescription", { amount: amountInr }),
           prefill: { name: payeeLabel },
           theme: { color: "#1b3022" },
           handler: async (response: unknown) => {
@@ -167,7 +183,9 @@ export function AutoPayPanel({
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-green text-xs font-bold text-white">
                 2
               </span>
-              {t(locale, "autopayStep2", { amount: amountInr })}
+              {inTrial
+                ? t(locale, "autopayStep2Trial", { today: TRIAL_MANDATE_AUTH_INR })
+                : t(locale, "autopayStep2", { amount: amountInr })}
             </li>
             <li className="flex gap-2">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-green text-xs font-bold text-white">
@@ -195,8 +213,12 @@ export function AutoPayPanel({
           {busy
             ? t(locale, "autopayStarting")
             : onboarding
-              ? t(locale, "autopayOnboardingButton", { amount: amountInr })
-              : t(locale, "autopayEnable", { amount: amountInr })}
+              ? inTrial
+                ? t(locale, "autopayOnboardingButton", { amount: amountInr })
+                : t(locale, "autopayEnable", { amount: amountInr })
+              : inTrial
+                ? t(locale, "autopayEnableTrial", { today: TRIAL_MANDATE_AUTH_INR })
+                : t(locale, "autopayEnable", { amount: amountInr })}
         </button>
       </div>
 

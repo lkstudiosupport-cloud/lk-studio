@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { NavShell } from "@/components/NavShell";
 import { SwipeNavContent } from "@/components/SwipeNavContent";
 import { SessionRefresh } from "@/components/SessionRefresh";
+import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
+import { isDemoAccountUser } from "@/lib/demo-accounts";
 import {
   cachedLocale,
   cachedCustomerSession,
@@ -18,6 +20,8 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     cachedCustomerNavProfile(session.id),
   ]);
 
+  const demoBypass = isDemoAccountUser(user);
+
   const navLinks = [
     { href: "/customer/designs", label: t(locale, "designs") },
     { href: "/customer/shops", label: t(locale, "browseShops") },
@@ -29,20 +33,28 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   return (
     <>
       <SessionRefresh />
-      <div className="brand-page-bg min-h-dvh w-full min-w-0">
-        <NavShell
-          locale={locale}
-          title={t(locale, "appName")}
-          profileHref="/customer/profile"
-          profileLabel={t(locale, "customerProfileTitle")}
-          profilePhoto={user?.profilePhoto}
-          links={navLinks}
-          navPosition="bottom"
-        />
-        <SwipeNavContent navHrefs={navLinks.map((l) => l.href)}>
-          <div className="app-main-content app-main-content-with-bottom-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">{children}</div>
-        </SwipeNavContent>
-      </div>
+      <AutopayGuard
+        autopayEnabled={user?.autopayEnabled ?? false}
+        trialBypass={demoBypass}
+        setupPath="/register/autopay"
+      >
+        <div className="brand-page-bg min-h-dvh w-full min-w-0">
+          <NavShell
+            locale={locale}
+            title={t(locale, "appName")}
+            profileHref="/customer/profile"
+            profileLabel={t(locale, "customerProfileTitle")}
+            profilePhoto={user?.profilePhoto}
+            links={navLinks}
+            navPosition="bottom"
+          />
+          <SwipeNavContent navHrefs={navLinks.map((l) => l.href)}>
+            <div className="app-main-content app-main-content-with-bottom-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
+              {children}
+            </div>
+          </SwipeNavContent>
+        </div>
+      </AutopayGuard>
     </>
   );
 }

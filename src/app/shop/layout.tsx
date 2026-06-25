@@ -6,7 +6,6 @@ import { SessionRefresh } from "@/components/SessionRefresh";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
 import { isDemoAccountUser } from "@/lib/demo-accounts";
-import { isInTrial } from "@/lib/subscription";
 import {
   cachedLocale,
   cachedShopSession,
@@ -24,11 +23,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     cachedUserDemoFields(session.id),
   ]);
 
-  const trialBypass =
-    (profile != null &&
-      isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt, profile.createdAt)) ||
-    isDemoAccountUser(user) ||
-    isDemoAccountUser({ phone: profile?.phone });
+  const demoBypass =
+    isDemoAccountUser(user) || isDemoAccountUser({ phone: profile?.phone });
 
   const navLinks = [
     { href: "/shop", label: t(locale, "dashboard") },
@@ -43,7 +39,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <SessionRefresh />
       <AutopayGuard
         autopayEnabled={profile?.autopayEnabled ?? false}
-        trialBypass={trialBypass}
+        trialBypass={demoBypass}
         setupPath="/register/autopay"
       >
         <div className="brand-page-bg min-h-dvh w-full min-w-0">

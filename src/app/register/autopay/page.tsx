@@ -38,7 +38,7 @@ export default async function RegisterAutopayPage() {
     if (isDemoAccountUser(user) || isDemoAccountUser({ phone: profile.phone })) redirect("/shop");
     if (profile.autopayEnabled) redirect("/shop");
 
-    const allowSkip = isInTrial(
+    const inTrial = isInTrial(
       profile.subscriptionStatus,
       profile.subscriptionEndsAt,
       profile.createdAt
@@ -52,7 +52,7 @@ export default async function RegisterAutopayPage() {
         razorpayConfigured={isRazorpayConfigured()}
         payeeLabel={profile.shopName}
         homePath="/shop"
-        allowSkip={allowSkip}
+        inTrial={inTrial}
       />
     );
   }
@@ -73,7 +73,7 @@ export default async function RegisterAutopayPage() {
   if (isDemoAccountUser(user)) redirect("/customer/designs");
   if (user.autopayEnabled) redirect("/customer/designs");
 
-  const allowSkip = isInTrial(
+  const inTrial = isInTrial(
     user.subscriptionStatus,
     user.subscriptionEndsAt,
     user.createdAt
@@ -87,7 +87,7 @@ export default async function RegisterAutopayPage() {
       razorpayConfigured={isRazorpayConfigured()}
       payeeLabel={user.name}
       homePath="/customer/designs"
-      allowSkip={allowSkip}
+      inTrial={inTrial}
     />
   );
 }

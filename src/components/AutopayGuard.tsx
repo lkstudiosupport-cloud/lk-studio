@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 /** Redirect to autopay setup until mandate is completed (registration onboarding). */
 export function AutopayGuard({
   autopayEnabled,
-  /** Active free trial — allow app use without mandate until trial ends. */
+  /** Demo accounts only — skip mandate requirement. */
   trialBypass = false,
   setupPath,
   children,

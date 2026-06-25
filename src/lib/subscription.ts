@@ -10,6 +10,8 @@ export const PAID_BILL_DAYS = 30;
 export const PLAN_BILL_DAYS = PAID_BILL_DAYS;
 export const SHOP_MONTHLY_PRICE_INR = 1000;
 export const CUSTOMER_MONTHLY_PRICE_INR = 100;
+/** UPI mandate verification charged once at trial signup (both shop and customer). */
+export const TRIAL_MANDATE_AUTH_INR = 1;
 
 /** Add whole calendar months; Jan 31 + 1 month → Feb 28/29. */
 export function addCalendarMonths(from: Date, months: number): Date {
