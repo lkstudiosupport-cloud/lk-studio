@@ -39,20 +39,24 @@ export async function persistAdminCatalogDesign(
 
   if (categoryHasSizeTiers(category)) {
     const tier = options?.sizeTier;
-    if (!tier) {
-      throw new Error("Choose Small, Medium, or Big before upload");
+    if (tier) {
+      sizeTier = tier;
+      catalogNumber = await nextTierCatalogDesignNumber(prisma, category, tier);
+      imagePath = await saveCatalogDesignUpload(category, file, tier);
+    } else {
+      catalogNumber = await nextCatalogDesignNumber(prisma, category);
+      imagePath = await saveCatalogDesignUpload(category, file);
     }
-    sizeTier = tier;
-    catalogNumber = await nextTierCatalogDesignNumber(prisma, category, tier);
-    imagePath = await saveCatalogDesignUpload(category, file, tier);
   } else if (categoryHasCatalogParts(category)) {
     const part = options?.catalogPart;
-    if (!part) {
-      throw new Error("Choose Blouses or Hand sleeves before upload");
+    if (part) {
+      catalogPart = part;
+      catalogNumber = await nextPartCatalogDesignNumber(prisma, category, part);
+      imagePath = await saveCatalogDesignUpload(category, file);
+    } else {
+      catalogNumber = await nextCatalogDesignNumber(prisma, category);
+      imagePath = await saveCatalogDesignUpload(category, file);
     }
-    catalogPart = part;
-    catalogNumber = await nextPartCatalogDesignNumber(prisma, category, part);
-    imagePath = await saveCatalogDesignUpload(category, file);
   } else {
     catalogNumber = await nextCatalogDesignNumber(prisma, category);
     imagePath = await saveCatalogDesignUpload(category, file);

@@ -8,16 +8,28 @@ import { t } from "@/lib/i18n";
 import { DesignImagesView } from "@/components/DesignImagesView";
 import { categoryHasCatalogParts, catalogPartLabelKey, CATALOG_PARTS } from "@/lib/design-catalog-part";
 import { categoryHasSizeTiers, sizeTierLabelKey } from "@/lib/design-size-tier";
-import { Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 
-export function AdminDesignItem({ design, locale }: { design: Design; locale: Locale }) {
+export function AdminDesignItem({
+  design,
+  locale,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
+}: {
+  design: Design;
+  locale: Locale;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [assigning, setAssigning] = useState(false);
 
-  const showTierAssign = categoryHasSizeTiers(design.category);
-  const showPartAssign = categoryHasCatalogParts(design.category);
+  const showTierAssign = categoryHasSizeTiers(design.category) && !selectable;
+  const showPartAssign = categoryHasCatalogParts(design.category) && !selectable;
 
   function onDelete() {
     if (!confirm("Delete this catalog design?")) return;
@@ -56,7 +68,9 @@ export function AdminDesignItem({ design, locale }: { design: Design; locale: Lo
   }
 
   return (
-    <article className="card-premium overflow-hidden">
+    <article
+      className={`card-premium overflow-hidden ${selectable && selected ? "ring-2 ring-brand-gold" : ""}`}
+    >
       <div className="relative">
         <DesignImagesView
           imagePath={design.imagePath}
@@ -66,6 +80,21 @@ export function AdminDesignItem({ design, locale }: { design: Design; locale: Lo
           previewCloseLabel={t(locale, "closePreview")}
           previewLabel={t(locale, "tapToPreview")}
         />
+        {selectable && (
+          <button
+            type="button"
+            onClick={onToggleSelect}
+            className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg border-2 shadow ${
+              selected
+                ? "border-brand-gold bg-brand-green text-brand-gold"
+                : "border-white/90 bg-black/40 text-white"
+            }`}
+            aria-label={selected ? "Deselect design" : "Select design"}
+            aria-pressed={selected}
+          >
+            {selected && <Check className="h-4 w-4" strokeWidth={3} />}
+          </button>
+        )}
         <button
           type="button"
           onClick={onDelete}

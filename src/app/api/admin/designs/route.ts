@@ -81,35 +81,58 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { id?: string; sizeTier?: DesignSizeTier; catalogPart?: CatalogPart };
+  let body: {
+    id?: string;
+    ids?: string[];
+    sizeTier?: DesignSizeTier;
+    catalogPart?: CatalogPart;
+  };
   try {
-    body = (await req.json()) as { id?: string; sizeTier?: DesignSizeTier; catalogPart?: CatalogPart };
+    body = (await req.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const id = body.id?.trim();
-  if (!id) {
+  const ids = (body.ids?.length ? body.ids : body.id ? [body.id] : [])
+    .map((id) => id.trim())
+    .filter(Boolean);
+  if (ids.length === 0) {
     return NextResponse.json({ error: "Design id required" }, { status: 400 });
   }
 
   try {
     if (body.sizeTier && ["SMALL", "MEDIUM", "BIG"].includes(body.sizeTier)) {
-      const result = await assignCatalogDesignSizeTier(id, body.sizeTier);
+      const results: string[] = [];
+      for (const id of ids) {
+        const result = await assignCatalogDesignSizeTier(id, body.sizeTier);
+        results.push(result.catalogNumber);
+      }
       revalidatePath("/admin/designs");
       revalidatePath("/shop/designs");
       revalidatePath("/customer/designs");
       revalidatePath("/customer/shops");
-      return NextResponse.json({ ok: true, catalogNumber: result.catalogNumber });
+      return NextResponse.json({
+        ok: true,
+        catalogNumber: results[results.length - 1],
+        count: results.length,
+      });
     }
 
     if (body.catalogPart && ["MAIN", "HAND_SLEEVES"].includes(body.catalogPart)) {
-      const result = await assignCatalogDesignPart(id, body.catalogPart);
+      const results: string[] = [];
+      for (const id of ids) {
+        const result = await assignCatalogDesignPart(id, body.catalogPart);
+        results.push(result.catalogNumber);
+      }
       revalidatePath("/admin/designs");
       revalidatePath("/shop/designs");
       revalidatePath("/customer/designs");
       revalidatePath("/customer/shops");
-      return NextResponse.json({ ok: true, catalogNumber: result.catalogNumber });
+      return NextResponse.json({
+        ok: true,
+        catalogNumber: results[results.length - 1],
+        count: results.length,
+      });
     }
 
     return NextResponse.json(
