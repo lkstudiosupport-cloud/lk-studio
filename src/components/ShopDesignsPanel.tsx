@@ -126,16 +126,10 @@ export function ShopDesignsPanel({
     }
   }
 
-  function uploadHint(): string {
-    if (isShopOwnedUploadCategory(category)) return t(locale, "shopStitchedHint");
-    return t(locale, "catalogDesignsHint");
-  }
-
   return (
     <div className="space-y-6">
       <div>
         <h1 className="page-title">{t(locale, "designs")}</h1>
-        <p className="mt-1 text-sm text-zinc-600">{t(locale, "shopDesignsHint")}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -165,7 +159,9 @@ export function ShopDesignsPanel({
           </span>
         </div>
 
-        <p className="text-sm text-zinc-600">{uploadHint()}</p>
+        {isShopOwnedUploadCategory(category) && (
+          <p className="text-sm text-zinc-600">{t(locale, "shopStitchedHint")}</p>
+        )}
 
         {hasSizeTiers && (
           <div className="space-y-2">
