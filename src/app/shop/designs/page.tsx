@@ -3,7 +3,12 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { ShopDesignsPanel } from "@/components/ShopDesignsPanel";
 import { DESIGN_LIST_LIMIT } from "@/lib/limits";
-import { visibleDesignsWhere } from "@/lib/design-access";
+import {
+  shopStitchedDesignsWhere,
+  visibleDesignsWhere,
+} from "@/lib/design-access";
+import { countSortedCatalogDesignsByCategory } from "@/lib/catalog-design-sort";
+import { cachedAppCatalogDesigns } from "@/lib/cached-catalog-designs";
 import { CATEGORIES } from "@/lib/categories";
 import { designListSelect } from "@/lib/design-list-select";
 import type { ServiceCategory } from "@prisma/client";
@@ -30,26 +35,21 @@ export default async function ShopDesignsPage({
   const shopId = session!.shopId!;
   const category = resolveCategory(params.category);
 
-  const [designs, countGroups] = await Promise.all([
+  const [designs, catalogDesigns, stitchedCount] = await Promise.all([
     prisma.design.findMany({
       where: visibleDesignsWhere(shopId, category),
       orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
       take: DESIGN_LIST_LIMIT,
       select: designListSelect,
     }),
-    prisma.design.groupBy({
-      by: ["category"],
-      where: visibleDesignsWhere(shopId),
-      _count: { _all: true },
-    }),
+    cachedAppCatalogDesigns(),
+    prisma.design.count({ where: shopStitchedDesignsWhere(shopId) }),
   ]);
 
-  const categoryCounts = Object.fromEntries(
-    CATEGORIES.map((c) => [
-      c.key,
-      countGroups.find((g) => g.category === c.key)?._count._all ?? 0,
-    ])
-  ) as Record<ServiceCategory, number>;
+  const categoryCounts = {
+    ...countSortedCatalogDesignsByCategory(catalogDesigns),
+    STITCHED_DESIGNS: stitchedCount,
+  } as Record<ServiceCategory, number>;
 
   return (
     <ShopDesignsPanel

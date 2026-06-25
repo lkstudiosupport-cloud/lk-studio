@@ -9,7 +9,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
-import { isSortedCatalogDesign } from "@/lib/catalog-design-sort";
+import { countSortedCatalogDesignsByCategory, isSortedCatalogDesign } from "@/lib/catalog-design-sort";
 import type { DesignListItem } from "@/lib/design-queries";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
@@ -65,7 +65,7 @@ export function CustomerCatalogPanel({
 
   const categoryDesigns = useMemo(() => {
     if (!category) return [];
-    let list = designs.filter((d) => d.category === category);
+    let list = designs.filter((d) => d.category === category && isSortedCatalogDesign(d, category));
     if (hasSizeTiers) {
       if (!sizeTier) return [];
       list = list.filter((d) => d.sizeTier === sizeTier);
@@ -77,13 +77,10 @@ export function CustomerCatalogPanel({
     return list;
   }, [designs, category, hasSizeTiers, hasCatalogParts, sizeTier, catalogPart]);
 
-  const counts = useMemo(() => {
-    const map = {} as Record<string, number>;
-    for (const c of tabs) {
-      map[c.key] = designs.filter((d) => d.category === c.key && isSortedCatalogDesign(d, c.key)).length;
-    }
-    return map;
-  }, [designs, tabs]);
+  const counts = useMemo(
+    () => countSortedCatalogDesignsByCategory(designs, tabs.map((c) => c.key)),
+    [designs, tabs]
+  );
 
   function pickCategory(next: ServiceCategory) {
     setCategory(next);

@@ -1,5 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import type { ServiceCategory } from "@prisma/client";
+import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
+import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 
 /** Only category shops may upload, edit, or delete. */
 export const SHOP_OWNED_UPLOAD_CATEGORY = "STITCHED_DESIGNS" as const;
@@ -39,9 +41,21 @@ export function isCatalogCategory(category: ServiceCategory): boolean {
 /** App catalog designs (admin) — same for all shops. */
 export function appCatalogDesignsWhere(category?: ServiceCategory): Prisma.DesignWhereInput {
   if (category && isCatalogCategory(category)) {
-    return { isCatalog: true, category, active: true };
+    return sortedCatalogDesignWhere(category);
   }
   return { isCatalog: true, category: { in: CATALOG_CATEGORIES }, active: true };
+}
+
+/** Catalog designs visible in shop/customer UI (subgroup assigned). */
+export function sortedCatalogDesignWhere(category: ServiceCategory): Prisma.DesignWhereInput {
+  const base: Prisma.DesignWhereInput = { isCatalog: true, category, active: true };
+  if (categoryHasSizeTiers(category)) {
+    return { ...base, sizeTier: { not: null } };
+  }
+  if (categoryHasCatalogParts(category)) {
+    return { ...base, catalogPart: { not: null } };
+  }
+  return base;
 }
 
 /** Stitched work uploaded by a specific shop. */
@@ -63,7 +77,7 @@ export function visibleDesignsWhere(
     if (isShopOwnedUploadCategory(category)) {
       return { shopId, category, active: true, isCatalog: false };
     }
-    return { isCatalog: true, category, active: true };
+    return sortedCatalogDesignWhere(category);
   }
   return {
     active: true,
