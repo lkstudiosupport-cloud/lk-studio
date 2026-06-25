@@ -39,7 +39,8 @@ export function CatalogPartButtons({
               : "bg-amber-50 text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100"
           }`}
         >
-          {t(locale, "sizeTierUnassigned")} ({unassignedCount ?? 0})
+          {t(locale, "sizeTierUnassigned")}
+          {unassignedCount != null ? ` (${unassignedCount})` : ""}
         </button>
       )}
       {CATALOG_PARTS.map((part) => (

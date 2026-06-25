@@ -9,7 +9,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
-import { countSortedCatalogDesignsByCategory, isSortedCatalogDesign } from "@/lib/catalog-design-sort";
+import { isSortedCatalogDesign } from "@/lib/catalog-design-sort";
 import type { DesignListItem } from "@/lib/design-queries";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
@@ -43,26 +43,6 @@ export function CustomerCatalogPanel({
   const hasCatalogParts = category ? categoryHasCatalogParts(category) : false;
   const needsSubgroup = hasSizeTiers || hasCatalogParts;
 
-  const tierCounts = useMemo(() => {
-    if (!category || !hasSizeTiers) return null;
-    const counts = { SMALL: 0, MEDIUM: 0, BIG: 0 } as Record<DesignSizeTier, number>;
-    for (const d of designs) {
-      if (d.category !== category || !d.sizeTier) continue;
-      counts[d.sizeTier]++;
-    }
-    return counts;
-  }, [designs, category, hasSizeTiers]);
-
-  const partCounts = useMemo(() => {
-    if (!category || !hasCatalogParts) return null;
-    const counts = { MAIN: 0, HAND_SLEEVES: 0 } as Record<CatalogPart, number>;
-    for (const d of designs) {
-      if (d.category !== category || !d.catalogPart) continue;
-      counts[d.catalogPart]++;
-    }
-    return counts;
-  }, [designs, category, hasCatalogParts]);
-
   const categoryDesigns = useMemo(() => {
     if (!category) return [];
     let list = designs.filter((d) => d.category === category && isSortedCatalogDesign(d, category));
@@ -76,11 +56,6 @@ export function CustomerCatalogPanel({
     }
     return list;
   }, [designs, category, hasSizeTiers, hasCatalogParts, sizeTier, catalogPart]);
-
-  const counts = useMemo(
-    () => countSortedCatalogDesignsByCategory(designs, tabs.map((c) => c.key)),
-    [designs, tabs]
-  );
 
   function pickCategory(next: ServiceCategory) {
     setCategory(next);
@@ -128,7 +103,6 @@ export function CustomerCatalogPanel({
             } ${category === c.key ? "category-tab-active" : ""}`}
           >
             <span className="block leading-tight">{t(locale, c.labelKey)}</span>
-            <span className="mt-1 block text-xs opacity-90">{counts[c.key] ?? 0}</span>
           </button>
         ))}
       </div>
@@ -150,12 +124,7 @@ export function CustomerCatalogPanel({
 
       {category && hasSizeTiers && (
         <div className="space-y-2">
-          <SizeTierButtons
-            locale={locale}
-            active={sizeTier}
-            onPick={pickSizeTier}
-            counts={tierCounts ?? undefined}
-          />
+          <SizeTierButtons locale={locale} active={sizeTier} onPick={pickSizeTier} />
           {!sizeTier && (
             <p className="card-premium p-4 text-center text-sm text-zinc-600">
               {t(locale, "customerPickSizeTierHint")}
@@ -171,7 +140,6 @@ export function CustomerCatalogPanel({
             category={category}
             active={catalogPart}
             onPick={pickCatalogPart}
-            counts={partCounts ?? undefined}
           />
           {!catalogPart && (
             <p className="card-premium p-4 text-center text-sm text-zinc-600">

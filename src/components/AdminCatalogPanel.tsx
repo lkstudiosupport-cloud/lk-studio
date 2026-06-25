@@ -56,14 +56,6 @@ export function AdminCatalogPanel({
     setSelectedIds(new Set());
   }, [sizeTierFilter, catalogPartFilter]);
 
-  const counts = useMemo(() => {
-    const map = {} as Record<string, number>;
-    for (const c of ADMIN_CATEGORIES) {
-      map[c.key] = designs.filter((d) => d.category === c.key && d.isCatalog).length;
-    }
-    return map;
-  }, [designs]);
-
   const categoryDesigns = useMemo(() => {
     return designs
       .filter((d) => d.category === category && d.isCatalog)
@@ -72,26 +64,6 @@ export function AdminCatalogPanel({
         return b.createdAt > a.createdAt ? 1 : -1;
       });
   }, [designs, category]);
-
-  const tierCounts = useMemo(() => {
-    const counts = { SMALL: 0, MEDIUM: 0, BIG: 0 } as Record<DesignSizeTier, number>;
-    let unassigned = 0;
-    for (const d of categoryDesigns) {
-      if (!d.sizeTier) unassigned++;
-      else counts[d.sizeTier]++;
-    }
-    return { ...counts, unassigned };
-  }, [categoryDesigns]);
-
-  const partCounts = useMemo(() => {
-    const counts = { MAIN: 0, HAND_SLEEVES: 0 } as Record<CatalogPart, number>;
-    let unassigned = 0;
-    for (const d of categoryDesigns) {
-      if (!d.catalogPart) unassigned++;
-      else counts[d.catalogPart]++;
-    }
-    return { ...counts, unassigned };
-  }, [categoryDesigns]);
 
   const visibleDesigns = useMemo(() => {
     if (hasSizeTiers) {
@@ -248,7 +220,6 @@ export function AdminCatalogPanel({
             } ${category === c.key ? "category-tab-active" : "opacity-90 hover:opacity-100"}`}
           >
             <span className="block leading-tight">{t(locale, c.labelKey)}</span>
-            <span className="mt-1 block text-xs opacity-90">{counts[c.key] ?? 0}</span>
           </button>
         ))}
       </div>
@@ -256,9 +227,6 @@ export function AdminCatalogPanel({
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-bold text-brand-green">{t(locale, activeCategory.labelKey)}</h2>
-          <span className="rounded-full bg-brand-cream px-3 py-1 text-xs font-semibold text-brand-green">
-            {visibleDesigns.length} designs
-          </span>
         </div>
 
         <p className="text-sm text-zinc-600">
@@ -274,13 +242,7 @@ export function AdminCatalogPanel({
             locale={locale}
             active={sizeTierFilter === "UNASSIGNED" ? undefined : sizeTierFilter}
             onPick={setSizeTierFilter}
-            counts={{
-              SMALL: tierCounts.SMALL,
-              MEDIUM: tierCounts.MEDIUM,
-              BIG: tierCounts.BIG,
-            }}
             showUnassigned
-            unassignedCount={tierCounts.unassigned}
             unassignedActive={sizeTierFilter === "UNASSIGNED"}
             onPickUnassigned={() => setSizeTierFilter("UNASSIGNED")}
           />
@@ -292,12 +254,7 @@ export function AdminCatalogPanel({
             category={category}
             active={catalogPartFilter === "UNASSIGNED" ? undefined : catalogPartFilter}
             onPick={setCatalogPartFilter}
-            counts={{
-              MAIN: partCounts.MAIN,
-              HAND_SLEEVES: partCounts.HAND_SLEEVES,
-            }}
             showUnassigned
-            unassignedCount={partCounts.unassigned}
             unassignedActive={catalogPartFilter === "UNASSIGNED"}
             onPickUnassigned={() => setCatalogPartFilter("UNASSIGNED")}
           />

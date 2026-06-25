@@ -34,7 +34,8 @@ export function SizeTierButtons({
               : "bg-amber-50 text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100"
           }`}
         >
-          {t(locale, "sizeTierUnassigned")} ({unassignedCount ?? 0})
+          {t(locale, "sizeTierUnassigned")}
+          {unassignedCount != null ? ` (${unassignedCount})` : ""}
         </button>
       )}
       {DESIGN_SIZE_TIERS.map((tier) => (
