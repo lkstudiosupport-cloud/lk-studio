@@ -33,6 +33,45 @@ export function isMsg91WidgetRuntimeConfigured(): boolean {
   );
 }
 
+export type Msg91WidgetProbe = {
+  ok: boolean;
+  error?: string;
+};
+
+/** Validate widget ID + token against MSG91 (no SMS sent). */
+export async function probeMsg91Widget(): Promise<Msg91WidgetProbe | null> {
+  const id = msg91WidgetIdServer();
+  const token = msg91WidgetTokenServer();
+  if (!id || !token) return null;
+
+  const url = `https://control.msg91.com/api/v5/widget/getWidgetProcess?widgetId=${encodeURIComponent(id)}&tokenAuth=${encodeURIComponent(token)}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const text = await res.text();
+    let data: { type?: string; message?: string } = {};
+    try {
+      data = JSON.parse(text) as { type?: string; message?: string };
+    } catch {
+      /* ignore */
+    }
+
+    if (data.type === "success" || res.ok) return { ok: true };
+    return {
+      ok: false,
+      error: typeof data.message === "string" ? data.message : `HTTP ${res.status}`,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Widget probe failed",
+    };
+  }
+}
+
 export function msg91TemplateId(): string | null {
   return process.env.MSG91_TEMPLATE_ID?.trim() || null;
 }
