@@ -100,7 +100,7 @@ export function AutoPayPanel({
         mandateAuthInr?: number;
       }>(res);
       if (!res.ok) throw new Error(data.error ?? "Could not start autopay");
-      if (!data.keyId || !data.subscriptionId || !data.customerId) {
+      if (!data.keyId || !data.subscriptionId) {
         throw new Error(data.error ?? "Could not start autopay");
       }
 
@@ -116,7 +116,6 @@ export function AutoPayPanel({
         const rzp = new window.Razorpay!({
           key: data.keyId,
           subscription_id: data.subscriptionId,
-          customer_id: data.customerId,
           name: t(locale, "appName"),
           description: checkoutInTrial
             ? t(locale, "autopayDescriptionTrial", {
