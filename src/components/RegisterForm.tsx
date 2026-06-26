@@ -10,6 +10,10 @@ import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { TermsAcceptanceField } from "@/components/TermsAcceptanceField";
 import { SHOP_MONTHLY_PRICE_INR, CUSTOMER_MONTHLY_PRICE_INR } from "@/lib/subscription";
+import {
+  deliverOtpViaWidgetIfNeeded,
+  verifyOtpViaWidgetIfNeeded,
+} from "@/lib/otp-widget-flow";
 
 type RegisterMode = "password" | "otp";
 
@@ -27,6 +31,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [widgetOtp, setWidgetOtp] = useState(false);
   const [demoCode, setDemoCode] = useState("");
   const [otpInfo, setOtpInfo] = useState("");
 
@@ -34,6 +39,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
     setMode(next);
     setError("");
     setOtpSent(false);
+    setWidgetOtp(false);
     setDemoCode("");
     setOtpInfo("");
   }
@@ -42,6 +48,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
     setRole(next);
     setError("");
     setOtpSent(false);
+    setWidgetOtp(false);
     setDemoCode("");
     setOtpInfo("");
   }
@@ -67,6 +74,15 @@ export function RegisterForm({ locale }: { locale: Locale }) {
         return;
       }
 
+      const useWidget = data.widgetOtp === true;
+      try {
+        await deliverOtpViaWidgetIfNeeded(phone, useWidget);
+      } catch {
+        setError(t(locale, "otpSendFailed"));
+        return;
+      }
+
+      setWidgetOtp(useWidget);
       setOtpSent(true);
       setOtpInfo(data.smsDelivered === false ? t(locale, "otpSmsFallback") : "");
       if (data.demoCode) setDemoCode(String(data.demoCode));
@@ -96,6 +112,17 @@ export function RegisterForm({ locale }: { locale: Locale }) {
     setLoading(true);
 
     try {
+      let accessToken: string | undefined;
+      if (mode === "otp") {
+        try {
+          accessToken = await verifyOtpViaWidgetIfNeeded(formVal(fd, "otpCode"), widgetOtp);
+        } catch {
+          setLoading(false);
+          setError("Invalid or expired code");
+          return;
+        }
+      }
+
       const body =
         mode === "password"
           ? {
@@ -108,16 +135,27 @@ export function RegisterForm({ locale }: { locale: Locale }) {
               acceptTerms: true as const,
               ...(shopName ? { shopName } : {}),
             }
-          : {
-              authMethod: "otp" as const,
-              otpCode: formVal(fd, "otpCode"),
-              name,
-              phone,
-              deviceId: getOrCreateDeviceId(),
-              role,
-              acceptTerms: true as const,
-              ...(shopName ? { shopName } : {}),
-            };
+          : accessToken
+            ? {
+                authMethod: "otp" as const,
+                accessToken,
+                name,
+                phone,
+                deviceId: getOrCreateDeviceId(),
+                role,
+                acceptTerms: true as const,
+                ...(shopName ? { shopName } : {}),
+              }
+            : {
+                authMethod: "otp" as const,
+                otpCode: formVal(fd, "otpCode"),
+                name,
+                phone,
+                deviceId: getOrCreateDeviceId(),
+                role,
+                acceptTerms: true as const,
+                ...(shopName ? { shopName } : {}),
+              };
 
       const res = await fetch("/api/auth/register", {
         method: "POST",

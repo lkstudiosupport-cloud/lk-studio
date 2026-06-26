@@ -118,6 +118,14 @@ Run on a device/emulator from Android Studio.
    ```
    Output: **`LK-Studio-release.aab`** — upload to Google Play Console.
 
+For sideload testing with the **same release build** (R8, signing, version) as the AAB:
+
+```powershell
+npm.cmd run build:apk:release
+```
+
+Output: **`LK-Studio-release.apk`**
+
 See [PLAY-STORE-CHECKLIST.md](./PLAY-STORE-CHECKLIST.md) and [play-store/ASSETS.md](./play-store/ASSETS.md) for listing assets and privacy URL.
 
 ---

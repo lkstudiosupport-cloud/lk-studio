@@ -94,6 +94,22 @@ async function sendMsg91LoginOtp(
   throw new Error("MSG91 SMS delivery failed");
 }
 
+const WIDGET_OTP_TTL_MS = 10 * 60 * 1000;
+
+/** MSG91 widget sends SMS in the browser; server only validates the account exists. */
+async function sendWidgetDelegatedLoginOtp(
+  e164Digits: string,
+  _role: UserRole
+): Promise<LoginOtpSendResult> {
+  return {
+    sent: true,
+    smsDelivered: true,
+    provider: "msg91-widget",
+    demoMode: false,
+    expiresAt: new Date(Date.now() + WIDGET_OTP_TTL_MS),
+  };
+}
+
 /** Send OTP via MSG91 Flow API (server SMS). Widget mode sends OTP on the client instead. */
 export async function sendLoginOtp(
   e164Digits: string,
@@ -101,6 +117,21 @@ export async function sendLoginOtp(
 ): Promise<LoginOtpSendResult> {
   if (isMsg91Configured()) {
     return sendMsg91LoginOtp(e164Digits, role);
+  }
+
+  if (isMsg91WidgetServerConfigured()) {
+    if (
+      isProduction() &&
+      !(
+        process.env.NEXT_PUBLIC_MSG91_WIDGET_ID?.trim() &&
+        process.env.NEXT_PUBLIC_MSG91_WIDGET_TOKEN?.trim()
+      )
+    ) {
+      throw new Error(
+        "Set NEXT_PUBLIC_MSG91_WIDGET_ID and NEXT_PUBLIC_MSG91_WIDGET_TOKEN on Render, then redeploy"
+      );
+    }
+    return sendWidgetDelegatedLoginOtp(e164Digits, role);
   }
 
   return sendLocalLoginOtp(e164Digits, role);

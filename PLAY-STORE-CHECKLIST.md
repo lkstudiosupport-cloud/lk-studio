@@ -4,6 +4,7 @@ Use this before submitting the Android app (Capacitor WebView shell).
 
 ## App binary
 
+- [ ] Bump `versionCode` in `scripts/android-version.properties` (must be higher than any upload already in Play Console)
 - [ ] Build a **signed release AAB** (not debug APK): `npm run build:aab:release`
 - [ ] Release build uses **R8** (code shrinking + obfuscation) — applied automatically by `scripts/patch-android-release.ps1`
 - [ ] Keystore created and backed up securely (see `keystore.properties.example`)

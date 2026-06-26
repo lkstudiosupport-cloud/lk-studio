@@ -122,6 +122,6 @@ On a **release or share APK** connected to production:
 
 ## 5. Version updates (after first Play release)
 
-1. Bump `versionCode` and `versionName` in `scripts/patch-android-release.ps1` (or edit `android/app/build.gradle`).
+1. Bump `versionCode` (required) and `versionName` in `scripts/android-version.properties` — e.g. `versionCode=3`, `versionName=1.0.2`.
 2. `git push origin main` (server updates automatically).
 3. `npm run build:aab:release` and upload new AAB to Play Console.
