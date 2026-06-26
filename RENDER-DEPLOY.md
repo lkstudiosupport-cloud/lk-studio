@@ -115,8 +115,10 @@ npm run db:seed
 | `RAZORPAY_WEBHOOK_SECRET` | If webhooks | Razorpay webhook signing secret |
 | `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Database / storage | Supabase API keys |
 | `MSG91_AUTH_KEY` | **Production OTP** | Server-only; verifies widget `access-token` |
-| `NEXT_PUBLIC_MSG91_WIDGET_ID` | **MSG91 Widget** | From MSG91 OTP widget settings |
-| `NEXT_PUBLIC_MSG91_WIDGET_TOKEN` | **MSG91 Widget** | Widget auth token (not authkey) |
+| `MSG91_WIDGET_ID` | **Production OTP** | Widget ID — **runtime env** (required for server OTP send) |
+| `MSG91_WIDGET_TOKEN` | **Production OTP** | Widget auth token — **runtime env** (required for server OTP send) |
+| `NEXT_PUBLIC_MSG91_WIDGET_ID` | Optional | Same as `MSG91_WIDGET_ID` if you need browser widget fallback |
+| `NEXT_PUBLIC_MSG91_WIDGET_TOKEN` | Optional | Same as `MSG91_WIDGET_TOKEN` if you need browser widget fallback |
 | `MSG91_TEMPLATE_ID` | Optional | Server Flow SMS if not using widget |
 | `MSG91_OTP_VARIABLE` | Optional | Template variable name (default `OTP`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Optional | Server-only; never expose in client |
@@ -129,11 +131,13 @@ npm run db:seed
 
 1. MSG91 Dashboard → **OTP** → create **Widget** → copy **Widget ID** and **Auth Token**
 2. MSG91 → **API** → copy **Authkey** (server only)
-3. On Render:
-   - `NEXT_PUBLIC_MSG91_WIDGET_ID` = widget ID
-   - `NEXT_PUBLIC_MSG91_WIDGET_TOKEN` = widget token
+3. On Render (all required for OTP login in the Android app):
+   - `MSG91_WIDGET_ID` = widget ID
+   - `MSG91_WIDGET_TOKEN` = widget token
    - `MSG91_AUTH_KEY` = authkey
-4. Redeploy. Login/register sends OTP via MSG91 widget; your server calls `verifyAccessToken` with the JWT.
+4. Redeploy. The server sends OTP via MSG91 widget API (no browser script — works in Capacitor WebView).
+
+`NEXT_PUBLIC_MSG91_*` alone is **not enough**: Next.js inlines those at build time. Use `MSG91_WIDGET_ID` / `MSG91_WIDGET_TOKEN` so Render can read them at runtime.
 
 **Alternative — server Flow API** (no widget): set `MSG91_AUTH_KEY` + `MSG91_TEMPLATE_ID` instead of widget public vars.
 

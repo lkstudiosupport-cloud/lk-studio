@@ -18,14 +18,23 @@ import {
   verifyMsg91WidgetAccessToken,
 } from "@/lib/msg91-widget";
 import {
+  isMsg91WidgetRuntimeConfigured,
   isMsg91WidgetServerSendConfigured,
+  otpConfigStatus,
+} from "@/lib/msg91-config";
+import {
   sendMsg91WidgetOtpMobile,
   verifyMsg91WidgetOtpMobile,
 } from "@/lib/msg91-widget-server";
 import { allowDemoOtpOnScreen, isProduction } from "@/lib/production";
 import { isDemoPhoneE164 } from "@/lib/demo-accounts";
 
-export { isMsg91Configured, msg91OtpConfigError, isMsg91WidgetServerConfigured };
+export {
+  isMsg91Configured,
+  msg91OtpConfigError,
+  isMsg91WidgetServerConfigured,
+  otpConfigStatus,
+};
 
 export type OtpProvider = "msg91" | "msg91-widget" | "local";
 
@@ -53,10 +62,16 @@ async function sendLocalLoginOtp(
   const showCode = canShowOtpCodeOnScreen(e164Digits);
 
   if (isProduction() && !showCode) {
+    const status = otpConfigStatus();
+    if (status.authKey && !status.widgetSend && !status.flowApi) {
+      throw new Error(
+        "Set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render (server runtime env), then redeploy"
+      );
+    }
     throw new Error(
       msg91OtpConfigError() ??
-        (isMsg91WidgetServerSendConfigured()
-          ? "MSG91 widget OTP is not configured"
+        (status.widgetSend && !isMsg91WidgetRuntimeConfigured()
+          ? "Set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render (not only NEXT_PUBLIC_*), then redeploy"
           : "MSG91 OTP is not configured")
     );
   }
@@ -112,7 +127,12 @@ async function sendMsg91WidgetServerLoginOtp(
 ): Promise<LoginOtpSendResult> {
   const reqId = await sendMsg91WidgetOtpMobile(e164Digits);
   if (!reqId) {
-    throw new Error("MSG91 widget SMS delivery failed");
+    if (isProduction() && !isMsg91WidgetRuntimeConfigured()) {
+      throw new Error(
+        "MSG91 widget credentials missing at runtime — set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render, then redeploy"
+      );
+    }
+    throw new Error("MSG91 widget SMS delivery failed — check widget token, SMS credits, and DLT template in MSG91 dashboard");
   }
 
   const expiresAt = await storeMsg91WidgetReqId(e164Digits, role, reqId);
