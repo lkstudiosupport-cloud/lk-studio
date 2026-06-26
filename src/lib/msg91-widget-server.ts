@@ -1,6 +1,5 @@
 import {
   isMsg91WidgetServerSendConfigured,
-  msg91AuthKey,
   msg91WidgetIdServer,
   msg91WidgetTokenServer,
 } from "@/lib/msg91-config";
@@ -91,17 +90,14 @@ export async function sendMsg91WidgetOtpMobileDetailed(e164Digits: string): Prom
   if (!id || !token) return { ok: false, error: "Widget ID or token not configured" };
 
   const identifier = formatMsg91Mobile(e164Digits);
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
-  const authKey = msg91AuthKey();
-  if (authKey) headers.authkey = authKey;
 
   try {
     const res = await fetch("https://control.msg91.com/api/v5/widget/sendOtpMobile", {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify({
         widgetId: id,
         tokenAuth: token,
@@ -142,17 +138,13 @@ export async function verifyMsg91WidgetOtpMobile(
   const token = msg91WidgetTokenServer();
   if (!id || !token) return null;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
-  const authKey = msg91AuthKey();
-  if (authKey) headers.authkey = authKey;
-
   try {
     const res = await fetch("https://control.msg91.com/api/v5/widget/verifyOtp", {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify({
         widgetId: id,
         tokenAuth: token,
