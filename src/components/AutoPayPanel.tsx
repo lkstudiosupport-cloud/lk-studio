@@ -2,13 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CreditCard, ShieldCheck } from "lucide-react";
+import { ShieldCheck, Smartphone } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { AutopayRole } from "@/lib/subscription-autopay";
 import { TRIAL_MANDATE_AUTH_INR } from "@/lib/subscription";
 import { enableAutopayDemo } from "@/app/subscription-autopay-actions";
 import { readApiJson } from "@/lib/api-json";
+import { razorpayUpiCheckoutOptions } from "@/lib/razorpay-checkout";
 
 function loadRazorpayScript() {
   return new Promise<boolean>((resolve) => {
@@ -121,6 +122,7 @@ export function AutoPayPanel({
             : t(locale, "autopayDescription", { amount: amountInr }),
           prefill: { name: payeeLabel },
           theme: { color: "#1b3022" },
+          ...razorpayUpiCheckoutOptions(),
           handler: async (response: unknown) => {
             const r = response as {
               razorpay_payment_id: string;
@@ -209,7 +211,7 @@ export function AutoPayPanel({
           onClick={() => void startAutopay()}
           className="btn-primary inline-flex w-full items-center justify-center gap-2 py-3 disabled:opacity-60"
         >
-          <CreditCard className="h-4 w-4" />
+          <Smartphone className="h-4 w-4" aria-hidden />
           {busy
             ? t(locale, "autopayStarting")
             : onboarding
