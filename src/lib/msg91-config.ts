@@ -38,18 +38,35 @@ export type Msg91WidgetProbe = {
   error?: string;
   /** Template ID from widget config, if MSG91 returns one (Flow API fallback). */
   templateId?: string;
+  /** Top-level keys returned by getWidgetProcess (for dashboard debugging). */
+  processKeys?: string[];
 };
 
 function templateIdFromWidgetProcess(data: Record<string, unknown>): string | undefined {
+  const nested =
+    data.data && typeof data.data === "object"
+      ? (data.data as Record<string, unknown>)
+      : undefined;
+  const process =
+    nested?.process && typeof nested.process === "object"
+      ? (nested.process as Record<string, unknown>)
+      : undefined;
+
   const candidates = [
     data.template_id,
     data.templateId,
     data.dlt_template_id,
-    (data.data as Record<string, unknown> | undefined)?.template_id,
-    (data.data as Record<string, unknown> | undefined)?.templateId,
+    nested?.template_id,
+    nested?.templateId,
+    nested?.dlt_template_id,
+    process?.template_id,
+    process?.templateId,
+    process?.dlt_template_id,
+    process?.sms_template_id,
   ];
   for (const c of candidates) {
     if (typeof c === "string" && c.trim().length > 0) return c.trim();
+    if (typeof c === "number") return String(c);
   }
   return undefined;
 }
@@ -76,14 +93,16 @@ export async function probeMsg91Widget(): Promise<Msg91WidgetProbe | null> {
     }
 
     const templateId = templateIdFromWidgetProcess(data);
+    const processKeys = Object.keys(data).slice(0, 20);
 
     if (data.type === "success" || res.ok) {
-      return { ok: true, ...(templateId ? { templateId } : {}) };
+      return { ok: true, ...(templateId ? { templateId } : {}), processKeys };
     }
     return {
       ok: false,
       error: typeof data.message === "string" ? data.message : `HTTP ${res.status}`,
       ...(templateId ? { templateId } : {}),
+      processKeys,
     };
   } catch (err) {
     return {
