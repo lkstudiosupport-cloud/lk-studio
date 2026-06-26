@@ -1,20 +1,34 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES } from "@/lib/categories";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
-import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
-import { categoryHasSizeTiers } from "@/lib/design-size-tier";
+import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
+import {
+  categoryHasSizeTiers,
+  defaultSizeTierForCategory,
+} from "@/lib/design-size-tier";
 import { isSortedCatalogDesign } from "@/lib/catalog-design-sort";
 import type { DesignListItem } from "@/lib/design-queries";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { CatalogPartButtons } from "@/components/CatalogPartButtons";
 import { withQueryParam } from "@/lib/query-string";
+
+function catalogUrl(
+  category: ServiceCategory,
+  sizeTier?: DesignSizeTier,
+  catalogPart?: CatalogPart
+): string {
+  let url = withQueryParam("/customer/designs", "category", category);
+  if (sizeTier) url = withQueryParam(url, "size", sizeTier);
+  if (catalogPart) url = withQueryParam(url, "part", catalogPart);
+  return url;
+}
 
 export function CustomerCatalogPanel({
   locale,
@@ -29,22 +43,25 @@ export function CustomerCatalogPanel({
   designs: DesignListItem[];
   favoriteDesignIds: string[];
   priceShopId?: string;
-  initialCategory?: ServiceCategory;
+  initialCategory: ServiceCategory;
   initialSizeTier?: DesignSizeTier;
   initialCatalogPart?: CatalogPart;
 }) {
   const tabs = CATEGORIES.filter((c) => CATALOG_CATEGORIES.includes(c.key));
-  const [category, setCategory] = useState<ServiceCategory | undefined>(initialCategory);
-  const [sizeTier, setSizeTier] = useState<DesignSizeTier | undefined>(initialSizeTier);
-  const [catalogPart, setCatalogPart] = useState<CatalogPart | undefined>(initialCatalogPart);
+  const [category, setCategory] = useState<ServiceCategory>(initialCategory);
+  const [sizeTier, setSizeTier] = useState<DesignSizeTier | undefined>(
+    initialSizeTier ?? defaultSizeTierForCategory(initialCategory)
+  );
+  const [catalogPart, setCatalogPart] = useState<CatalogPart | undefined>(
+    initialCatalogPart ?? defaultCatalogPartForCategory(initialCategory)
+  );
 
   const favorites = useMemo(() => new Set(favoriteDesignIds), [favoriteDesignIds]);
-  const hasSizeTiers = category ? categoryHasSizeTiers(category) : false;
-  const hasCatalogParts = category ? categoryHasCatalogParts(category) : false;
+  const hasSizeTiers = categoryHasSizeTiers(category);
+  const hasCatalogParts = categoryHasCatalogParts(category);
   const needsSubgroup = hasSizeTiers || hasCatalogParts;
 
   const categoryDesigns = useMemo(() => {
-    if (!category) return [];
     let list = designs.filter((d) => d.category === category && isSortedCatalogDesign(d, category));
     if (hasSizeTiers) {
       if (!sizeTier) return [];
@@ -57,34 +74,33 @@ export function CustomerCatalogPanel({
     return list;
   }, [designs, category, hasSizeTiers, hasCatalogParts, sizeTier, catalogPart]);
 
+  const prevCategory = useRef(initialCategory);
+
+  useEffect(() => {
+    if (prevCategory.current === category) return;
+    prevCategory.current = category;
+    setSizeTier(defaultSizeTierForCategory(category));
+    setCatalogPart(defaultCatalogPartForCategory(category));
+  }, [category]);
+
+  useEffect(() => {
+    window.history.replaceState(null, "", catalogUrl(category, sizeTier, catalogPart));
+  }, [category, sizeTier, catalogPart]);
+
   function pickCategory(next: ServiceCategory) {
     setCategory(next);
-    setSizeTier(undefined);
-    setCatalogPart(undefined);
-    window.history.replaceState(null, "", withQueryParam("/customer/designs", "category", next));
   }
 
   function pickSizeTier(next: DesignSizeTier) {
     setSizeTier(next);
-    if (!category) return;
-    window.history.replaceState(
-      null,
-      "",
-      withQueryParam(withQueryParam("/customer/designs", "category", category), "size", next)
-    );
   }
 
   function pickCatalogPart(next: CatalogPart) {
     setCatalogPart(next);
-    if (!category) return;
-    window.history.replaceState(
-      null,
-      "",
-      withQueryParam(withQueryParam("/customer/designs", "category", category), "part", next)
-    );
   }
 
-  const subgroupReady = !needsSubgroup || (hasSizeTiers && sizeTier) || (hasCatalogParts && catalogPart);
+  const subgroupReady =
+    !needsSubgroup || (hasSizeTiers && sizeTier) || (hasCatalogParts && catalogPart);
 
   return (
     <div className="space-y-6">
@@ -107,12 +123,6 @@ export function CustomerCatalogPanel({
         ))}
       </div>
 
-      {!category && (
-        <p className="card-premium p-6 text-center text-sm text-zinc-600">
-          {t(locale, "customerPickCategoryHint")}
-        </p>
-      )}
-
       {category && !priceShopId && (
         <p className="card-premium p-4 text-sm text-zinc-600">
           {t(locale, "pickShopForFavorites")}{" "}
@@ -123,30 +133,16 @@ export function CustomerCatalogPanel({
       )}
 
       {category && hasSizeTiers && (
-        <div className="space-y-2">
-          <SizeTierButtons locale={locale} active={sizeTier} onPick={pickSizeTier} />
-          {!sizeTier && (
-            <p className="card-premium p-4 text-center text-sm text-zinc-600">
-              {t(locale, "customerPickSizeTierHint")}
-            </p>
-          )}
-        </div>
+        <SizeTierButtons locale={locale} active={sizeTier} onPick={pickSizeTier} />
       )}
 
       {category && hasCatalogParts && (
-        <div className="space-y-2">
-          <CatalogPartButtons
-            locale={locale}
-            category={category}
-            active={catalogPart}
-            onPick={pickCatalogPart}
-          />
-          {!catalogPart && (
-            <p className="card-premium p-4 text-center text-sm text-zinc-600">
-              {t(locale, "customerPickCatalogPartHint")}
-            </p>
-          )}
-        </div>
+        <CatalogPartButtons
+          locale={locale}
+          category={category}
+          active={catalogPart}
+          onPick={pickCatalogPart}
+        />
       )}
 
       {category && subgroupReady && (

@@ -6,12 +6,11 @@ import { CustomerCatalogPanel } from "@/components/CustomerCatalogPanel";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { isShopActive } from "@/lib/subscription";
 import {
-  CATALOG_CATEGORIES,
   isCatalogCategory,
   shopStitchedDesignsWhere,
 } from "@/lib/design-access";
-import { categoryHasSizeTiers } from "@/lib/design-size-tier";
-import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
+import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
+import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
 import { cachedAppCatalogDesigns } from "@/lib/cached-catalog-designs";
 import { DESIGN_CARD_SELECT } from "@/lib/design-queries";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
@@ -140,16 +139,22 @@ export default async function CustomerDesignsPage({
   }
 
   const rawCategory = params.category as ServiceCategory | undefined;
-  const category =
-    rawCategory && isCatalogCategory(rawCategory) ? rawCategory : undefined;
+  const category: ServiceCategory =
+    rawCategory && isCatalogCategory(rawCategory) ? rawCategory : "MAGGAM";
   const rawSize = params.size?.toUpperCase();
-  const initialSizeTier =
+  const sizeFromParams =
     rawSize === "SMALL" || rawSize === "MEDIUM" || rawSize === "BIG"
       ? (rawSize as DesignSizeTier)
       : undefined;
+  const initialSizeTier = categoryHasSizeTiers(category)
+    ? sizeFromParams ?? defaultSizeTierForCategory(category)
+    : undefined;
   const rawPart = params.part?.toUpperCase();
-  const initialCatalogPart =
+  const partFromParams =
     rawPart === "MAIN" || rawPart === "HAND_SLEEVES" ? (rawPart as CatalogPart) : undefined;
+  const initialCatalogPart = categoryHasCatalogParts(category)
+    ? partFromParams ?? defaultCatalogPartForCategory(category)
+    : undefined;
   const shopIdParam = params.shopId?.trim();
 
   if (shopIdParam) {
@@ -185,13 +190,9 @@ export default async function CustomerDesignsPage({
       designs={designs}
       favoriteDesignIds={customerFavorites.map((f) => f.designId)}
       priceShopId={priceShopId}
-      initialCategory={category && CATALOG_CATEGORIES.includes(category) ? category : undefined}
-      initialSizeTier={
-        category && categoryHasSizeTiers(category) ? initialSizeTier : undefined
-      }
-      initialCatalogPart={
-        category && categoryHasCatalogParts(category) ? initialCatalogPart : undefined
-      }
+      initialCategory={category}
+      initialSizeTier={initialSizeTier}
+      initialCatalogPart={initialCatalogPart}
     />
   );
 }
