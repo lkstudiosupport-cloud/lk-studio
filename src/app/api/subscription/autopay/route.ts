@@ -13,6 +13,7 @@ import {
   razorpayKeyId,
 } from "@/lib/razorpay-subscription";
 import { RAZORPAY_MANDATE_AUTH_PAISE } from "@/lib/razorpay-config";
+import { formatRazorpayContact } from "@/lib/razorpay-checkout";
 
 async function payerForRole(role: AutopayRole, session: { id: string; email: string; shopId?: string }) {
   if (role === "SHOP") {
@@ -90,6 +91,9 @@ export async function POST(req: Request) {
         ok: true,
         keyId: razorpayKeyId(),
         subscriptionId: payer.existingSubscriptionId,
+        customerId: payer.existingCustomerId ?? undefined,
+        payerEmail: payer.email,
+        payerContact: formatRazorpayContact(payer.contact),
         alreadyActive: true,
       });
     }
@@ -163,6 +167,9 @@ export async function POST(req: Request) {
       ok: true,
       keyId: razorpayKeyId(),
       subscriptionId: subscription.id,
+      customerId,
+      payerEmail: payer.email,
+      payerContact: formatRazorpayContact(payer.contact),
       trialActive: Boolean(trialBillingStart),
       mandateAuthInr: trialBillingStart ? RAZORPAY_MANDATE_AUTH_PAISE / 100 : null,
       billingStartsAt: trialBillingStart?.toISOString() ?? null,

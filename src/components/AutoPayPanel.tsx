@@ -93,11 +93,14 @@ export function AutoPayPanel({
         error?: string;
         keyId?: string;
         subscriptionId?: string;
+        customerId?: string;
+        payerEmail?: string;
+        payerContact?: string;
         trialActive?: boolean;
         mandateAuthInr?: number;
       }>(res);
       if (!res.ok) throw new Error(data.error ?? "Could not start autopay");
-      if (!data.keyId || !data.subscriptionId) {
+      if (!data.keyId || !data.subscriptionId || !data.customerId) {
         throw new Error(data.error ?? "Could not start autopay");
       }
 
@@ -113,6 +116,7 @@ export function AutoPayPanel({
         const rzp = new window.Razorpay!({
           key: data.keyId,
           subscription_id: data.subscriptionId,
+          customer_id: data.customerId,
           name: t(locale, "appName"),
           description: checkoutInTrial
             ? t(locale, "autopayDescriptionTrial", {
@@ -120,7 +124,11 @@ export function AutoPayPanel({
                 monthly: amountInr,
               })
             : t(locale, "autopayDescription", { amount: amountInr }),
-          prefill: { name: payeeLabel },
+          prefill: {
+            name: payeeLabel,
+            email: data.payerEmail,
+            contact: data.payerContact,
+          },
           theme: { color: "#1b3022" },
           ...razorpayUpiCheckoutOptions(),
           handler: async (response: unknown) => {

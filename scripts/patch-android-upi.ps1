@@ -4,7 +4,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $manifest = Join-Path $root "android\app\src\main\AndroidManifest.xml"
 
 if (-not (Test-Path $manifest)) {
-    Write-Host "Skip UPI manifest patch — android\app\src\main\AndroidManifest.xml not found (run: npx cap add android)"
+    Write-Host 'Skip UPI manifest patch - android app manifest not found (run: npx cap add android)'
     exit 0
 }
 
