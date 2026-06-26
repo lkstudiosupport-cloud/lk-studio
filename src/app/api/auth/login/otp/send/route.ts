@@ -59,6 +59,10 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("OTP send error:", err);
-    return NextResponse.json({ errorKey: "otpSendFailed" }, { status: 500 });
+    const detail = err instanceof Error ? err.message.slice(0, 200) : undefined;
+    return NextResponse.json(
+      { errorKey: "otpSendFailed", ...(detail ? { detail } : {}) },
+      { status: 500 }
+    );
   }
 }
