@@ -11,6 +11,7 @@ import {
   isMsg91Configured,
   msg91OtpConfigError,
   sendMsg91Otp,
+  sendMsg91OtpV5,
 } from "@/lib/msg91-sms";
 import {
   isMsg91WidgetServerConfigured,
@@ -21,9 +22,10 @@ import {
   isMsg91WidgetRuntimeConfigured,
   isMsg91WidgetServerSendConfigured,
   otpConfigStatus,
+  probeMsg91Widget,
 } from "@/lib/msg91-config";
 import {
-  sendMsg91WidgetOtpMobile,
+  sendMsg91WidgetOtpMobileDetailed,
   verifyMsg91WidgetOtpMobile,
 } from "@/lib/msg91-widget-server";
 import { allowDemoOtpOnScreen, isProduction } from "@/lib/production";
@@ -125,24 +127,49 @@ async function sendMsg91WidgetServerLoginOtp(
   e164Digits: string,
   role: UserRole
 ): Promise<LoginOtpSendResult> {
-  const reqId = await sendMsg91WidgetOtpMobile(e164Digits);
-  if (!reqId) {
-    if (isProduction() && !isMsg91WidgetRuntimeConfigured()) {
-      throw new Error(
-        "MSG91 widget credentials missing at runtime — set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render, then redeploy"
-      );
-    }
-    throw new Error("MSG91 widget SMS delivery failed — check widget token, SMS credits, and DLT template in MSG91 dashboard");
+  const widgetResult = await sendMsg91WidgetOtpMobileDetailed(e164Digits);
+  if (widgetResult.ok) {
+    const expiresAt = await storeMsg91WidgetReqId(e164Digits, role, widgetResult.reqId);
+    return {
+      sent: true,
+      smsDelivered: true,
+      provider: "msg91-widget",
+      demoMode: false,
+      expiresAt,
+    };
   }
 
-  const expiresAt = await storeMsg91WidgetReqId(e164Digits, role, reqId);
-  return {
-    sent: true,
-    smsDelivered: true,
-    provider: "msg91-widget",
-    demoMode: false,
-    expiresAt,
-  };
+  console.error("MSG91 widget sendOtpMobile failed:", widgetResult.error);
+
+  // Fallback: v5 OTP API when widget SMS fails but authkey + template exist.
+  const code = generateOtpCode();
+  const expiresAt = await storeLoginOtp(e164Digits, role, code);
+  let templateId = process.env.MSG91_TEMPLATE_ID?.trim();
+  if (!templateId) {
+    const probe = await probeMsg91Widget();
+    templateId = probe?.templateId;
+  }
+
+  if (templateId && (await sendMsg91OtpV5(e164Digits, code, templateId))) {
+    return {
+      sent: true,
+      smsDelivered: true,
+      provider: "msg91",
+      demoMode: false,
+      expiresAt,
+    };
+  }
+
+  if (isProduction() && !isMsg91WidgetRuntimeConfigured()) {
+    throw new Error(
+      "MSG91 widget credentials missing at runtime — set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render, then redeploy"
+    );
+  }
+
+  throw new Error(
+    widgetResult.error ||
+      "MSG91 widget SMS delivery failed — check widget token, SMS credits, and DLT template in MSG91 dashboard"
+  );
 }
 
 /** Send OTP via MSG91 Flow API or widget server API. */

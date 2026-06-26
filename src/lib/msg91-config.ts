@@ -36,7 +36,23 @@ export function isMsg91WidgetRuntimeConfigured(): boolean {
 export type Msg91WidgetProbe = {
   ok: boolean;
   error?: string;
+  /** Template ID from widget config, if MSG91 returns one (Flow API fallback). */
+  templateId?: string;
 };
+
+function templateIdFromWidgetProcess(data: Record<string, unknown>): string | undefined {
+  const candidates = [
+    data.template_id,
+    data.templateId,
+    data.dlt_template_id,
+    (data.data as Record<string, unknown> | undefined)?.template_id,
+    (data.data as Record<string, unknown> | undefined)?.templateId,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim().length > 0) return c.trim();
+  }
+  return undefined;
+}
 
 /** Validate widget ID + token against MSG91 (no SMS sent). */
 export async function probeMsg91Widget(): Promise<Msg91WidgetProbe | null> {
@@ -52,17 +68,22 @@ export async function probeMsg91Widget(): Promise<Msg91WidgetProbe | null> {
       headers: { Accept: "application/json" },
     });
     const text = await res.text();
-    let data: { type?: string; message?: string } = {};
+    let data: Record<string, unknown> = {};
     try {
-      data = JSON.parse(text) as { type?: string; message?: string };
+      data = JSON.parse(text) as Record<string, unknown>;
     } catch {
       /* ignore */
     }
 
-    if (data.type === "success" || res.ok) return { ok: true };
+    const templateId = templateIdFromWidgetProcess(data);
+
+    if (data.type === "success" || res.ok) {
+      return { ok: true, ...(templateId ? { templateId } : {}) };
+    }
     return {
       ok: false,
       error: typeof data.message === "string" ? data.message : `HTTP ${res.status}`,
+      ...(templateId ? { templateId } : {}),
     };
   } catch (err) {
     return {

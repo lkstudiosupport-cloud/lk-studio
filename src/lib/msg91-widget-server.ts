@@ -1,17 +1,19 @@
 import {
   isMsg91WidgetServerSendConfigured,
+  msg91AuthKey,
   msg91WidgetIdServer,
   msg91WidgetTokenServer,
 } from "@/lib/msg91-config";
 import { formatMsg91Mobile } from "@/lib/msg91-sms";
 
-export { isMsg91WidgetServerSendConfigured };
+type SendResult = { ok: true; reqId: string } | { ok: false; error: string };
 
 type Msg91WidgetResponse = {
   type?: string;
   message?: string;
   reqId?: string;
   request_id?: string;
+  requestId?: string;
   ["access-token"]?: string;
   accessToken?: string;
   data?: Record<string, unknown>;
@@ -35,8 +37,10 @@ function reqIdFrom(data: Msg91WidgetResponse): string | null {
   const candidates: unknown[] = [
     data.reqId,
     data.request_id,
-    nested && typeof nested === "object" ? nested.reqId : undefined,
-    nested && typeof nested === "object" ? nested.request_id : undefined,
+    data.requestId,
+    nested?.reqId,
+    nested?.request_id,
+    nested?.requestId,
   ];
 
   for (const c of candidates) {
@@ -56,8 +60,8 @@ function accessTokenFrom(data: Msg91WidgetResponse): string | null {
   const candidates: unknown[] = [
     data["access-token"],
     data.accessToken,
-    nested && typeof nested === "object" ? nested["access-token"] : undefined,
-    nested && typeof nested === "object" ? nested.accessToken : undefined,
+    nested?.["access-token"],
+    nested?.accessToken,
   ];
 
   for (const c of candidates) {
@@ -67,26 +71,37 @@ function accessTokenFrom(data: Msg91WidgetResponse): string | null {
   return null;
 }
 
-function widgetFailed(data: Msg91WidgetResponse, text: string, context: string): null {
-  console.error(`MSG91 widget ${context} failed:`, data, text);
-  return null;
+function msg91Error(data: Msg91WidgetResponse, text: string, httpStatus: number): string {
+  if (typeof data.message === "string" && data.message.trim()) return data.message.trim();
+  if (httpStatus >= 400) return `MSG91 HTTP ${httpStatus}`;
+  return text.slice(0, 200) || "MSG91 widget request failed";
 }
 
 /** Send OTP via MSG91 widget server API (works in Capacitor WebView — no browser script). */
 export async function sendMsg91WidgetOtpMobile(e164Digits: string): Promise<string | null> {
+  const result = await sendMsg91WidgetOtpMobileDetailed(e164Digits);
+  if (result.ok) return result.reqId;
+  console.error("MSG91 widget sendOtpMobile:", result.error);
+  return null;
+}
+
+export async function sendMsg91WidgetOtpMobileDetailed(e164Digits: string): Promise<SendResult> {
   const id = msg91WidgetIdServer();
   const token = msg91WidgetTokenServer();
-  if (!id || !token) return null;
+  if (!id || !token) return { ok: false, error: "Widget ID or token not configured" };
 
   const identifier = formatMsg91Mobile(e164Digits);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  const authKey = msg91AuthKey();
+  if (authKey) headers.authkey = authKey;
 
   try {
     const res = await fetch("https://control.msg91.com/api/v5/widget/sendOtpMobile", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers,
       body: JSON.stringify({
         widgetId: id,
         tokenAuth: token,
@@ -98,23 +113,23 @@ export async function sendMsg91WidgetOtpMobile(e164Digits: string): Promise<stri
     const data = parseJson(text);
 
     if (data.type && data.type !== "success") {
-      return widgetFailed(data, text, "sendOtpMobile");
+      return { ok: false, error: msg91Error(data, text, res.status) };
     }
 
     const reqId = reqIdFrom(data);
     if (!reqId) {
-      if (!res.ok) {
-        console.error("MSG91 widget sendOtpMobile HTTP error:", res.status, data, text);
-      } else {
-        console.error("MSG91 widget sendOtpMobile: missing reqId", data, text);
-      }
-      return null;
+      return {
+        ok: false,
+        error: msg91Error(data, text, res.status) || "Missing reqId in MSG91 response",
+      };
     }
 
-    return reqId;
+    return { ok: true, reqId };
   } catch (err) {
-    console.error("MSG91 widget sendOtpMobile request error:", err);
-    return null;
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "MSG91 widget request error",
+    };
   }
 }
 
@@ -127,13 +142,17 @@ export async function verifyMsg91WidgetOtpMobile(
   const token = msg91WidgetTokenServer();
   if (!id || !token) return null;
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  const authKey = msg91AuthKey();
+  if (authKey) headers.authkey = authKey;
+
   try {
     const res = await fetch("https://control.msg91.com/api/v5/widget/verifyOtp", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers,
       body: JSON.stringify({
         widgetId: id,
         tokenAuth: token,
@@ -146,16 +165,13 @@ export async function verifyMsg91WidgetOtpMobile(
     const data = parseJson(text);
 
     if (data.type && data.type !== "success") {
-      return widgetFailed(data, text, "verifyOtp");
+      console.error("MSG91 widget verifyOtp failed:", data, text);
+      return null;
     }
 
     const accessToken = accessTokenFrom(data);
     if (!accessToken) {
-      if (!res.ok) {
-        console.error("MSG91 widget verifyOtp HTTP error:", res.status, data, text);
-      } else {
-        console.error("MSG91 widget verifyOtp: missing access token", data, text);
-      }
+      console.error("MSG91 widget verifyOtp: missing access token", data, text);
       return null;
     }
 
@@ -165,3 +181,5 @@ export async function verifyMsg91WidgetOtpMobile(
     return null;
   }
 }
+
+export { isMsg91WidgetServerSendConfigured } from "@/lib/msg91-config";

@@ -38,6 +38,50 @@ type Msg91FlowResponse = {
   request_id?: string;
 };
 
+/** Send a 6-digit OTP via MSG91 v5 OTP API (DLT template + authkey). */
+export async function sendMsg91OtpV5(
+  e164Digits: string,
+  code: string,
+  templateIdOverride?: string
+): Promise<boolean> {
+  const key = authKey();
+  const tpl = templateIdOverride?.trim() || templateId();
+  if (!key || !tpl) return false;
+
+  const mobile = formatMsg91Mobile(e164Digits);
+
+  try {
+    const res = await fetch("https://control.msg91.com/api/v5/otp", {
+      method: "POST",
+      headers: {
+        authkey: key,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        template_id: tpl,
+        mobile,
+        otp: code,
+      }),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as Msg91FlowResponse;
+
+    if (!res.ok) {
+      console.error("MSG91 v5 OTP HTTP error:", res.status, data);
+      return false;
+    }
+
+    if (data.type === "success") return true;
+
+    console.error("MSG91 v5 OTP send failed:", data.message ?? data);
+    return false;
+  } catch (err) {
+    console.error("MSG91 v5 OTP request error:", err);
+    return false;
+  }
+}
+
 /** Send a 6-digit OTP via MSG91 Flow API (DLT template). */
 export async function sendMsg91Otp(e164Digits: string, code: string): Promise<boolean> {
   const key = authKey();
