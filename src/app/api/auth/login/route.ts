@@ -3,12 +3,10 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { findUserByPhone } from "@/lib/auth-user";
-import { finishLogin, finishTrustedPasswordLogin } from "@/lib/login-session";
-import { isDemoPhone } from "@/lib/demo-accounts";
+import { finishLogin } from "@/lib/login-session";
 import { isValidPhone, INVALID_PHONE_MESSAGE } from "@/lib/phone";
 import { zodErrorMessage, formString, formOptionalString, formOptionalNumber } from "@/lib/zod-error-message";
 import { deviceIdSchema, requestUserAgent } from "@/lib/auth-device";
-import { isDeviceTrusted } from "@/lib/trusted-device";
 
 const schema = z.object({
   phone: formString(1),
@@ -60,37 +58,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    if (role === "ADMIN" || isDemoPhone(phone)) {
-      const redirect = await finishLogin(
-        user,
-        role,
-        { latitude, longitude, address, locationLink },
-        {
-          bumpSession: true,
-          trustDevice: { deviceId, userAgent: requestUserAgent(req) },
-        }
-      );
-      return NextResponse.json({ ok: true, redirect });
-    }
-
-    const trusted = await isDeviceTrusted(user.id, deviceId);
-    if (!trusted) {
-      return NextResponse.json({ requireOtp: true });
-    }
-
-    const redirect = await finishTrustedPasswordLogin(
+    const redirect = await finishLogin(
       user,
       role,
-      deviceId,
+      { latitude, longitude, address, locationLink },
       {
-        latitude,
-        longitude,
-        address,
-        locationLink,
-      },
-      requestUserAgent(req)
+        bumpSession: true,
+        trustDevice: { deviceId, userAgent: requestUserAgent(req) },
+      }
     );
-
     return NextResponse.json({ ok: true, redirect });
   } catch (err) {
     console.error("Login error:", err);

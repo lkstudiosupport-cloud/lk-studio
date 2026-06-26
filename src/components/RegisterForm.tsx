@@ -11,8 +11,6 @@ import { getOrCreateDeviceId } from "@/lib/device-id";
 import { TermsAcceptanceField } from "@/components/TermsAcceptanceField";
 import { SHOP_MONTHLY_PRICE_INR, CUSTOMER_MONTHLY_PRICE_INR } from "@/lib/subscription";
 
-type RegisterMode = "password" | "otp";
-
 function formVal(fd: FormData, key: string): string {
   const v = fd.get(key);
   return v == null ? "" : String(v);
@@ -22,61 +20,13 @@ export function RegisterForm({ locale }: { locale: Locale }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [role, setRole] = useState<"SHOP" | "CUSTOMER">("CUSTOMER");
-  const [mode, setMode] = useState<RegisterMode>("otp");
   const [phone, setPhone] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [demoCode, setDemoCode] = useState("");
-  const [otpInfo, setOtpInfo] = useState("");
-
-  function switchMode(next: RegisterMode) {
-    setMode(next);
-    setError("");
-    setOtpSent(false);
-    setDemoCode("");
-    setOtpInfo("");
-  }
 
   function switchRole(next: "SHOP" | "CUSTOMER") {
     setRole(next);
     setError("");
-    setOtpSent(false);
-    setDemoCode("");
-    setOtpInfo("");
-  }
-
-  async function sendOtp() {
-    if (!phone.trim()) return;
-    setLoading(true);
-    setError("");
-    setDemoCode("");
-
-    try {
-      const res = await fetch("/api/auth/register/otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, role }),
-      });
-      const data = await parseApiResponse(res);
-      setLoading(false);
-
-      if (!res.ok) {
-        const key = typeof data.errorKey === "string" ? data.errorKey : null;
-        const detail = typeof data.detail === "string" ? data.detail : null;
-        setError(
-          detail || (key ? t(locale, key) : String(data.error ?? "Could not send OTP"))
-        );
-        return;
-      }
-
-      setOtpSent(true);
-      setOtpInfo(data.smsDelivered === false ? t(locale, "otpSmsFallback") : "");
-      if (data.demoCode) setDemoCode(String(data.demoCode));
-    } catch {
-      setLoading(false);
-      setError("Cannot reach server. Keep mobile:dev running on PC.");
-    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -91,42 +41,23 @@ export function RegisterForm({ locale }: { locale: Locale }) {
     const name = formVal(fd, "name");
     const shopName = role === "SHOP" ? formVal(fd, "shopName") : undefined;
 
-    if (mode === "otp" && !otpSent) {
-      await sendOtp();
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const body =
-        mode === "password"
-          ? {
-              authMethod: "password" as const,
-              password: formVal(fd, "password"),
-              name,
-              phone,
-              deviceId: getOrCreateDeviceId(),
-              role,
-              acceptTerms: true as const,
-              ...(shopName ? { shopName } : {}),
-            }
-          : {
-              authMethod: "otp" as const,
-              otpCode: formVal(fd, "otpCode"),
-              name,
-              phone,
-              deviceId: getOrCreateDeviceId(),
-              role,
-              acceptTerms: true as const,
-              ...(shopName ? { shopName } : {}),
-            };
-
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          authMethod: "password",
+          password: formVal(fd, "password"),
+          name,
+          phone,
+          deviceId: getOrCreateDeviceId(),
+          role,
+          acceptTerms: true,
+          ...(shopName ? { shopName } : {}),
+        }),
       });
       const data = await parseApiResponse(res);
       setLoading(false);
@@ -173,29 +104,6 @@ export function RegisterForm({ locale }: { locale: Locale }) {
         })}
       </p>
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <button
-          type="button"
-          onClick={() => switchMode("otp")}
-          className={`flex-1 rounded-lg px-2 py-2.5 text-xs font-semibold sm:text-sm ${
-            mode === "otp" ? "bg-brand-green text-brand-gold" : "bg-brand-green/10 text-brand-green"
-          }`}
-        >
-          {t(locale, "registerWithOtp")}
-        </button>
-        <button
-          type="button"
-          onClick={() => switchMode("password")}
-          className={`flex-1 rounded-lg px-2 py-2.5 text-xs font-semibold sm:text-sm ${
-            mode === "password"
-              ? "bg-brand-green text-brand-gold"
-              : "bg-brand-green/10 text-brand-green"
-          }`}
-        >
-          {t(locale, "registerWithPassword")}
-        </button>
-      </div>
-
       <input name="name" required placeholder={t(locale, "name")} className="input-premium w-full" />
       {role === "SHOP" && (
         <input
@@ -206,75 +114,25 @@ export function RegisterForm({ locale }: { locale: Locale }) {
         />
       )}
       <PhoneInput locale={locale} value={phone} onChange={setPhone} required />
-
-      {mode === "password" ? (
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={6}
-          placeholder={t(locale, "password")}
-          className="input-premium w-full"
-        />
-      ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-zinc-600">{t(locale, "registerOtpHint")}</p>
-          {!otpSent ? (
-            <button
-              type="submit"
-              disabled={loading || !phone.trim()}
-              className="btn-secondary w-full py-3"
-            >
-              {loading ? "..." : t(locale, "sendOtpCode")}
-            </button>
-          ) : (
-            <>
-              <p className="text-sm text-brand-green-soft">{t(locale, "otpCodeSent")}</p>
-              {otpInfo && (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{otpInfo}</p>
-              )}
-              {demoCode && (
-                <p className="rounded-lg bg-brand-gold/20 px-3 py-2 text-sm text-brand-green">
-                  {t(locale, "demoOtpCode")}: <strong>{demoCode}</strong>
-                </p>
-              )}
-              <input
-                name="otpCode"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                required
-                maxLength={6}
-                placeholder={t(locale, "otpCode")}
-                className="input-premium w-full tracking-widest"
-              />
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => void sendOtp()}
-                className="w-full text-sm text-brand-green-soft"
-              >
-                {t(locale, "resendCode")}
-              </button>
-            </>
-          )}
-        </div>
-      )}
+      <input
+        name="password"
+        type="password"
+        required
+        minLength={6}
+        placeholder={t(locale, "password")}
+        className="input-premium w-full"
+      />
 
       <TermsAcceptanceField locale={locale} checked={acceptTerms} onChange={setAcceptTerms} />
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {(mode === "password" || otpSent) && (
-        <button type="submit" disabled={loading} className="btn-primary w-full py-3">
-          {loading
-            ? "..."
-            : role === "SHOP"
-              ? t(locale, "registerContinueAutopay")
-              : mode === "otp"
-                ? t(locale, "verifyAndRegister")
-                : t(locale, "registerContinue")}
-        </button>
-      )}
+      <button type="submit" disabled={loading} className="btn-primary w-full py-3">
+        {loading
+          ? "..."
+          : role === "SHOP"
+            ? t(locale, "registerContinueAutopay")
+            : t(locale, "registerContinue")}
+      </button>
 
       <div className="pt-2 text-center text-sm">
         <Link href="/" className="block text-brand-green-soft">
