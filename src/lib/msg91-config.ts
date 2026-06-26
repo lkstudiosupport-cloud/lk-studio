@@ -40,6 +40,9 @@ export type Msg91WidgetProbe = {
   templateId?: string;
   /** Top-level keys returned by getWidgetProcess (for dashboard debugging). */
   processKeys?: string[];
+  hasError?: boolean;
+  scode?: string;
+  dataKeys?: string[];
 };
 
 function templateIdFromWidgetProcess(data: Record<string, unknown>): string | undefined {
@@ -92,17 +95,50 @@ export async function probeMsg91Widget(): Promise<Msg91WidgetProbe | null> {
       /* ignore */
     }
 
+    const nested =
+      data.data && typeof data.data === "object"
+        ? (data.data as Record<string, unknown>)
+        : undefined;
+    const dataKeys = nested ? Object.keys(nested).slice(0, 25) : undefined;
     const templateId = templateIdFromWidgetProcess(data);
     const processKeys = Object.keys(data).slice(0, 20);
+    const hasError = data.hasError === true;
+    const scode = typeof data.scode === "string" ? data.scode : undefined;
+    const errors =
+      Array.isArray(data.errors) && data.errors.length > 0
+        ? String(data.errors[0])
+        : undefined;
+
+    if (hasError) {
+      return {
+        ok: false,
+        error: errors ?? scode ?? "Widget configuration error",
+        ...(templateId ? { templateId } : {}),
+        processKeys,
+        hasError,
+        scode,
+        ...(dataKeys ? { dataKeys } : {}),
+      };
+    }
 
     if (data.type === "success" || res.ok) {
-      return { ok: true, ...(templateId ? { templateId } : {}), processKeys };
+      return {
+        ok: true,
+        ...(templateId ? { templateId } : {}),
+        processKeys,
+        hasError: false,
+        scode,
+        ...(dataKeys ? { dataKeys } : {}),
+      };
     }
     return {
       ok: false,
       error: typeof data.message === "string" ? data.message : `HTTP ${res.status}`,
       ...(templateId ? { templateId } : {}),
       processKeys,
+      hasError,
+      scode,
+      ...(dataKeys ? { dataKeys } : {}),
     };
   } catch (err) {
     return {

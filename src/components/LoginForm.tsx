@@ -93,7 +93,10 @@ export function LoginForm({
 
       if (!res.ok) {
         const key = typeof data.errorKey === "string" ? data.errorKey : null;
-        setError(key ? t(locale, key) : String(data.error ?? "Could not send OTP"));
+        const detail = typeof data.detail === "string" ? data.detail : null;
+        setError(
+          detail || (key ? t(locale, key) : String(data.error ?? "Could not send OTP"))
+        );
         return;
       }
 
