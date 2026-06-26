@@ -104,10 +104,14 @@ Run on a device/emulator from Android Studio.
        buildTypes {
            release {
                signingConfig signingConfigs.release
+               minifyEnabled true
+               shrinkResources true
+               proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
            }
        }
    }
    ```
+   Or skip manual edits — `npm run build:aab:release` runs `scripts/patch-android-release.ps1`, which applies signing, R8, and ProGuard rules from `scripts/android-proguard-rules.pro`.
 6. Build signed AAB:
    ```powershell
    npm.cmd run build:aab:release

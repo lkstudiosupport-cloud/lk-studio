@@ -5,6 +5,7 @@ Use this before submitting the Android app (Capacitor WebView shell).
 ## App binary
 
 - [ ] Build a **signed release AAB** (not debug APK): `npm run build:aab:release`
+- [ ] Release build uses **R8** (code shrinking + obfuscation) — applied automatically by `scripts/patch-android-release.ps1`
 - [ ] Keystore created and backed up securely (see `keystore.properties.example`)
 - [ ] `CAPACITOR_SERVER_URL` points to production HTTPS (e.g. `https://lk-studio-1.onrender.com`)
 - [ ] Test login, photo upload, orders, and account deletion on a release build

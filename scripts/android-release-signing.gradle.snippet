@@ -1,6 +1,7 @@
 // Paste into android/app/build.gradle inside the `android { }` block
 // after running: npx cap add android
 // Requires android/keystore.properties (see keystore.properties.example)
+// Or run: npm run build:aab:release (applies scripts/patch-android-release.ps1 automatically)
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
@@ -22,6 +23,8 @@ signingConfigs {
 buildTypes {
     release {
         signingConfig signingConfigs.release
-        minifyEnabled false
+        minifyEnabled true
+        shrinkResources true
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
     }
 }
