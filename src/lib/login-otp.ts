@@ -160,9 +160,9 @@ async function sendMsg91WidgetServerLoginOtp(
     };
   }
 
-  if (isProduction() && !isMsg91WidgetRuntimeConfigured()) {
+  if (isProduction() && !isMsg91WidgetServerSendConfigured()) {
     throw new Error(
-      "MSG91 widget credentials missing at runtime — set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render, then redeploy"
+      "MSG91 widget credentials missing — set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render, then redeploy"
     );
   }
 
