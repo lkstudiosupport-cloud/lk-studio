@@ -1,8 +1,9 @@
 /** MSG91 SMS OTP — production India (+91) with DLT-approved templates. */
 
+import { msg91AuthKey } from "@/lib/msg91-config";
+
 function authKey(): string | null {
-  const key = process.env.MSG91_AUTH_KEY?.trim();
-  return key || null;
+  return msg91AuthKey();
 }
 
 function templateId(): string | null {
@@ -37,6 +38,97 @@ type Msg91FlowResponse = {
   message?: string;
   request_id?: string;
 };
+
+function msg91Success(data: Msg91FlowResponse): boolean {
+  if (data.type === "success") return true;
+  const msg = data.message?.toLowerCase() ?? "";
+  return msg.includes("success") || msg.includes("verified");
+}
+
+/** Send OTP via MSG91 v5 API — MSG91 generates the code (verify with verifyMsg91ManagedOtp). */
+export async function sendMsg91ManagedOtp(
+  e164Digits: string,
+  templateIdOverride: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const key = authKey();
+  const tpl = templateIdOverride.trim();
+  if (!key || !tpl) return { ok: false, error: "MSG91 authkey or template not configured" };
+
+  const mobile = formatMsg91Mobile(e164Digits);
+
+  try {
+    const res = await fetch("https://control.msg91.com/api/v5/otp", {
+      method: "POST",
+      headers: {
+        authkey: key,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        template_id: tpl,
+        mobile,
+        otp_length: 6,
+        otp_expiry: 10,
+      }),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as Msg91FlowResponse;
+
+    if (!res.ok) {
+      console.error("MSG91 managed OTP HTTP error:", res.status, data);
+      return {
+        ok: false,
+        error: data.message ?? `MSG91 HTTP ${res.status}`,
+      };
+    }
+
+    if (msg91Success(data)) return { ok: true };
+
+    console.error("MSG91 managed OTP send failed:", data.message ?? data);
+    return { ok: false, error: data.message ?? "MSG91 OTP send failed" };
+  } catch (err) {
+    console.error("MSG91 managed OTP request error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "MSG91 OTP request error",
+    };
+  }
+}
+
+/** Verify OTP via MSG91 v5 API (pairs with sendMsg91ManagedOtp). */
+export async function verifyMsg91ManagedOtp(e164Digits: string, code: string): Promise<boolean> {
+  const key = authKey();
+  if (!key) return false;
+
+  const mobile = formatMsg91Mobile(e164Digits);
+
+  try {
+    const res = await fetch("https://control.msg91.com/api/v5/otp/verify", {
+      method: "POST",
+      headers: {
+        authkey: key,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        mobile,
+        otp: code.trim(),
+      }),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as Msg91FlowResponse;
+
+    if (!res.ok) {
+      console.error("MSG91 managed OTP verify HTTP error:", res.status, data);
+      return false;
+    }
+
+    return msg91Success(data);
+  } catch (err) {
+    console.error("MSG91 managed OTP verify error:", err);
+    return false;
+  }
+}
 
 /** Send a 6-digit OTP via MSG91 v5 OTP API (DLT template + authkey). */
 export async function sendMsg91OtpV5(

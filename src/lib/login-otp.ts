@@ -3,27 +3,30 @@ import { generateOtpCode } from "@/lib/auth-user";
 import {
   clearLoginOtp,
   consumeLoginOtp,
+  getLoginOtpKind,
   getMsg91WidgetReqId,
   storeLoginOtp,
+  storeMsg91ManagedOtp,
   storeMsg91WidgetReqId,
 } from "@/lib/login-session";
 import {
+  msg91AuthKey,
+  isMsg91WidgetServerSendConfigured,
+  otpConfigStatus,
+} from "@/lib/msg91-config";
+import {
   isMsg91Configured,
   msg91OtpConfigError,
+  sendMsg91ManagedOtp,
   sendMsg91Otp,
-  sendMsg91OtpV5,
+  verifyMsg91ManagedOtp,
 } from "@/lib/msg91-sms";
+import { resolveMsg91TemplateId } from "@/lib/msg91-template";
 import {
   isMsg91WidgetServerConfigured,
   msg91PhoneMatches,
   verifyMsg91WidgetAccessToken,
 } from "@/lib/msg91-widget";
-import {
-  isMsg91WidgetRuntimeConfigured,
-  isMsg91WidgetServerSendConfigured,
-  otpConfigStatus,
-  probeMsg91Widget,
-} from "@/lib/msg91-config";
 import {
   sendMsg91WidgetOtpMobileDetailed,
   verifyMsg91WidgetOtpMobile,
@@ -38,7 +41,7 @@ export {
   otpConfigStatus,
 };
 
-export type OtpProvider = "msg91" | "msg91-widget" | "local";
+export type OtpProvider = "msg91" | "msg91-widget" | "msg91-managed" | "local";
 
 export type LoginOtpSendResult = {
   sent: boolean;
@@ -64,17 +67,9 @@ async function sendLocalLoginOtp(
   const showCode = canShowOtpCodeOnScreen(e164Digits);
 
   if (isProduction() && !showCode) {
-    const status = otpConfigStatus();
-    if (status.authKey && !status.widgetSend && !status.flowApi) {
-      throw new Error(
-        "Set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render (server runtime env), then redeploy"
-      );
-    }
     throw new Error(
       msg91OtpConfigError() ??
-        (status.widgetSend && !isMsg91WidgetRuntimeConfigured()
-          ? "Set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render (not only NEXT_PUBLIC_*), then redeploy"
-          : "MSG91 OTP is not configured")
+        "MSG91 OTP is not configured — set MSG91_AUTH_KEY and MSG91_TEMPLATE_ID on Render"
     );
   }
 
@@ -85,6 +80,27 @@ async function sendLocalLoginOtp(
     demoMode: showCode,
     expiresAt,
     ...(showCode ? { demoCode: code } : {}),
+  };
+}
+
+/** MSG91 authkey v5 API — MSG91 generates OTP (works for login + register, Capacitor-safe). */
+async function sendAuthkeyManagedLoginOtp(
+  e164Digits: string,
+  role: UserRole,
+  templateId: string
+): Promise<LoginOtpSendResult> {
+  const result = await sendMsg91ManagedOtp(e164Digits, templateId);
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
+
+  const expiresAt = await storeMsg91ManagedOtp(e164Digits, role);
+  return {
+    sent: true,
+    smsDelivered: true,
+    provider: "msg91-managed",
+    demoMode: false,
+    expiresAt,
   };
 }
 
@@ -122,7 +138,7 @@ async function sendMsg91LoginOtp(
   throw new Error("MSG91 SMS delivery failed");
 }
 
-/** Send OTP via MSG91 widget server API (no browser script — works in Capacitor). */
+/** Send OTP via MSG91 widget server API (fallback when authkey path unavailable). */
 async function sendMsg91WidgetServerLoginOtp(
   e164Digits: string,
   role: UserRole
@@ -139,44 +155,28 @@ async function sendMsg91WidgetServerLoginOtp(
     };
   }
 
-  console.error("MSG91 widget sendOtpMobile failed:", widgetResult.error);
-
-  // Fallback: v5 OTP API when widget SMS fails but authkey + template exist.
-  const code = generateOtpCode();
-  const expiresAt = await storeLoginOtp(e164Digits, role, code);
-  let templateId = process.env.MSG91_TEMPLATE_ID?.trim();
-  if (!templateId) {
-    const probe = await probeMsg91Widget();
-    templateId = probe?.templateId;
-  }
-
-  if (templateId && (await sendMsg91OtpV5(e164Digits, code, templateId))) {
-    return {
-      sent: true,
-      smsDelivered: true,
-      provider: "msg91",
-      demoMode: false,
-      expiresAt,
-    };
-  }
-
-  if (isProduction() && !isMsg91WidgetServerSendConfigured()) {
-    throw new Error(
-      "MSG91 widget credentials missing — set MSG91_WIDGET_ID and MSG91_WIDGET_TOKEN on Render, then redeploy"
-    );
-  }
-
-  throw new Error(
-    widgetResult.error ||
-      "MSG91 widget SMS delivery failed — check widget token, SMS credits, and DLT template in MSG91 dashboard"
-  );
+  throw new Error(widgetResult.error || "MSG91 widget SMS delivery failed");
 }
 
-/** Send OTP via MSG91 Flow API or widget server API. */
+/** Send OTP for shop/customer login and registration. */
 export async function sendLoginOtp(
   e164Digits: string,
   role: UserRole
 ): Promise<LoginOtpSendResult> {
+  const templateId = await resolveMsg91TemplateId();
+
+  if (msg91AuthKey() && templateId) {
+    try {
+      return await sendAuthkeyManagedLoginOtp(e164Digits, role, templateId);
+    } catch (err) {
+      console.error("MSG91 authkey OTP failed, trying widget fallback:", err);
+      if (isMsg91WidgetServerSendConfigured()) {
+        return sendMsg91WidgetServerLoginOtp(e164Digits, role);
+      }
+      throw err;
+    }
+  }
+
   if (isMsg91Configured()) {
     return sendMsg91LoginOtp(e164Digits, role);
   }
@@ -188,14 +188,23 @@ export async function sendLoginOtp(
   return sendLocalLoginOtp(e164Digits, role);
 }
 
-/** Verify 6-digit OTP (Flow/local code or MSG91 widget server reqId). */
+/** Verify 6-digit OTP (MSG91 authkey, widget reqId, or local hash). */
 export async function verifyLoginOtp(
   e164Digits: string,
   role: UserRole,
   code: string
 ): Promise<boolean> {
-  const reqId = await getMsg91WidgetReqId(e164Digits, role);
-  if (reqId) {
+  const kind = await getLoginOtpKind(e164Digits, role);
+
+  if (kind === "managed") {
+    const ok = await verifyMsg91ManagedOtp(e164Digits, code);
+    if (ok) await clearLoginOtp(e164Digits, role);
+    return ok;
+  }
+
+  if (kind === "widget") {
+    const reqId = await getMsg91WidgetReqId(e164Digits, role);
+    if (!reqId) return false;
     const accessToken = await verifyMsg91WidgetOtpMobile(reqId, code);
     if (!accessToken) return false;
     const ok = await verifyMsg91WidgetLogin(e164Digits, accessToken);

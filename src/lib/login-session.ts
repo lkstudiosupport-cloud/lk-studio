@@ -80,6 +80,7 @@ export async function storeLoginOtp(phone: string, role: UserRole, code: string)
 }
 
 const MSG91_REQ_PREFIX = "msg91-req:";
+const MSG91_MANAGED_PREFIX = "msg91-managed:";
 
 /** Store MSG91 widget reqId returned by sendOtpMobile (server-side widget API). */
 export async function storeMsg91WidgetReqId(phone: string, role: UserRole, reqId: string) {
@@ -101,6 +102,31 @@ export async function getMsg91WidgetReqId(phone: string, role: UserRole): Promis
   if (!row || row.expiresAt < new Date()) return null;
   if (!row.codeHash.startsWith(MSG91_REQ_PREFIX)) return null;
   return row.codeHash.slice(MSG91_REQ_PREFIX.length);
+}
+
+/** MSG91 authkey OTP API — MSG91 generates and verifies the code (not stored locally). */
+export async function storeMsg91ManagedOtp(phone: string, role: UserRole) {
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await prisma.loginOtp.deleteMany({ where: { phone, role } });
+  await prisma.loginOtp.create({
+    data: { phone, role, codeHash: `${MSG91_MANAGED_PREFIX}1`, expiresAt },
+  });
+
+  return expiresAt;
+}
+
+export type LoginOtpKind = "managed" | "widget" | "local";
+
+export async function getLoginOtpKind(phone: string, role: UserRole): Promise<LoginOtpKind | null> {
+  const row = await prisma.loginOtp.findFirst({
+    where: { phone, role },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!row || row.expiresAt < new Date()) return null;
+  if (row.codeHash.startsWith(MSG91_MANAGED_PREFIX)) return "managed";
+  if (row.codeHash.startsWith(MSG91_REQ_PREFIX)) return "widget";
+  return "local";
 }
 
 export async function clearLoginOtp(phone: string, role: UserRole) {
