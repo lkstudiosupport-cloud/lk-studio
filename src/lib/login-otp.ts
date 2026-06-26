@@ -1,6 +1,12 @@
 import type { UserRole } from "@prisma/client";
 import { generateOtpCode } from "@/lib/auth-user";
-import { consumeLoginOtp, storeLoginOtp } from "@/lib/login-session";
+import {
+  clearLoginOtp,
+  consumeLoginOtp,
+  getMsg91WidgetReqId,
+  storeLoginOtp,
+  storeMsg91WidgetReqId,
+} from "@/lib/login-session";
 import {
   isMsg91Configured,
   msg91OtpConfigError,
@@ -11,6 +17,11 @@ import {
   msg91PhoneMatches,
   verifyMsg91WidgetAccessToken,
 } from "@/lib/msg91-widget";
+import {
+  isMsg91WidgetServerSendConfigured,
+  sendMsg91WidgetOtpMobile,
+  verifyMsg91WidgetOtpMobile,
+} from "@/lib/msg91-widget-server";
 import { allowDemoOtpOnScreen, isProduction } from "@/lib/production";
 import { isDemoPhoneE164 } from "@/lib/demo-accounts";
 
@@ -44,8 +55,8 @@ async function sendLocalLoginOtp(
   if (isProduction() && !showCode) {
     throw new Error(
       msg91OtpConfigError() ??
-        (isMsg91WidgetServerConfigured()
-          ? "Configure MSG91 widget on login page or MSG91_TEMPLATE_ID for server SMS"
+        (isMsg91WidgetServerSendConfigured()
+          ? "MSG91 widget OTP is not configured"
           : "MSG91 OTP is not configured")
     );
   }
@@ -94,23 +105,27 @@ async function sendMsg91LoginOtp(
   throw new Error("MSG91 SMS delivery failed");
 }
 
-const WIDGET_OTP_TTL_MS = 10 * 60 * 1000;
-
-/** MSG91 widget sends SMS in the browser; server only validates the account exists. */
-async function sendWidgetDelegatedLoginOtp(
+/** Send OTP via MSG91 widget server API (no browser script — works in Capacitor). */
+async function sendMsg91WidgetServerLoginOtp(
   e164Digits: string,
-  _role: UserRole
+  role: UserRole
 ): Promise<LoginOtpSendResult> {
+  const reqId = await sendMsg91WidgetOtpMobile(e164Digits);
+  if (!reqId) {
+    throw new Error("MSG91 widget SMS delivery failed");
+  }
+
+  const expiresAt = await storeMsg91WidgetReqId(e164Digits, role, reqId);
   return {
     sent: true,
     smsDelivered: true,
     provider: "msg91-widget",
     demoMode: false,
-    expiresAt: new Date(Date.now() + WIDGET_OTP_TTL_MS),
+    expiresAt,
   };
 }
 
-/** Send OTP via MSG91 Flow API (server SMS). Widget mode sends OTP on the client instead. */
+/** Send OTP via MSG91 Flow API or widget server API. */
 export async function sendLoginOtp(
   e164Digits: string,
   role: UserRole
@@ -119,30 +134,28 @@ export async function sendLoginOtp(
     return sendMsg91LoginOtp(e164Digits, role);
   }
 
-  if (isMsg91WidgetServerConfigured()) {
-    if (
-      isProduction() &&
-      !(
-        process.env.NEXT_PUBLIC_MSG91_WIDGET_ID?.trim() &&
-        process.env.NEXT_PUBLIC_MSG91_WIDGET_TOKEN?.trim()
-      )
-    ) {
-      throw new Error(
-        "Set NEXT_PUBLIC_MSG91_WIDGET_ID and NEXT_PUBLIC_MSG91_WIDGET_TOKEN on Render, then redeploy"
-      );
-    }
-    return sendWidgetDelegatedLoginOtp(e164Digits, role);
+  if (isMsg91WidgetServerSendConfigured()) {
+    return sendMsg91WidgetServerLoginOtp(e164Digits, role);
   }
 
   return sendLocalLoginOtp(e164Digits, role);
 }
 
-/** Verify 6-digit code from server-stored OTP (Flow API / dev fallback). */
+/** Verify 6-digit OTP (Flow/local code or MSG91 widget server reqId). */
 export async function verifyLoginOtp(
   e164Digits: string,
   role: UserRole,
   code: string
 ): Promise<boolean> {
+  const reqId = await getMsg91WidgetReqId(e164Digits, role);
+  if (reqId) {
+    const accessToken = await verifyMsg91WidgetOtpMobile(reqId, code);
+    if (!accessToken) return false;
+    const ok = await verifyMsg91WidgetLogin(e164Digits, accessToken);
+    if (ok) await clearLoginOtp(e164Digits, role);
+    return ok;
+  }
+
   return consumeLoginOtp(e164Digits, role, code.trim());
 }
 

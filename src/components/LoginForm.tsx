@@ -9,10 +9,6 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { showDemoLoginUI } from "@/lib/demo-ui";
-import {
-  deliverOtpViaWidgetIfNeeded,
-  verifyOtpViaWidgetIfNeeded,
-} from "@/lib/otp-widget-flow";
 
 type LoginMode = "password" | "otp";
 
@@ -30,7 +26,6 @@ export function LoginForm({
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [widgetOtp, setWidgetOtp] = useState(false);
   const [demoCode, setDemoCode] = useState("");
   const [otpInfo, setOtpInfo] = useState("");
 
@@ -67,7 +62,6 @@ export function LoginForm({
         setMode("otp");
         setInfo(t(locale, "deviceVerificationRequired"));
         setOtpSent(false);
-        setWidgetOtp(false);
         setDemoCode("");
         setLoading(false);
         await sendOtp();
@@ -103,15 +97,6 @@ export function LoginForm({
         return;
       }
 
-      const useWidget = data.widgetOtp === true;
-      try {
-        await deliverOtpViaWidgetIfNeeded(phone, useWidget);
-      } catch {
-        setError(t(locale, "otpSendFailed"));
-        return;
-      }
-
-      setWidgetOtp(useWidget);
       setOtpSent(true);
       setOtpInfo(data.smsDelivered === false ? t(locale, "otpSmsFallback") : "");
       if (data.demoCode) setDemoCode(String(data.demoCode));
@@ -126,24 +111,14 @@ export function LoginForm({
     setLoading(true);
     setError("");
     const fd = new FormData(e.currentTarget);
-    const code = String(fd.get("code") ?? "").trim();
 
     try {
-      let accessToken: string | undefined;
-      try {
-        accessToken = await verifyOtpViaWidgetIfNeeded(code, widgetOtp);
-      } catch {
-        setLoading(false);
-        setError("Invalid or expired code");
-        return;
-      }
-
       const res = await fetch("/api/auth/login/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(
-          authPayload(accessToken ? { accessToken } : { code })
+          authPayload({ code: fd.get("code") })
         ),
       });
 
@@ -168,7 +143,6 @@ export function LoginForm({
     setError("");
     setInfo("");
     setOtpSent(false);
-    setWidgetOtp(false);
     setDemoCode("");
     setOtpInfo("");
   }

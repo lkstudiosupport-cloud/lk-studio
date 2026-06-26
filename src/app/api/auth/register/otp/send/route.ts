@@ -60,7 +60,6 @@ export async function POST(req: Request) {
       ok: true,
       expiresAt: result.expiresAt.toISOString(),
       smsDelivered: result.smsDelivered,
-      widgetOtp: result.provider === "msg91-widget",
       ...(result.demoMode && result.demoCode ? { demoCode: result.demoCode } : {}),
     });
   } catch (err) {
