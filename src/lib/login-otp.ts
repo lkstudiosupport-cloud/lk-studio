@@ -18,6 +18,7 @@ import {
   isMsg91Configured,
   msg91OtpConfigError,
   sendMsg91ManagedOtp,
+  sendMsg91LegacyOtp,
   sendMsg91Otp,
   verifyMsg91ManagedOtp,
 } from "@/lib/msg91-sms";
@@ -104,6 +105,26 @@ async function sendAuthkeyManagedLoginOtp(
   };
 }
 
+/** Legacy MSG91 SendOTP API — no template_id env needed. */
+async function sendLegacyManagedLoginOtp(
+  e164Digits: string,
+  role: UserRole
+): Promise<LoginOtpSendResult> {
+  const result = await sendMsg91LegacyOtp(e164Digits);
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
+
+  const expiresAt = await storeMsg91ManagedOtp(e164Digits, role);
+  return {
+    sent: true,
+    smsDelivered: true,
+    provider: "msg91-managed",
+    demoMode: false,
+    expiresAt,
+  };
+}
+
 async function sendMsg91LoginOtp(
   e164Digits: string,
   role: UserRole
@@ -165,15 +186,25 @@ export async function sendLoginOtp(
 ): Promise<LoginOtpSendResult> {
   const templateId = await resolveMsg91TemplateId();
 
-  if (msg91AuthKey() && templateId) {
+  if (msg91AuthKey()) {
+    if (templateId) {
+      try {
+        return await sendAuthkeyManagedLoginOtp(e164Digits, role, templateId);
+      } catch (err) {
+        console.error("MSG91 v5 OTP failed, trying legacy SendOTP:", err);
+      }
+    }
+
     try {
-      return await sendAuthkeyManagedLoginOtp(e164Digits, role, templateId);
+      return await sendLegacyManagedLoginOtp(e164Digits, role);
     } catch (err) {
-      console.error("MSG91 authkey OTP failed, trying widget fallback:", err);
+      console.error("MSG91 legacy OTP failed, trying widget fallback:", err);
       if (isMsg91WidgetServerSendConfigured()) {
         return sendMsg91WidgetServerLoginOtp(e164Digits, role);
       }
-      throw err;
+      throw err instanceof Error
+        ? err
+        : new Error("MSG91 OTP send failed — check MSG91_AUTH_KEY and SMS credits");
     }
   }
 

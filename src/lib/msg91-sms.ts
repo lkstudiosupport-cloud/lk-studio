@@ -101,7 +101,17 @@ export async function verifyMsg91ManagedOtp(e164Digits: string, code: string): P
   if (!key) return false;
 
   const mobile = formatMsg91Mobile(e164Digits);
+  const otp = code.trim();
 
+  if (await verifyMsg91ManagedOtpV5(key, mobile, otp)) return true;
+  return verifyMsg91LegacyOtp(key, mobile, otp);
+}
+
+async function verifyMsg91ManagedOtpV5(
+  key: string,
+  mobile: string,
+  otp: string
+): Promise<boolean> {
   try {
     const res = await fetch("https://control.msg91.com/api/v5/otp/verify", {
       method: "POST",
@@ -110,22 +120,71 @@ export async function verifyMsg91ManagedOtp(e164Digits: string, code: string): P
         "Content-Type": "application/json",
         accept: "application/json",
       },
-      body: JSON.stringify({
-        mobile,
-        otp: code.trim(),
-      }),
+      body: JSON.stringify({ mobile, otp }),
     });
 
     const data = (await res.json().catch(() => ({}))) as Msg91FlowResponse;
+    if (!res.ok) return false;
+    return msg91Success(data);
+  } catch {
+    return false;
+  }
+}
 
-    if (!res.ok) {
-      console.error("MSG91 managed OTP verify HTTP error:", res.status, data);
-      return false;
+/** Legacy SendOTP API — uses MSG91 OTP templates (no template_id in request). */
+export async function sendMsg91LegacyOtp(
+  e164Digits: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const key = authKey();
+  if (!key) return { ok: false, error: "MSG91_AUTH_KEY is not set" };
+
+  const mobile = formatMsg91Mobile(e164Digits);
+  const params = new URLSearchParams({
+    authkey: key,
+    mobile,
+    otp_length: "6",
+    otp_expiry: "10",
+  });
+
+  try {
+    const res = await fetch(`https://control.msg91.com/api/sendotp.php?${params.toString()}`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const text = await res.text();
+    let data: Msg91FlowResponse = {};
+    try {
+      data = JSON.parse(text) as Msg91FlowResponse;
+    } catch {
+      return { ok: false, error: text.slice(0, 120) || "Invalid MSG91 response" };
     }
 
-    return msg91Success(data);
+    if (!res.ok) {
+      return { ok: false, error: data.message ?? `MSG91 HTTP ${res.status}` };
+    }
+
+    if (msg91Success(data)) return { ok: true };
+
+    return { ok: false, error: data.message ?? "MSG91 legacy OTP send failed" };
   } catch (err) {
-    console.error("MSG91 managed OTP verify error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "MSG91 legacy OTP request error",
+    };
+  }
+}
+
+async function verifyMsg91LegacyOtp(key: string, mobile: string, otp: string): Promise<boolean> {
+  const params = new URLSearchParams({ authkey: key, mobile, otp });
+  try {
+    const res = await fetch(
+      `https://control.msg91.com/api/verifyRequestOTP.php?${params.toString()}`,
+      { method: "GET", headers: { Accept: "application/json" } }
+    );
+    const data = (await res.json().catch(() => ({}))) as Msg91FlowResponse;
+    if (!res.ok) return false;
+    return msg91Success(data);
+  } catch {
     return false;
   }
 }
