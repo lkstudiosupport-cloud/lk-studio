@@ -72,6 +72,7 @@ if (Test-Path $varsFile) {
 
 Write-Host "Syncing Capacitor..."
 npx.cmd cap sync android
+& (Join-Path $root "scripts\patch-android-upi.ps1")
 
 & (Join-Path $root "scripts\patch-android-release.ps1")
 

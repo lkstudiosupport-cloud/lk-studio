@@ -22,6 +22,7 @@ if (-not $env:CAPACITOR_SERVER_URL) {
 
 Write-Host "Syncing Android app to: $env:CAPACITOR_SERVER_URL" -ForegroundColor Cyan
 npx.cmd cap sync android
+& (Join-Path $root "scripts\patch-android-upi.ps1")
 
 Write-Host ""
 Write-Host "Done. Rebuild and reinstall APK:" -ForegroundColor Yellow

@@ -58,6 +58,7 @@ if (-not $env:CAPACITOR_SERVER_URL) {
 
 Write-Host "Syncing Capacitor..."
 npx.cmd cap sync android
+& (Join-Path $root "scripts\patch-android-upi.ps1")
 
 $gradlew = Join-Path $root "android\gradlew.bat"
 if (-not (Test-Path $gradlew)) {
