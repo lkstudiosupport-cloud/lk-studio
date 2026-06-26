@@ -6,8 +6,6 @@ import {
 } from "@/lib/auth";
 import { saveUserLocation, type LocationPayload } from "@/lib/save-location";
 import type { UserRole } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import { hashOtp, verifyOtp } from "@/lib/auth-user";
 import { trustDevice } from "@/lib/trusted-device";
 
 type UserWithShop = {
@@ -65,84 +63,4 @@ export async function finishTrustedPasswordLogin(
     bumpSession: false,
     trustDevice: { deviceId, userAgent },
   });
-}
-
-export async function storeLoginOtp(phone: string, role: UserRole, code: string) {
-  const codeHash = await hashOtp(code);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  await prisma.loginOtp.deleteMany({ where: { phone, role } });
-  await prisma.loginOtp.create({
-    data: { phone, role, codeHash, expiresAt },
-  });
-
-  return expiresAt;
-}
-
-const MSG91_REQ_PREFIX = "msg91-req:";
-const MSG91_MANAGED_PREFIX = "msg91-managed:";
-
-/** Store MSG91 widget reqId returned by sendOtpMobile (server-side widget API). */
-export async function storeMsg91WidgetReqId(phone: string, role: UserRole, reqId: string) {
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  await prisma.loginOtp.deleteMany({ where: { phone, role } });
-  await prisma.loginOtp.create({
-    data: { phone, role, codeHash: `${MSG91_REQ_PREFIX}${reqId}`, expiresAt },
-  });
-
-  return expiresAt;
-}
-
-export async function getMsg91WidgetReqId(phone: string, role: UserRole): Promise<string | null> {
-  const row = await prisma.loginOtp.findFirst({
-    where: { phone, role },
-    orderBy: { createdAt: "desc" },
-  });
-  if (!row || row.expiresAt < new Date()) return null;
-  if (!row.codeHash.startsWith(MSG91_REQ_PREFIX)) return null;
-  return row.codeHash.slice(MSG91_REQ_PREFIX.length);
-}
-
-/** MSG91 authkey OTP API — MSG91 generates and verifies the code (not stored locally). */
-export async function storeMsg91ManagedOtp(phone: string, role: UserRole) {
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  await prisma.loginOtp.deleteMany({ where: { phone, role } });
-  await prisma.loginOtp.create({
-    data: { phone, role, codeHash: `${MSG91_MANAGED_PREFIX}1`, expiresAt },
-  });
-
-  return expiresAt;
-}
-
-export type LoginOtpKind = "managed" | "widget" | "local";
-
-export async function getLoginOtpKind(phone: string, role: UserRole): Promise<LoginOtpKind | null> {
-  const row = await prisma.loginOtp.findFirst({
-    where: { phone, role },
-    orderBy: { createdAt: "desc" },
-  });
-  if (!row || row.expiresAt < new Date()) return null;
-  if (row.codeHash.startsWith(MSG91_MANAGED_PREFIX)) return "managed";
-  if (row.codeHash.startsWith(MSG91_REQ_PREFIX)) return "widget";
-  return "local";
-}
-
-export async function clearLoginOtp(phone: string, role: UserRole) {
-  await prisma.loginOtp.deleteMany({ where: { phone, role } });
-}
-
-export async function consumeLoginOtp(phone: string, role: UserRole, code: string) {
-  const row = await prisma.loginOtp.findFirst({
-    where: { phone, role },
-    orderBy: { createdAt: "desc" },
-  });
-  if (!row || row.expiresAt < new Date()) return false;
-
-  const ok = await verifyOtp(code, row.codeHash);
-  if (!ok) return false;
-
-  await prisma.loginOtp.delete({ where: { id: row.id } });
-  return true;
 }

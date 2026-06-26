@@ -64,6 +64,8 @@
     "aws4fetch": "^1.0.20",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
+    "firebase": "^12.15.0",
+    "firebase-admin": "^14.1.0",
     "html2canvas": "^1.4.1",
     "i18next": "^25.2.1",
     "jose": "^6.0.11",

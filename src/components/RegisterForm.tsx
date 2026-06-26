@@ -10,6 +10,11 @@ import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { TermsAcceptanceField } from "@/components/TermsAcceptanceField";
 import { SHOP_MONTHLY_PRICE_INR, CUSTOMER_MONTHLY_PRICE_INR } from "@/lib/subscription";
+import {
+  FIREBASE_RECAPTCHA_CONTAINER_ID,
+  mapFirebasePhoneAuthError,
+  useFirebasePhoneOtp,
+} from "@/lib/firebase/phone-auth-client";
 
 type RegisterMode = "password" | "otp";
 
@@ -20,6 +25,7 @@ function formVal(fd: FormData, key: string): string {
 
 export function RegisterForm({ locale }: { locale: Locale }) {
   const router = useRouter();
+  const { sendOtp, verifyOtpAndGetIdToken, resetRecaptcha } = useFirebasePhoneOtp();
   const [error, setError] = useState("");
   const [role, setRole] = useState<"SHOP" | "CUSTOMER">("CUSTOMER");
   const [mode, setMode] = useState<RegisterMode>("otp");
@@ -27,53 +33,33 @@ export function RegisterForm({ locale }: { locale: Locale }) {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
-  const [demoCode, setDemoCode] = useState("");
-  const [otpInfo, setOtpInfo] = useState("");
 
   function switchMode(next: RegisterMode) {
     setMode(next);
     setError("");
     setOtpSent(false);
-    setDemoCode("");
-    setOtpInfo("");
+    resetRecaptcha();
   }
 
   function switchRole(next: "SHOP" | "CUSTOMER") {
     setRole(next);
     setError("");
     setOtpSent(false);
-    setDemoCode("");
-    setOtpInfo("");
+    resetRecaptcha();
   }
 
-  async function sendOtp() {
+  async function sendFirebaseOtp() {
     if (!phone.trim()) return;
     setLoading(true);
     setError("");
-    setDemoCode("");
 
     try {
-      const res = await fetch("/api/auth/register/otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, role }),
-      });
-      const data = await parseApiResponse(res);
-      setLoading(false);
-
-      if (!res.ok) {
-        const key = typeof data.errorKey === "string" ? data.errorKey : null;
-        const detail = typeof data.detail === "string" ? data.detail : null;
-        setError(detail || (key ? t(locale, key) : String(data.error ?? "Could not send OTP")));
-        return;
-      }
-
+      await sendOtp(phone);
       setOtpSent(true);
-      setOtpInfo(data.smsDelivered === false ? t(locale, "otpSmsFallback") : "");
-      if (data.demoCode) setDemoCode(String(data.demoCode));
-    } catch {
       setLoading(false);
-      setError("Cannot reach server. Keep mobile:dev running on PC.");
+    } catch (err) {
+      setLoading(false);
+      setError(mapFirebasePhoneAuthError(err));
     }
   }
 
@@ -90,7 +76,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
     const shopName = role === "SHOP" ? formVal(fd, "shopName") : undefined;
 
     if (mode === "otp" && !otpSent) {
-      await sendOtp();
+      await sendFirebaseOtp();
       return;
     }
 
@@ -111,7 +97,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
             }
           : {
               authMethod: "otp" as const,
-              otpCode: formVal(fd, "otpCode"),
+              idToken: await verifyOtpAndGetIdToken(formVal(fd, "otpCode")),
               name,
               phone,
               deviceId: getOrCreateDeviceId(),
@@ -136,14 +122,16 @@ export function RegisterForm({ locale }: { locale: Locale }) {
       }
       router.push(String(data.redirect ?? "/"));
       router.refresh();
-    } catch {
+    } catch (err) {
       setLoading(false);
-      setError("Cannot reach server. Keep mobile:dev running on PC.");
+      setError(mapFirebasePhoneAuthError(err));
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="card-premium space-y-4 p-4 sm:p-6">
+      <div id={FIREBASE_RECAPTCHA_CONTAINER_ID} className="hidden" aria-hidden />
+
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
@@ -228,14 +216,6 @@ export function RegisterForm({ locale }: { locale: Locale }) {
           ) : (
             <>
               <p className="text-sm text-brand-green-soft">{t(locale, "otpCodeSent")}</p>
-              {otpInfo && (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{otpInfo}</p>
-              )}
-              {demoCode && (
-                <p className="rounded-lg bg-brand-gold/20 px-3 py-2 text-sm text-brand-green">
-                  {t(locale, "demoOtpCode")}: <strong>{demoCode}</strong>
-                </p>
-              )}
               <input
                 name="otpCode"
                 type="text"
@@ -249,7 +229,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
               <button
                 type="button"
                 disabled={loading}
-                onClick={() => void sendOtp()}
+                onClick={() => void sendFirebaseOtp()}
                 className="w-full text-sm text-brand-green-soft"
               >
                 {t(locale, "resendCode")}

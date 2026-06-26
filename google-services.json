@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "895823988907",
+    "project_id": "lk-studio-29e6d",
+    "storage_bucket": "lk-studio-29e6d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:895823988907:android:93fd6421805d2acdcd8fee",
+        "android_client_info": {
+          "package_name": "com.lkstudio.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCf7tMpcdoVgJvznioOFfsm_q3h5Ch8sY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

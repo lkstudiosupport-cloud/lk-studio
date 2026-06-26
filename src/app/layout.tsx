@@ -1,5 +1,6 @@
 import { Poppins } from "next/font/google";
 import type { Metadata, Viewport } from "next";
+import { FirebaseAnalytics } from "@/components/FirebaseAnalytics";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${poppins.variable} min-h-dvh antialiased font-[family-name:var(--font-brand)]`}>
+        <FirebaseAnalytics />
         {children}
       </body>
     </html>

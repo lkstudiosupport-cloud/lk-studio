@@ -114,32 +114,27 @@ npm run db:seed
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` | If live autopay | Same Key Id as `RAZORPAY_KEY_ID` |
 | `RAZORPAY_WEBHOOK_SECRET` | If webhooks | Razorpay webhook signing secret |
 | `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Database / storage | Supabase API keys |
-| `MSG91_AUTH_KEY` | **Production OTP** | Server-only; verifies widget `access-token` |
-| `MSG91_WIDGET_ID` | **Production OTP** | Widget ID — **runtime env** (required for server OTP send) |
-| `MSG91_WIDGET_TOKEN` | **Production OTP** | Widget auth token — **runtime env** (required for server OTP send) |
-| `NEXT_PUBLIC_MSG91_WIDGET_ID` | Optional | Same as `MSG91_WIDGET_ID` if you need browser widget fallback |
-| `NEXT_PUBLIC_MSG91_WIDGET_TOKEN` | Optional | Same as `MSG91_WIDGET_TOKEN` if you need browser widget fallback |
-| `MSG91_TEMPLATE_ID` | Optional | Server Flow SMS if not using widget |
-| `MSG91_OTP_VARIABLE` | Optional | Template variable name (default `OTP`) |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | **Phone OTP + Analytics** | Firebase Console → Project settings → Web app |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | **Phone OTP** | e.g. `your-project.firebaseapp.com` |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | **Phone OTP + Analytics** | Firebase project ID |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Optional | Firebase storage bucket |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | **Phone OTP** | From Firebase web config |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | **Phone OTP + Analytics** | From Firebase web config |
+| `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` | Optional | Google Analytics |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | **Phone OTP (server)** | Full service account JSON (one line) — verifies ID tokens after client OTP |
 | `SUPABASE_SERVICE_ROLE_KEY` | Optional | Server-only; never expose in client |
 
 \* Without S3, file uploads fail in production (ephemeral disk). The API returns a clear error: *File storage not configured…*
 
-### MSG91 OTP (production)
+### Firebase Phone OTP (production)
 
-**Recommended — OTP Widget**
+1. Firebase Console → **Authentication** → **Sign-in method** → enable **Phone**
+2. **Authentication** → **Settings** → **Authorized domains** — add your Render host (e.g. `lk-studio-1.onrender.com`) and `localhost`
+3. **Project settings** → **Your apps** → Web app — copy all `NEXT_PUBLIC_FIREBASE_*` values into Render
+4. **Project settings** → **Service accounts** → **Generate new private key** — paste the entire JSON into `FIREBASE_SERVICE_ACCOUNT_JSON` (single line on Render)
+5. Redeploy. The client sends SMS via Firebase; the server verifies the returned ID token.
 
-1. MSG91 Dashboard → **OTP** → create **Widget** → copy **Widget ID** and **Auth Token**
-2. MSG91 → **API** → copy **Authkey** (server only)
-3. On Render (all required for OTP login in the Android app):
-   - `MSG91_WIDGET_ID` = widget ID
-   - `MSG91_WIDGET_TOKEN` = widget token
-   - `MSG91_AUTH_KEY` = authkey
-4. Redeploy. The server sends OTP via MSG91 widget API (no browser script — works in Capacitor WebView).
-
-`NEXT_PUBLIC_MSG91_*` alone is **not enough**: Next.js inlines those at build time. Use `MSG91_WIDGET_ID` / `MSG91_WIDGET_TOKEN` so Render can read them at runtime.
-
-**Alternative — server Flow API** (no widget): set `MSG91_AUTH_KEY` + `MSG91_TEMPLATE_ID` instead of widget public vars.
+For local/dev testing without SMS, add **test phone numbers** in Firebase Console → Authentication → Sign-in method → Phone → Phone numbers for testing.
 
 You can disable Supabase Phone provider — it is not used for OTP.
 

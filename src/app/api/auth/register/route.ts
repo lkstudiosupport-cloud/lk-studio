@@ -14,11 +14,14 @@ import { internalEmailForUser } from "@/lib/internal-email";
 import {
   zodErrorMessage,
   formString,
-  formCode,
   formOptionalString,
   formOptionalNumber,
 } from "@/lib/zod-error-message";
-import { verifyLoginOtp, verifyMsg91WidgetLogin } from "@/lib/login-otp";
+import {
+  firebasePhoneAuthConfigError,
+  isFirebasePhoneAuthConfigured,
+  verifyFirebasePhoneToken,
+} from "@/lib/firebase/phone-auth-server";
 
 const registerBase = {
   name: formString(1),
@@ -43,17 +46,11 @@ const passwordSchema = z.object({
 
 const otpSchema = z.object({
   authMethod: z.literal("otp"),
-  otpCode: formCode().optional(),
-  accessToken: formString(20).optional(),
+  idToken: formString(20),
   ...registerBase,
 });
 
-const schema = z
-  .discriminatedUnion("authMethod", [passwordSchema, otpSchema])
-  .refine((d) => d.authMethod !== "otp" || Boolean(d.otpCode?.trim() || d.accessToken?.trim()), {
-    message: "OTP code or MSG91 access token required",
-    path: ["otpCode"],
-  });
+const schema = z.discriminatedUnion("authMethod", [passwordSchema, otpSchema]);
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
@@ -97,15 +94,19 @@ export async function POST(req: Request) {
     }
 
     if (data.authMethod === "otp") {
+      if (!isFirebasePhoneAuthConfigured()) {
+        return NextResponse.json(
+          { error: firebasePhoneAuthConfigError() ?? "Phone OTP is not configured" },
+          { status: 503 }
+        );
+      }
       const e164 = resolvePhoneE164(phone);
       if (!e164) {
         return NextResponse.json({ error: INVALID_PHONE_MESSAGE }, { status: 400 });
       }
-      const otpOk = data.accessToken
-        ? await verifyMsg91WidgetLogin(e164, data.accessToken)
-        : await verifyLoginOtp(e164, role, data.otpCode!.trim());
+      const otpOk = await verifyFirebasePhoneToken(data.idToken, e164);
       if (!otpOk) {
-        return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 401 });
+        return NextResponse.json({ error: "Invalid or expired verification" }, { status: 401 });
       }
     }
 

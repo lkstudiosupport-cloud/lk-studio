@@ -9,6 +9,11 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { showDemoLoginUI } from "@/lib/demo-ui";
+import {
+  FIREBASE_RECAPTCHA_CONTAINER_ID,
+  mapFirebasePhoneAuthError,
+  useFirebasePhoneOtp,
+} from "@/lib/firebase/phone-auth-client";
 
 type LoginMode = "password" | "otp";
 
@@ -20,14 +25,13 @@ export function LoginForm({
   role: "SHOP" | "CUSTOMER";
 }) {
   const router = useRouter();
+  const { sendOtp, verifyOtpAndGetIdToken, resetRecaptcha } = useFirebasePhoneOtp();
   const [mode, setMode] = useState<LoginMode>("password");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [demoCode, setDemoCode] = useState("");
-  const [otpInfo, setOtpInfo] = useState("");
 
   function authPayload(extra: Record<string, unknown> = {}) {
     return { phone, role, deviceId: getOrCreateDeviceId(), ...extra };
@@ -60,9 +64,9 @@ export function LoginForm({
         setMode("otp");
         setInfo(t(locale, "deviceVerificationRequired"));
         setOtpSent(false);
-        setDemoCode("");
+        resetRecaptcha();
         setLoading(false);
-        await sendOtp();
+        await sendFirebaseOtp();
         return;
       }
 
@@ -74,34 +78,18 @@ export function LoginForm({
     }
   }
 
-  async function sendOtp() {
+  async function sendFirebaseOtp() {
     setLoading(true);
     setError("");
     setInfo("");
-    setDemoCode("");
 
     try {
-      const res = await fetch("/api/auth/login/otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, role }),
-      });
-      const data = await parseApiResponse(res);
-      setLoading(false);
-
-      if (!res.ok) {
-        const key = typeof data.errorKey === "string" ? data.errorKey : null;
-        const detail = typeof data.detail === "string" ? data.detail : null;
-        setError(detail || (key ? t(locale, key) : String(data.error ?? "Could not send OTP")));
-        return;
-      }
-
+      await sendOtp(phone);
       setOtpSent(true);
-      setOtpInfo(data.smsDelivered === false ? t(locale, "otpSmsFallback") : "");
-      if (data.demoCode) setDemoCode(String(data.demoCode));
-    } catch {
       setLoading(false);
-      setError("Cannot reach server. Keep mobile:dev running on PC.");
+    } catch (err) {
+      setLoading(false);
+      setError(mapFirebasePhoneAuthError(err));
     }
   }
 
@@ -110,13 +98,15 @@ export function LoginForm({
     setLoading(true);
     setError("");
     const fd = new FormData(e.currentTarget);
+    const code = String(fd.get("code") ?? "");
 
     try {
+      const idToken = await verifyOtpAndGetIdToken(code);
       const res = await fetch("/api/auth/login/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(authPayload({ code: fd.get("code") })),
+        body: JSON.stringify(authPayload({ idToken })),
       });
 
       const data = await parseApiResponse(res);
@@ -129,9 +119,9 @@ export function LoginForm({
 
       router.push(String(data.redirect ?? "/"));
       router.refresh();
-    } catch {
+    } catch (err) {
       setLoading(false);
-      setError("Cannot reach server. Keep mobile:dev running on PC.");
+      setError(mapFirebasePhoneAuthError(err));
     }
   }
 
@@ -140,12 +130,13 @@ export function LoginForm({
     setError("");
     setInfo("");
     setOtpSent(false);
-    setDemoCode("");
-    setOtpInfo("");
+    resetRecaptcha();
   }
 
   return (
     <div className="card-premium min-w-0 space-y-4 p-4 sm:p-6">
+      <div id={FIREBASE_RECAPTCHA_CONTAINER_ID} className="hidden" aria-hidden />
+
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
@@ -201,7 +192,7 @@ export function LoginForm({
             <button
               type="button"
               disabled={loading || !phone.trim()}
-              onClick={() => void sendOtp()}
+              onClick={() => void sendFirebaseOtp()}
               className="btn-primary w-full py-3"
             >
               {loading ? "..." : t(locale, "sendOtpCode")}
@@ -209,14 +200,6 @@ export function LoginForm({
           ) : (
             <>
               <p className="text-sm text-brand-green-soft">{t(locale, "otpCodeSent")}</p>
-              {otpInfo && (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{otpInfo}</p>
-              )}
-              {demoCode && (
-                <p className="rounded-lg bg-brand-gold/20 px-3 py-2 text-sm text-brand-green">
-                  {t(locale, "demoOtpCode")}: <strong>{demoCode}</strong>
-                </p>
-              )}
               <input
                 name="code"
                 type="text"
@@ -233,7 +216,7 @@ export function LoginForm({
               <button
                 type="button"
                 disabled={loading}
-                onClick={() => void sendOtp()}
+                onClick={() => void sendFirebaseOtp()}
                 className="w-full text-sm text-brand-green-soft"
               >
                 {t(locale, "resendCode")}
