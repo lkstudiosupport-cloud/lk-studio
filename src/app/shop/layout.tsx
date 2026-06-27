@@ -23,6 +23,25 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     cachedUserDemoFields(session.id),
   ]);
 
+  if (!profile) {
+    return (
+      <main className="brand-page-bg flex min-h-dvh items-center justify-center p-6">
+        <div className="card-premium max-w-md space-y-4 p-6 text-center">
+          <h1 className="text-lg font-bold text-brand-green">{t(locale, "appName")}</h1>
+          <p className="text-sm text-zinc-600">
+            Shop profile could not be loaded. Check your connection and try again.
+          </p>
+          <a href="/shop" className="btn-primary block py-3">
+            Try again
+          </a>
+          <a href="/login/shop" className="btn-secondary block py-3">
+            {t(locale, "shopLogin")}
+          </a>
+        </div>
+      </main>
+    );
+  }
+
   const demoBypass =
     isDemoAccountUser(user) || isDemoAccountUser({ phone: profile?.phone });
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { LocaleLocationBar } from "@/components/LocaleLocationBar";
-import { getSessionFromCookie } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { LegalFooter } from "@/components/LegalFooter";
@@ -10,9 +10,9 @@ import { showDemoLogin } from "@/lib/production";
 
 export default async function HomePage() {
   const locale = await getLocale();
-  const session = await getSessionFromCookie();
+  const session = await getSession();
 
-  if (session?.role === "SHOP") redirect("/shop");
+  if (session?.role === "SHOP" && session.shopId) redirect("/shop");
   if (session?.role === "CUSTOMER") redirect("/customer/designs");
 
   return (
