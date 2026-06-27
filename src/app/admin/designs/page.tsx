@@ -8,10 +8,15 @@ import {
   fetchCatalogPartCounts,
   fetchCatalogSizeTierCounts,
 } from "@/lib/catalog-design-counts";
+import {
+  catalogAdminApiQuery,
+  catalogAdminWhere,
+  fetchCatalogDesignPage,
+  parseAdminPartView,
+  parseAdminSizeView,
+} from "@/lib/catalog-design-list";
 import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
-import { designListSelect } from "@/lib/design-list-select";
-import { withDbRetry } from "@/lib/safe-db";
 import type { ServiceCategory } from "@prisma/client";
 
 const CATEGORY_KEYS = new Set(CATALOG_CATEGORIES);
@@ -26,20 +31,22 @@ function resolveCategory(raw?: string): ServiceCategory {
 export default async function AdminDesignsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; sizeView?: string; partView?: string }>;
 }) {
   await requireSession(["ADMIN"]);
   const [locale, params] = await Promise.all([getLocale(), searchParams]);
   const category = resolveCategory(params.category);
+  const sizeView = categoryHasSizeTiers(category)
+    ? parseAdminSizeView(params.sizeView)
+    : undefined;
+  const partView = categoryHasCatalogParts(category)
+    ? parseAdminPartView(params.partView)
+    : undefined;
 
-  const [designs, categoryCounts, tierCounts, partCounts] = await Promise.all([
-    withDbRetry(() =>
-      prisma.design.findMany({
-        where: { isCatalog: true, category, active: true },
-        select: designListSelect,
-        orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
-      })
-    ),
+  const adminQuery = { category, sizeView, partView };
+
+  const [designPage, categoryCounts, tierCounts, partCounts] = await Promise.all([
+    fetchCatalogDesignPage({ where: catalogAdminWhere(adminQuery), page: 1 }),
     cachedAdminCategoryCounts(),
     categoryHasSizeTiers(category) ? fetchCatalogSizeTierCounts(category) : Promise.resolve(null),
     categoryHasCatalogParts(category) ? fetchCatalogPartCounts(category) : Promise.resolve(null),
@@ -49,7 +56,12 @@ export default async function AdminDesignsPage({
     <AdminCatalogPanel
       locale={locale}
       category={category}
-      designs={designs}
+      sizeView={sizeView}
+      partView={partView}
+      designs={designPage.items}
+      total={designPage.total}
+      hasMore={designPage.hasMore}
+      apiQuery={catalogAdminApiQuery(adminQuery)}
       categoryCounts={categoryCounts}
       tierCounts={tierCounts}
       partCounts={partCounts}

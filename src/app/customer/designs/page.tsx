@@ -8,7 +8,6 @@ import { isShopActive } from "@/lib/subscription";
 import {
   isCatalogCategory,
   shopStitchedDesignsWhere,
-  sortedCatalogDesignWhere,
 } from "@/lib/design-access";
 import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
 import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
@@ -17,8 +16,12 @@ import {
   fetchCatalogPartCounts,
   fetchCatalogSizeTierCounts,
 } from "@/lib/catalog-design-counts";
+import {
+  catalogBrowseApiQuery,
+  catalogBrowseWhere,
+  fetchCatalogDesignPage,
+} from "@/lib/catalog-design-list";
 import { DESIGN_CARD_SELECT } from "@/lib/design-queries";
-import { DESIGN_LIST_LIMIT } from "@/lib/limits";
 import { withDbRetry } from "@/lib/safe-db";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import Link from "next/link";
@@ -188,15 +191,11 @@ export default async function CustomerDesignsPage({
   });
   const priceShopId = savedShop?.shopId;
 
-  const [designs, categoryCounts, tierCounts, partCounts, customerFavorites] = await Promise.all([
-    withDbRetry(() =>
-      prisma.design.findMany({
-        where: sortedCatalogDesignWhere(category),
-        select: DESIGN_CARD_SELECT,
-        orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
-        take: DESIGN_LIST_LIMIT,
-      })
-    ),
+  const [designPage, categoryCounts, tierCounts, partCounts, customerFavorites] = await Promise.all([
+    fetchCatalogDesignPage({
+      where: catalogBrowseWhere({ category, sizeTier: initialSizeTier, catalogPart: initialCatalogPart }),
+      page: 1,
+    }),
     cachedCatalogCategoryCounts(),
     categoryHasSizeTiers(category) ? fetchCatalogSizeTierCounts(category) : Promise.resolve(null),
     categoryHasCatalogParts(category) ? fetchCatalogPartCounts(category) : Promise.resolve(null),
@@ -210,10 +209,19 @@ export default async function CustomerDesignsPage({
       : Promise.resolve([]),
   ]);
 
+  const apiQuery = catalogBrowseApiQuery({
+    category,
+    sizeTier: initialSizeTier,
+    catalogPart: initialCatalogPart,
+  });
+
   return (
     <CustomerCatalogPanel
       locale={locale}
-      designs={designs}
+      designs={designPage.items}
+      total={designPage.total}
+      hasMore={designPage.hasMore}
+      apiQuery={apiQuery}
       categoryCounts={categoryCounts}
       tierCounts={tierCounts}
       partCounts={partCounts}

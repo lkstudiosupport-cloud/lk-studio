@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES } from "@/lib/categories";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
-import {
-  categoryHasSizeTiers,
-  defaultSizeTierForCategory,
-} from "@/lib/design-size-tier";
+import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
 import type { CatalogPartCounts, CatalogSizeTierCounts } from "@/lib/catalog-design-counts";
 import type { DesignListItem } from "@/lib/design-queries";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
+import { CatalogDesignPager } from "@/components/CatalogDesignPager";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { CatalogPartButtons } from "@/components/CatalogPartButtons";
 import { withQueryParam } from "@/lib/query-string";
@@ -33,6 +32,9 @@ function catalogUrl(
 export function CustomerCatalogPanel({
   locale,
   designs,
+  total,
+  hasMore,
+  apiQuery,
   categoryCounts,
   tierCounts,
   partCounts,
@@ -44,6 +46,9 @@ export function CustomerCatalogPanel({
 }: {
   locale: Locale;
   designs: DesignListItem[];
+  total: number;
+  hasMore: boolean;
+  apiQuery: string;
   categoryCounts: Partial<Record<ServiceCategory, number>>;
   tierCounts: CatalogSizeTierCounts | null;
   partCounts: CatalogPartCounts | null;
@@ -54,43 +59,25 @@ export function CustomerCatalogPanel({
   initialCatalogPart?: CatalogPart;
 }) {
   const tabs = CATEGORIES.filter((c) => CATALOG_CATEGORIES.includes(c.key));
-  const [sizeTier, setSizeTier] = useState<DesignSizeTier | undefined>(
-    initialSizeTier ?? defaultSizeTierForCategory(initialCategory)
-  );
-  const [catalogPart, setCatalogPart] = useState<CatalogPart | undefined>(
-    initialCatalogPart ?? defaultCatalogPartForCategory(initialCategory)
-  );
-
   const category = initialCategory;
+  const sizeTier = initialSizeTier ?? defaultSizeTierForCategory(category);
+  const catalogPart = initialCatalogPart ?? defaultCatalogPartForCategory(category);
+  const router = useRouter();
   const favorites = useMemo(() => new Set(favoriteDesignIds), [favoriteDesignIds]);
   const hasSizeTiers = categoryHasSizeTiers(category);
   const hasCatalogParts = categoryHasCatalogParts(category);
   const needsSubgroup = hasSizeTiers || hasCatalogParts;
 
-  const categoryDesigns = useMemo(() => {
-    let list = designs;
-    if (hasSizeTiers) {
-      if (!sizeTier) return [];
-      list = list.filter((d) => d.sizeTier === sizeTier);
-    }
-    if (hasCatalogParts) {
-      if (!catalogPart) return [];
-      list = list.filter((d) => d.catalogPart === catalogPart);
-    }
-    return list;
-  }, [designs, hasSizeTiers, hasCatalogParts, sizeTier, catalogPart]);
-
-  useEffect(() => {
-    setSizeTier(initialSizeTier ?? defaultSizeTierForCategory(initialCategory));
-    setCatalogPart(initialCatalogPart ?? defaultCatalogPartForCategory(initialCategory));
-  }, [initialCategory, initialSizeTier, initialCatalogPart]);
-
-  useEffect(() => {
-    window.history.replaceState(null, "", catalogUrl(category, sizeTier, catalogPart));
-  }, [category, sizeTier, catalogPart]);
-
   const subgroupReady =
     !needsSubgroup || (hasSizeTiers && sizeTier) || (hasCatalogParts && catalogPart);
+
+  function pickSizeTier(tier: DesignSizeTier) {
+    router.push(catalogUrl(category, tier, catalogPart));
+  }
+
+  function pickCatalogPart(part: CatalogPart) {
+    router.push(catalogUrl(category, sizeTier, part));
+  }
 
   return (
     <div className="space-y-6">
@@ -128,7 +115,7 @@ export function CustomerCatalogPanel({
         <SizeTierButtons
           locale={locale}
           active={sizeTier}
-          onPick={setSizeTier}
+          onPick={pickSizeTier}
           counts={
             tierCounts
               ? { SMALL: tierCounts.SMALL, MEDIUM: tierCounts.MEDIUM, BIG: tierCounts.BIG }
@@ -142,7 +129,7 @@ export function CustomerCatalogPanel({
           locale={locale}
           category={category}
           active={catalogPart}
-          onPick={setCatalogPart}
+          onPick={pickCatalogPart}
           counts={
             partCounts
               ? { MAIN: partCounts.MAIN, HAND_SLEEVES: partCounts.HAND_SLEEVES }
@@ -152,15 +139,25 @@ export function CustomerCatalogPanel({
       )}
 
       {category && subgroupReady && (
-        <ShopDesignCollections
+        <CatalogDesignPager
           locale={locale}
-          designs={categoryDesigns}
-          shopId={priceShopId}
-          favoriteDesignIds={favorites}
-          detailHrefForDesign={(d) =>
-            withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
-          }
-        />
+          initialDesigns={designs}
+          total={total}
+          hasMore={hasMore}
+          apiQuery={apiQuery}
+        >
+          {(pagedDesigns) => (
+            <ShopDesignCollections
+              locale={locale}
+              designs={pagedDesigns}
+              shopId={priceShopId}
+              favoriteDesignIds={favorites}
+              detailHrefForDesign={(d) =>
+                withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
+              }
+            />
+          )}
+        </CatalogDesignPager>
       )}
     </div>
   );

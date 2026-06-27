@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ServiceCategory } from "@prisma/client";
@@ -19,30 +19,51 @@ import type { CatalogPart, DesignSizeTier } from "@prisma/client";
 import { compressImageFile } from "@/lib/compress-image";
 import { fetchApi, formatFetchError } from "@/lib/parse-api-response";
 import { withQueryParam } from "@/lib/query-string";
+import { CatalogDesignPager } from "@/components/CatalogDesignPager";
+import type { CatalogAdminQuery } from "@/lib/catalog-design-list";
 import { Loader2, Plus } from "lucide-react";
 
 const ADMIN_CATEGORIES = CATEGORIES.filter((c) => CATALOG_CATEGORIES.includes(c.key));
 const ADMIN_BASE = "/admin/designs";
 
+function adminDesignsUrl(
+  category: ServiceCategory,
+  sizeView?: CatalogAdminQuery["sizeView"],
+  partView?: CatalogAdminQuery["partView"]
+): string {
+  let url = withQueryParam(ADMIN_BASE, "category", category);
+  if (sizeView) url = withQueryParam(url, "sizeView", sizeView);
+  if (partView) url = withQueryParam(url, "partView", partView);
+  return url;
+}
+
 export function AdminCatalogPanel({
   locale,
   category,
+  sizeView,
+  partView,
   designs,
+  total,
+  hasMore,
+  apiQuery,
   categoryCounts,
   tierCounts,
   partCounts,
 }: {
   locale: Locale;
   category: ServiceCategory;
+  sizeView?: CatalogAdminQuery["sizeView"];
+  partView?: CatalogAdminQuery["partView"];
   designs: DesignListItem[];
+  total: number;
+  hasMore: boolean;
+  apiQuery: string;
   categoryCounts: Partial<Record<ServiceCategory, number>>;
   tierCounts: CatalogSizeTierCounts | null;
   partCounts: CatalogPartCounts | null;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [sizeTierFilter, setSizeTierFilter] = useState<DesignSizeTier | "UNASSIGNED">("UNASSIGNED");
-  const [catalogPartFilter, setCatalogPartFilter] = useState<CatalogPart | "UNASSIGNED">("UNASSIGNED");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -52,45 +73,26 @@ export function AdminCatalogPanel({
   const activeCategory = ADMIN_CATEGORIES.find((c) => c.key === category)!;
   const hasSizeTiers = categoryHasSizeTiers(category);
   const hasCatalogParts = categoryHasCatalogParts(category);
+  const sizeTierFilter = sizeView ?? "unassigned";
+  const catalogPartFilter = partView ?? "unassigned";
   const onUnassignedView =
-    (hasSizeTiers && sizeTierFilter === "UNASSIGNED") ||
-    (hasCatalogParts && catalogPartFilter === "UNASSIGNED");
+    (hasSizeTiers && sizeTierFilter === "unassigned") ||
+    (hasCatalogParts && catalogPartFilter === "unassigned");
 
   useEffect(() => {
     setSelectedIds(new Set());
-    setSizeTierFilter("UNASSIGNED");
-    setCatalogPartFilter("UNASSIGNED");
-  }, [category]);
-
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [sizeTierFilter, catalogPartFilter]);
-
-  const categoryDesigns = useMemo(() => {
-    return [...designs].sort((a, b) => {
-      if (a.catalogNumber && b.catalogNumber) return a.catalogNumber.localeCompare(b.catalogNumber);
-      return b.createdAt > a.createdAt ? 1 : -1;
-    });
-  }, [designs]);
+  }, [category, sizeTierFilter, catalogPartFilter]);
 
   const safeTierCounts = tierCounts ?? { SMALL: 0, MEDIUM: 0, BIG: 0, unassigned: 0 };
   const safePartCounts = partCounts ?? { MAIN: 0, HAND_SLEEVES: 0, unassigned: 0 };
 
-  const visibleDesigns = useMemo(() => {
-    if (hasSizeTiers) {
-      if (sizeTierFilter === "UNASSIGNED") {
-        return categoryDesigns.filter((d) => !d.sizeTier);
-      }
-      return categoryDesigns.filter((d) => d.sizeTier === sizeTierFilter);
-    }
-    if (hasCatalogParts) {
-      if (catalogPartFilter === "UNASSIGNED") {
-        return categoryDesigns.filter((d) => !d.catalogPart);
-      }
-      return categoryDesigns.filter((d) => d.catalogPart === catalogPartFilter);
-    }
-    return categoryDesigns;
-  }, [categoryDesigns, hasSizeTiers, hasCatalogParts, sizeTierFilter, catalogPartFilter]);
+  function pickSizeView(view: DesignSizeTier | "unassigned") {
+    router.push(adminDesignsUrl(category, view, partView));
+  }
+
+  function pickPartView(view: CatalogPart | "unassigned") {
+    router.push(adminDesignsUrl(category, sizeView, view));
+  }
 
   function toggleSelected(id: string) {
     setSelectedIds((prev) => {
@@ -102,7 +104,7 @@ export function AdminCatalogPanel({
   }
 
   function selectAllVisible() {
-    setSelectedIds(new Set(visibleDesigns.map((d) => d.id)));
+    setSelectedIds(new Set(designs.map((d) => d.id)));
   }
 
   function clearSelection() {
@@ -131,8 +133,7 @@ export function AdminCatalogPanel({
         last = await uploadOne(files[i]!);
       }
       if (last) setLastCode(last);
-      if (hasSizeTiers) setSizeTierFilter("UNASSIGNED");
-      if (hasCatalogParts) setCatalogPartFilter("UNASSIGNED");
+      router.push(adminDesignsUrl(category, "unassigned", partView));
       router.refresh();
     } catch (e) {
       setError(formatFetchError(e, "Upload failed"));
@@ -165,8 +166,8 @@ export function AdminCatalogPanel({
       if (!res.ok) throw new Error(data.error || "Assign failed");
       if (data.catalogNumber) setLastCode(data.catalogNumber);
       setSelectedIds(new Set());
-      if (body.sizeTier) setSizeTierFilter(body.sizeTier);
-      if (body.catalogPart) setCatalogPartFilter(body.catalogPart);
+      if (body.sizeTier) router.push(adminDesignsUrl(category, body.sizeTier, partView));
+      else if (body.catalogPart) router.push(adminDesignsUrl(category, sizeView, body.catalogPart));
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Assign failed");
@@ -228,7 +229,7 @@ export function AdminCatalogPanel({
         {ADMIN_CATEGORIES.map((c) => (
           <Link
             key={c.key}
-            href={withQueryParam(ADMIN_BASE, "category", c.key)}
+            href={adminDesignsUrl(c.key, "unassigned", "unassigned")}
             scroll={false}
             prefetch
             className={`min-h-[4rem] rounded-2xl p-2.5 text-center text-xs font-semibold shadow-md transition sm:min-h-[4.5rem] sm:p-3 sm:text-sm ${
@@ -257,8 +258,8 @@ export function AdminCatalogPanel({
         {hasSizeTiers && (
           <SizeTierButtons
             locale={locale}
-            active={sizeTierFilter === "UNASSIGNED" ? undefined : sizeTierFilter}
-            onPick={setSizeTierFilter}
+            active={sizeTierFilter === "unassigned" ? undefined : sizeTierFilter}
+            onPick={(tier) => pickSizeView(tier)}
             counts={{
               SMALL: safeTierCounts.SMALL,
               MEDIUM: safeTierCounts.MEDIUM,
@@ -266,8 +267,8 @@ export function AdminCatalogPanel({
             }}
             showUnassigned
             unassignedCount={safeTierCounts.unassigned}
-            unassignedActive={sizeTierFilter === "UNASSIGNED"}
-            onPickUnassigned={() => setSizeTierFilter("UNASSIGNED")}
+            unassignedActive={sizeTierFilter === "unassigned"}
+            onPickUnassigned={() => pickSizeView("unassigned")}
           />
         )}
 
@@ -275,20 +276,20 @@ export function AdminCatalogPanel({
           <CatalogPartButtons
             locale={locale}
             category={category}
-            active={catalogPartFilter === "UNASSIGNED" ? undefined : catalogPartFilter}
-            onPick={setCatalogPartFilter}
+            active={catalogPartFilter === "unassigned" ? undefined : catalogPartFilter}
+            onPick={(part) => pickPartView(part)}
             counts={{
               MAIN: safePartCounts.MAIN,
               HAND_SLEEVES: safePartCounts.HAND_SLEEVES,
             }}
             showUnassigned
             unassignedCount={safePartCounts.unassigned}
-            unassignedActive={catalogPartFilter === "UNASSIGNED"}
-            onPickUnassigned={() => setCatalogPartFilter("UNASSIGNED")}
+            unassignedActive={catalogPartFilter === "unassigned"}
+            onPickUnassigned={() => pickPartView("unassigned")}
           />
         )}
 
-        {onUnassignedView && visibleDesigns.length > 0 && (
+        {onUnassignedView && designs.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -342,34 +343,44 @@ export function AdminCatalogPanel({
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => fileRef.current?.click()}
-            className="flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-green/35 bg-brand-cream/40 text-brand-green transition hover:border-brand-green/60 hover:bg-brand-cream/70 disabled:opacity-60"
-          >
-            {pending ? (
-              <Loader2 className="h-8 w-8 animate-spin text-brand-gold" />
-            ) : (
-              <>
-                <Plus className="h-8 w-8 text-brand-gold" />
-                <span className="px-2 text-center text-xs font-semibold">Add photos (bulk)</span>
-              </>
-            )}
-          </button>
+        <CatalogDesignPager
+          locale={locale}
+          initialDesigns={designs}
+          total={total}
+          hasMore={hasMore}
+          apiQuery={apiQuery}
+        >
+          {(pagedDesigns) => (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => fileRef.current?.click()}
+                className="flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-green/35 bg-brand-cream/40 text-brand-green transition hover:border-brand-green/60 hover:bg-brand-cream/70 disabled:opacity-60"
+              >
+                {pending ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-brand-gold" />
+                ) : (
+                  <>
+                    <Plus className="h-8 w-8 text-brand-gold" />
+                    <span className="px-2 text-center text-xs font-semibold">Add photos (bulk)</span>
+                  </>
+                )}
+              </button>
 
-          {visibleDesigns.map((d) => (
-            <AdminDesignItem
-              key={d.id}
-              design={d}
-              locale={locale}
-              selectable={onUnassignedView}
-              selected={selectedIds.has(d.id)}
-              onToggleSelect={() => toggleSelected(d.id)}
-            />
-          ))}
-        </div>
+              {pagedDesigns.map((d) => (
+                <AdminDesignItem
+                  key={d.id}
+                  design={d}
+                  locale={locale}
+                  selectable={onUnassignedView}
+                  selected={selectedIds.has(d.id)}
+                  onToggleSelect={() => toggleSelected(d.id)}
+                />
+              ))}
+            </div>
+          )}
+        </CatalogDesignPager>
       </section>
 
       <input

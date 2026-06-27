@@ -1,0 +1,158 @@
+import type { Prisma } from "@prisma/client";
+import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import {
+  isShopOwnedUploadCategory,
+  shopStitchedDesignsWhere,
+  sortedCatalogDesignWhere,
+} from "@/lib/design-access";
+import { categoryHasSizeTiers } from "@/lib/design-size-tier";
+import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
+import { designListSelect, type DesignListItem } from "@/lib/design-list-select";
+import { CATALOG_MAX_PAGE, CATALOG_PAGE_SIZE } from "@/lib/limits";
+import { withDbRetry } from "@/lib/safe-db";
+
+export type CatalogBrowseQuery = {
+  category: ServiceCategory;
+  sizeTier?: DesignSizeTier;
+  catalogPart?: CatalogPart;
+};
+
+export type CatalogAdminQuery = {
+  category: ServiceCategory;
+  /** unassigned | SMALL | MEDIUM | BIG */
+  sizeView?: "unassigned" | DesignSizeTier;
+  /** unassigned | MAIN | HAND_SLEEVES */
+  partView?: "unassigned" | CatalogPart;
+};
+
+const designOrderBy = [{ catalogNumber: "asc" as const }, { createdAt: "desc" as const }];
+
+export function catalogBrowseWhere(query: CatalogBrowseQuery): Prisma.DesignWhereInput {
+  const base = sortedCatalogDesignWhere(query.category);
+  if (categoryHasSizeTiers(query.category) && query.sizeTier) {
+    return { ...base, sizeTier: query.sizeTier };
+  }
+  if (categoryHasCatalogParts(query.category) && query.catalogPart) {
+    return { ...base, catalogPart: query.catalogPart };
+  }
+  return base;
+}
+
+export function catalogAdminWhere(query: CatalogAdminQuery): Prisma.DesignWhereInput {
+  const base: Prisma.DesignWhereInput = {
+    isCatalog: true,
+    category: query.category,
+    active: true,
+  };
+
+  if (categoryHasSizeTiers(query.category)) {
+    const view = query.sizeView ?? "unassigned";
+    if (view === "unassigned") return { ...base, sizeTier: null };
+    return { ...base, sizeTier: view };
+  }
+
+  if (categoryHasCatalogParts(query.category)) {
+    const view = query.partView ?? "unassigned";
+    if (view === "unassigned") return { ...base, catalogPart: null };
+    return { ...base, catalogPart: view };
+  }
+
+  return base;
+}
+
+export function shopDesignsWhere(
+  shopId: string,
+  query: CatalogBrowseQuery
+): Prisma.DesignWhereInput {
+  if (isShopOwnedUploadCategory(query.category)) {
+    return shopStitchedDesignsWhere(shopId);
+  }
+  return catalogBrowseWhere(query);
+}
+
+function clampPage(page: number): number {
+  if (!Number.isFinite(page) || page < 1) return 1;
+  return Math.min(Math.floor(page), CATALOG_MAX_PAGE);
+}
+
+export async function fetchCatalogDesignPage({
+  where,
+  page = 1,
+  pageSize = CATALOG_PAGE_SIZE,
+}: {
+  where: Prisma.DesignWhereInput;
+  page?: number;
+  pageSize?: number;
+}): Promise<{ items: DesignListItem[]; total: number; page: number; pageSize: number; hasMore: boolean }> {
+  const p = clampPage(page);
+  const take = Math.min(Math.max(pageSize, 1), CATALOG_PAGE_SIZE);
+  const skip = (p - 1) * take;
+
+  const [items, total] = await Promise.all([
+    withDbRetry(() =>
+      prisma.design.findMany({
+        where,
+        select: designListSelect,
+        orderBy: designOrderBy,
+        skip,
+        take,
+      })
+    ),
+    withDbRetry(() => prisma.design.count({ where })),
+  ]);
+
+  return {
+    items,
+    total,
+    page: p,
+    pageSize: take,
+    hasMore: skip + items.length < total,
+  };
+}
+
+export function parseCatalogPage(raw?: string): number {
+  const n = Number.parseInt(raw ?? "1", 10);
+  return clampPage(n);
+}
+
+export function parseSizeTier(raw?: string): DesignSizeTier | undefined {
+  const u = raw?.toUpperCase();
+  if (u === "SMALL" || u === "MEDIUM" || u === "BIG") return u;
+  return undefined;
+}
+
+export function parseCatalogPart(raw?: string): CatalogPart | undefined {
+  const u = raw?.toUpperCase();
+  if (u === "MAIN" || u === "HAND_SLEEVES") return u;
+  return undefined;
+}
+
+export function parseAdminSizeView(raw?: string): CatalogAdminQuery["sizeView"] {
+  const u = raw?.toLowerCase();
+  if (u === "unassigned" || !u) return "unassigned";
+  const tier = parseSizeTier(raw);
+  return tier ?? "unassigned";
+}
+
+export function parseAdminPartView(raw?: string): CatalogAdminQuery["partView"] {
+  const u = raw?.toLowerCase();
+  if (u === "unassigned" || !u) return "unassigned";
+  const part = parseCatalogPart(raw);
+  return part ?? "unassigned";
+}
+
+export function catalogBrowseApiQuery(query: CatalogBrowseQuery & { mode?: string }): string {
+  const params = new URLSearchParams({ category: query.category });
+  if (query.sizeTier) params.set("size", query.sizeTier);
+  if (query.catalogPart) params.set("part", query.catalogPart);
+  if (query.mode) params.set("mode", query.mode);
+  return params.toString();
+}
+
+export function catalogAdminApiQuery(query: CatalogAdminQuery): string {
+  const params = new URLSearchParams({ category: query.category, mode: "admin" });
+  if (query.sizeView) params.set("sizeView", query.sizeView);
+  if (query.partView) params.set("partView", query.partView);
+  return params.toString();
+}

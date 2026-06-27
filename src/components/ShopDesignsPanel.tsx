@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES, isCategoryShopUpload } from "@/lib/categories";
+import type { CatalogPartCounts, CatalogSizeTierCounts } from "@/lib/catalog-design-counts";
+import { CatalogDesignPager } from "@/components/CatalogDesignPager";
 import { isShopOwnedUploadCategory } from "@/lib/design-access";
 import type { DesignListItem } from "@/lib/design-list-select";
 import { withQueryParam } from "@/lib/query-string";
@@ -21,30 +23,49 @@ import { Loader2, Plus } from "lucide-react";
 
 const BASE_PATH = "/shop/designs";
 
+function shopDesignsUrl(
+  category: ServiceCategory,
+  sizeTier?: DesignSizeTier,
+  catalogPart?: CatalogPart
+): string {
+  let url = withQueryParam(BASE_PATH, "category", category);
+  if (sizeTier) url = withQueryParam(url, "size", sizeTier);
+  if (catalogPart) url = withQueryParam(url, "part", catalogPart);
+  return url;
+}
+
 export function ShopDesignsPanel({
   locale,
   designs,
+  total,
+  hasMore,
+  apiQuery,
   shopId,
   category,
+  sizeTier,
+  catalogPart,
   categoryCounts,
+  tierCounts,
+  partCounts,
 }: {
   locale: Locale;
   designs: DesignListItem[];
+  total: number;
+  hasMore: boolean;
+  apiQuery: string;
   shopId: string;
   category: ServiceCategory;
+  sizeTier?: DesignSizeTier;
+  catalogPart?: CatalogPart;
   categoryCounts: Record<ServiceCategory, number>;
+  tierCounts: CatalogSizeTierCounts | null;
+  partCounts: CatalogPartCounts | null;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
-  const [sizeTier, setSizeTier] = useState<DesignSizeTier | undefined>(() =>
-    defaultSizeTierForCategory(category)
-  );
-  const [catalogPart, setCatalogPart] = useState<CatalogPart | undefined>(() =>
-    defaultCatalogPartForCategory(category)
-  );
 
   const canUpload = isCategoryShopUpload(category);
   const activeCategory = CATEGORIES.find((c) => c.key === category)!;
@@ -52,46 +73,16 @@ export function ShopDesignsPanel({
   const hasCatalogParts = categoryHasCatalogParts(category);
   const needsSubgroup = hasSizeTiers || hasCatalogParts;
 
-  const tierCounts = useMemo(() => {
-    if (!hasSizeTiers) return null;
-    const counts = { SMALL: 0, MEDIUM: 0, BIG: 0 } as Record<DesignSizeTier, number>;
-    for (const d of designs) {
-      if (!d.sizeTier) continue;
-      counts[d.sizeTier]++;
-    }
-    return counts;
-  }, [designs, hasSizeTiers]);
-
-  const partCounts = useMemo(() => {
-    if (!hasCatalogParts) return null;
-    const counts = { MAIN: 0, HAND_SLEEVES: 0 } as Record<CatalogPart, number>;
-    for (const d of designs) {
-      if (!d.catalogPart) continue;
-      counts[d.catalogPart]++;
-    }
-    return counts;
-  }, [designs, hasCatalogParts]);
-
-  const visibleDesigns = useMemo(() => {
-    let list = designs;
-    if (hasSizeTiers) {
-      if (!sizeTier) return [];
-      list = list.filter((d) => d.sizeTier === sizeTier);
-    }
-    if (hasCatalogParts) {
-      if (!catalogPart) return [];
-      list = list.filter((d) => d.catalogPart === catalogPart);
-    }
-    return list;
-  }, [designs, hasSizeTiers, hasCatalogParts, sizeTier, catalogPart]);
-
-  useEffect(() => {
-    setSizeTier(defaultSizeTierForCategory(category));
-    setCatalogPart(defaultCatalogPartForCategory(category));
-  }, [category]);
-
   const subgroupReady =
     !needsSubgroup || (hasSizeTiers && sizeTier) || (hasCatalogParts && catalogPart);
+
+  function pickSizeTier(tier: DesignSizeTier) {
+    router.push(shopDesignsUrl(category, tier, catalogPart));
+  }
+
+  function pickCatalogPart(part: CatalogPart) {
+    router.push(shopDesignsUrl(category, sizeTier, part));
+  }
 
   function canManageDesign(design: DesignListItem): boolean {
     return canUpload && isShopOwnedUploadCategory(category) && !design.isCatalog && design.shopId === shopId;
@@ -140,7 +131,11 @@ export function ShopDesignsPanel({
         {CATEGORIES.map((c) => (
           <Link
             key={c.key}
-            href={withQueryParam(BASE_PATH, "category", c.key)}
+            href={shopDesignsUrl(
+              c.key,
+              defaultSizeTierForCategory(c.key),
+              defaultCatalogPartForCategory(c.key)
+            )}
             scroll={false}
             prefetch
             className={`min-h-[4rem] rounded-2xl p-2.5 text-center text-xs font-semibold shadow-md transition hover:opacity-100 sm:min-h-[4.5rem] sm:p-3 sm:text-sm ${
@@ -169,8 +164,12 @@ export function ShopDesignsPanel({
             <SizeTierButtons
               locale={locale}
               active={sizeTier}
-              onPick={setSizeTier}
-              counts={tierCounts ?? undefined}
+              onPick={pickSizeTier}
+              counts={
+                tierCounts
+                  ? { SMALL: tierCounts.SMALL, MEDIUM: tierCounts.MEDIUM, BIG: tierCounts.BIG }
+                  : undefined
+              }
             />
             {!sizeTier && (
               <p className="card-premium p-4 text-center text-sm text-zinc-600">
@@ -186,8 +185,12 @@ export function ShopDesignsPanel({
               locale={locale}
               category={category}
               active={catalogPart}
-              onPick={setCatalogPart}
-              counts={partCounts ?? undefined}
+              onPick={pickCatalogPart}
+              counts={
+                partCounts
+                  ? { MAIN: partCounts.MAIN, HAND_SLEEVES: partCounts.HAND_SLEEVES }
+                  : undefined
+              }
             />
             {!catalogPart && (
               <p className="card-premium p-4 text-center text-sm text-zinc-600">
@@ -205,49 +208,62 @@ export function ShopDesignsPanel({
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {canUpload && (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => fileRef.current?.click()}
-              className="flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-green/35 bg-brand-cream/40 text-brand-green transition hover:border-brand-green/60 hover:bg-brand-cream/70 disabled:opacity-60"
-            >
-              {pending ? (
-                <Loader2 className="h-8 w-8 animate-spin text-brand-gold" />
-              ) : (
-                <>
-                  <Plus className="h-8 w-8 text-brand-gold" />
-                  <span className="px-2 text-center text-xs font-semibold">{t(locale, "addDesignPhoto")}</span>
-                </>
-              )}
-            </button>
-          )}
+        {subgroupReady && (
+          <CatalogDesignPager
+            locale={locale}
+            initialDesigns={designs}
+            total={total}
+            hasMore={hasMore}
+            apiQuery={apiQuery}
+          >
+            {(pagedDesigns) => (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {canUpload && (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => fileRef.current?.click()}
+                    className="flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-green/35 bg-brand-cream/40 text-brand-green transition hover:border-brand-green/60 hover:bg-brand-cream/70 disabled:opacity-60"
+                  >
+                    {pending ? (
+                      <Loader2 className="h-8 w-8 animate-spin text-brand-gold" />
+                    ) : (
+                      <>
+                        <Plus className="h-8 w-8 text-brand-gold" />
+                        <span className="px-2 text-center text-xs font-semibold">
+                          {t(locale, "addDesignPhoto")}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )}
 
-          {subgroupReady &&
-            visibleDesigns.map((d) => (
-              <ShopDesignItem
-                key={d.id}
-                design={d}
-                locale={locale}
-                manageable={canManageDesign(d)}
-              />
-            ))}
-        </div>
+                {pagedDesigns.map((d) => (
+                  <ShopDesignItem
+                    key={d.id}
+                    design={d}
+                    locale={locale}
+                    manageable={canManageDesign(d)}
+                  />
+                ))}
+              </div>
+            )}
+          </CatalogDesignPager>
+        )}
 
-        {visibleDesigns.length === 0 && !canUpload && needsSubgroup && !subgroupReady && (
+        {designs.length === 0 && !canUpload && needsSubgroup && !subgroupReady && (
           <p className="card-premium py-10 text-center text-sm text-zinc-500">
             {hasCatalogParts ? t(locale, "customerPickCatalogPartHint") : t(locale, "customerPickSizeTierHint")}
           </p>
         )}
 
-        {visibleDesigns.length === 0 && !canUpload && subgroupReady && (
+        {designs.length === 0 && !canUpload && subgroupReady && (
           <p className="card-premium py-10 text-center text-sm text-zinc-500">
             {t(locale, "noCatalogDesignsYet")}
           </p>
         )}
 
-        {visibleDesigns.length === 0 && canUpload && (
+        {designs.length === 0 && canUpload && (
           <p className="text-center text-sm text-zinc-500">{t(locale, "noStitchedDesignsYet")}</p>
         )}
 
