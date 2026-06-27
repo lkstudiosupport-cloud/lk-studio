@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { CatalogPart, Design, DesignSizeTier } from "@prisma/client";
+import type { CatalogPart, DesignSizeTier } from "@prisma/client";
+import type { DesignListItem } from "@/lib/design-list-select";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { DesignImagesView } from "@/components/DesignImagesView";
@@ -17,7 +18,7 @@ export function AdminDesignItem({
   selected = false,
   onToggleSelect,
 }: {
-  design: Design;
+  design: DesignListItem;
   locale: Locale;
   selectable?: boolean;
   selected?: boolean;

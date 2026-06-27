@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import type { UserRole } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { withDbRetry } from "@/lib/safe-db";
 
 
 
@@ -200,22 +201,23 @@ export async function getSession(): Promise<SessionUser | null> {
 
   const { session } = read;
 
-  const user = await prisma.user.findUnique({
+  try {
+    const user = await withDbRetry(() =>
+      prisma.user.findUnique({
+        where: { id: session.id },
+        select: { sessionVersion: true, role: true },
+      })
+    );
 
-    where: { id: session.id },
+    if (!user || user.role !== session.role) return null;
 
-    select: { sessionVersion: true, role: true },
+    if ((session.sessionVersion ?? 0) !== user.sessionVersion) return null;
 
-  });
-
-  if (!user || user.role !== session.role) return null;
-
-  if ((session.sessionVersion ?? 0) !== user.sessionVersion) return null;
-
-
-
-  return session;
-
+    return session;
+  } catch (err) {
+    console.error("[lk-studio] getSession db error:", err);
+    return null;
+  }
 }
 
 

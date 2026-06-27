@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Design, ServiceCategory } from "@prisma/client";
+import type { ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES } from "@/lib/categories";
@@ -12,25 +13,34 @@ import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { CatalogPartButtons } from "@/components/CatalogPartButtons";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
+import type { CatalogPartCounts, CatalogSizeTierCounts } from "@/lib/catalog-design-counts";
+import type { DesignListItem } from "@/lib/design-list-select";
 import type { CatalogPart, DesignSizeTier } from "@prisma/client";
 import { compressImageFile } from "@/lib/compress-image";
 import { fetchApi, formatFetchError } from "@/lib/parse-api-response";
+import { withQueryParam } from "@/lib/query-string";
 import { Loader2, Plus } from "lucide-react";
 
-const ADMIN_CATEGORIES = CATEGORIES.filter((c) =>
-  CATALOG_CATEGORIES.includes(c.key)
-);
+const ADMIN_CATEGORIES = CATEGORIES.filter((c) => CATALOG_CATEGORIES.includes(c.key));
+const ADMIN_BASE = "/admin/designs";
 
 export function AdminCatalogPanel({
   locale,
+  category,
   designs,
+  categoryCounts,
+  tierCounts,
+  partCounts,
 }: {
   locale: Locale;
-  designs: Design[];
+  category: ServiceCategory;
+  designs: DesignListItem[];
+  categoryCounts: Partial<Record<ServiceCategory, number>>;
+  tierCounts: CatalogSizeTierCounts | null;
+  partCounts: CatalogPartCounts | null;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [category, setCategory] = useState<ServiceCategory>(ADMIN_CATEGORIES[0]!.key);
   const [sizeTierFilter, setSizeTierFilter] = useState<DesignSizeTier | "UNASSIGNED">("UNASSIGNED");
   const [catalogPartFilter, setCatalogPartFilter] = useState<CatalogPart | "UNASSIGNED">("UNASSIGNED");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -56,42 +66,15 @@ export function AdminCatalogPanel({
     setSelectedIds(new Set());
   }, [sizeTierFilter, catalogPartFilter]);
 
-  const counts = useMemo(() => {
-    const map = {} as Record<string, number>;
-    for (const c of ADMIN_CATEGORIES) {
-      map[c.key] = designs.filter((d) => d.category === c.key && d.isCatalog).length;
-    }
-    return map;
+  const categoryDesigns = useMemo(() => {
+    return [...designs].sort((a, b) => {
+      if (a.catalogNumber && b.catalogNumber) return a.catalogNumber.localeCompare(b.catalogNumber);
+      return b.createdAt > a.createdAt ? 1 : -1;
+    });
   }, [designs]);
 
-  const categoryDesigns = useMemo(() => {
-    return designs
-      .filter((d) => d.category === category && d.isCatalog)
-      .sort((a, b) => {
-        if (a.catalogNumber && b.catalogNumber) return a.catalogNumber.localeCompare(b.catalogNumber);
-        return b.createdAt > a.createdAt ? 1 : -1;
-      });
-  }, [designs, category]);
-
-  const tierCounts = useMemo(() => {
-    const counts = { SMALL: 0, MEDIUM: 0, BIG: 0 } as Record<DesignSizeTier, number>;
-    let unassigned = 0;
-    for (const d of categoryDesigns) {
-      if (!d.sizeTier) unassigned++;
-      else counts[d.sizeTier]++;
-    }
-    return { ...counts, unassigned };
-  }, [categoryDesigns]);
-
-  const partCounts = useMemo(() => {
-    const counts = { MAIN: 0, HAND_SLEEVES: 0 } as Record<CatalogPart, number>;
-    let unassigned = 0;
-    for (const d of categoryDesigns) {
-      if (!d.catalogPart) unassigned++;
-      else counts[d.catalogPart]++;
-    }
-    return { ...counts, unassigned };
-  }, [categoryDesigns]);
+  const safeTierCounts = tierCounts ?? { SMALL: 0, MEDIUM: 0, BIG: 0, unassigned: 0 };
+  const safePartCounts = partCounts ?? { MAIN: 0, HAND_SLEEVES: 0, unassigned: 0 };
 
   const visibleDesigns = useMemo(() => {
     if (hasSizeTiers) {
@@ -243,21 +226,18 @@ export function AdminCatalogPanel({
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {ADMIN_CATEGORIES.map((c) => (
-          <button
+          <Link
             key={c.key}
-            type="button"
-            onClick={() => {
-              setCategory(c.key);
-              setError("");
-              setLastCode("");
-            }}
-            className={`min-h-[4rem] rounded-2xl p-2.5 text-center text-xs font-semibold shadow-md transition active:scale-[0.98] sm:min-h-[4.5rem] sm:p-3 sm:text-sm ${
+            href={withQueryParam(ADMIN_BASE, "category", c.key)}
+            scroll={false}
+            prefetch
+            className={`min-h-[4rem] rounded-2xl p-2.5 text-center text-xs font-semibold shadow-md transition sm:min-h-[4.5rem] sm:p-3 sm:text-sm ${
               c.color
             } ${category === c.key ? "category-tab-active" : "opacity-90 hover:opacity-100"}`}
           >
             <span className="block leading-tight">{t(locale, c.labelKey)}</span>
-            <span className="mt-1 block text-xs opacity-90">({counts[c.key] ?? 0})</span>
-          </button>
+            <span className="mt-1 block text-xs opacity-90">({categoryCounts[c.key] ?? 0})</span>
+          </Link>
         ))}
       </div>
 
@@ -280,12 +260,12 @@ export function AdminCatalogPanel({
             active={sizeTierFilter === "UNASSIGNED" ? undefined : sizeTierFilter}
             onPick={setSizeTierFilter}
             counts={{
-              SMALL: tierCounts.SMALL,
-              MEDIUM: tierCounts.MEDIUM,
-              BIG: tierCounts.BIG,
+              SMALL: safeTierCounts.SMALL,
+              MEDIUM: safeTierCounts.MEDIUM,
+              BIG: safeTierCounts.BIG,
             }}
             showUnassigned
-            unassignedCount={tierCounts.unassigned}
+            unassignedCount={safeTierCounts.unassigned}
             unassignedActive={sizeTierFilter === "UNASSIGNED"}
             onPickUnassigned={() => setSizeTierFilter("UNASSIGNED")}
           />
@@ -298,11 +278,11 @@ export function AdminCatalogPanel({
             active={catalogPartFilter === "UNASSIGNED" ? undefined : catalogPartFilter}
             onPick={setCatalogPartFilter}
             counts={{
-              MAIN: partCounts.MAIN,
-              HAND_SLEEVES: partCounts.HAND_SLEEVES,
+              MAIN: safePartCounts.MAIN,
+              HAND_SLEEVES: safePartCounts.HAND_SLEEVES,
             }}
             showUnassigned
-            unassignedCount={partCounts.unassigned}
+            unassignedCount={safePartCounts.unassigned}
             unassignedActive={catalogPartFilter === "UNASSIGNED"}
             onPickUnassigned={() => setCatalogPartFilter("UNASSIGNED")}
           />

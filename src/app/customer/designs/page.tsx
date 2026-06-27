@@ -8,11 +8,18 @@ import { isShopActive } from "@/lib/subscription";
 import {
   isCatalogCategory,
   shopStitchedDesignsWhere,
+  sortedCatalogDesignWhere,
 } from "@/lib/design-access";
 import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
 import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
-import { cachedAppCatalogDesigns } from "@/lib/cached-catalog-designs";
+import {
+  cachedCatalogCategoryCounts,
+  fetchCatalogPartCounts,
+  fetchCatalogSizeTierCounts,
+} from "@/lib/catalog-design-counts";
 import { DESIGN_CARD_SELECT } from "@/lib/design-queries";
+import { DESIGN_LIST_LIMIT } from "@/lib/limits";
+import { withDbRetry } from "@/lib/safe-db";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import Link from "next/link";
 import { shopRatingSummaries } from "@/lib/shop-rating";
@@ -117,7 +124,7 @@ export default async function CustomerDesignsPage({
   const locale = await getLocale();
   const params = await searchParams;
 
-  const customer = await prisma.user.findUniqueOrThrow({
+  const customer = await prisma.user.findUnique({
     where: { id: session!.id },
     select: {
       subscriptionStatus: true,
@@ -127,6 +134,13 @@ export default async function CustomerDesignsPage({
       phoneNormalized: true,
     },
   });
+  if (!customer) {
+    return (
+      <div className="card-premium p-6 text-center text-sm text-zinc-600">
+        {t(locale, "noData")}
+      </div>
+    );
+  }
   const designAccess =
     isDemoAccountUser(customer) ||
     canCustomerBrowseDesigns(
@@ -174,13 +188,25 @@ export default async function CustomerDesignsPage({
   });
   const priceShopId = savedShop?.shopId;
 
-  const [designs, customerFavorites] = await Promise.all([
-    cachedAppCatalogDesigns(),
+  const [designs, categoryCounts, tierCounts, partCounts, customerFavorites] = await Promise.all([
+    withDbRetry(() =>
+      prisma.design.findMany({
+        where: sortedCatalogDesignWhere(category),
+        select: DESIGN_CARD_SELECT,
+        orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
+        take: DESIGN_LIST_LIMIT,
+      })
+    ),
+    cachedCatalogCategoryCounts(),
+    categoryHasSizeTiers(category) ? fetchCatalogSizeTierCounts(category) : Promise.resolve(null),
+    categoryHasCatalogParts(category) ? fetchCatalogPartCounts(category) : Promise.resolve(null),
     priceShopId
-      ? prisma.customerFavorite.findMany({
-          where: { customerId: session!.id, shopId: priceShopId },
-          select: { designId: true },
-        })
+      ? withDbRetry(() =>
+          prisma.customerFavorite.findMany({
+            where: { customerId: session!.id, shopId: priceShopId },
+            select: { designId: true },
+          })
+        )
       : Promise.resolve([]),
   ]);
 
@@ -188,6 +214,9 @@ export default async function CustomerDesignsPage({
     <CustomerCatalogPanel
       locale={locale}
       designs={designs}
+      categoryCounts={categoryCounts}
+      tierCounts={tierCounts}
+      partCounts={partCounts}
       favoriteDesignIds={customerFavorites.map((f) => f.designId)}
       priceShopId={priceShopId}
       initialCategory={category}

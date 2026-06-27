@@ -3,14 +3,11 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { ShopDesignsPanel } from "@/components/ShopDesignsPanel";
 import { DESIGN_LIST_LIMIT } from "@/lib/limits";
-import {
-  shopStitchedDesignsWhere,
-  visibleDesignsWhere,
-} from "@/lib/design-access";
-import { countSortedCatalogDesignsByCategory } from "@/lib/catalog-design-sort";
-import { cachedAppCatalogDesigns } from "@/lib/cached-catalog-designs";
+import { shopStitchedDesignsWhere, visibleDesignsWhere } from "@/lib/design-access";
+import { cachedCatalogCategoryCounts } from "@/lib/catalog-design-counts";
 import { designListSelect } from "@/lib/design-list-select";
 import { CATEGORIES } from "@/lib/categories";
+import { withDbRetry } from "@/lib/safe-db";
 import type { ServiceCategory } from "@prisma/client";
 
 const CATEGORY_KEYS = new Set(CATEGORIES.map((c) => c.key));
@@ -35,19 +32,21 @@ export default async function ShopDesignsPage({
   const shopId = session!.shopId!;
   const category = resolveCategory(params.category);
 
-  const [designs, catalogDesigns, stitchedCount] = await Promise.all([
-    prisma.design.findMany({
-      where: visibleDesignsWhere(shopId, category),
-      orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
-      take: DESIGN_LIST_LIMIT,
-      select: designListSelect,
-    }),
-    cachedAppCatalogDesigns(),
-    prisma.design.count({ where: shopStitchedDesignsWhere(shopId) }),
+  const [designs, catalogCounts, stitchedCount] = await Promise.all([
+    withDbRetry(() =>
+      prisma.design.findMany({
+        where: visibleDesignsWhere(shopId, category),
+        orderBy: [{ catalogNumber: "asc" }, { createdAt: "desc" }],
+        take: DESIGN_LIST_LIMIT,
+        select: designListSelect,
+      })
+    ),
+    cachedCatalogCategoryCounts(),
+    withDbRetry(() => prisma.design.count({ where: shopStitchedDesignsWhere(shopId) })),
   ]);
 
   const categoryCounts = {
-    ...countSortedCatalogDesignsByCategory(catalogDesigns),
+    ...catalogCounts,
     STITCHED_DESIGNS: stitchedCount,
   } as Record<ServiceCategory, number>;
 
