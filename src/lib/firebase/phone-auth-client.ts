@@ -28,6 +28,9 @@ export function mapFirebasePhoneAuthError(err: unknown): string {
     if (code === "auth/operation-not-allowed") {
       return "SMS not allowed for this region — enable India in Firebase SMS region settings";
     }
+    if (code === "auth/billing-not-enabled") {
+      return "Phone SMS requires Firebase Blaze plan — upgrade billing or use a test phone number";
+    }
   }
   if (err instanceof Error && err.message) return err.message;
   return "Phone verification failed";

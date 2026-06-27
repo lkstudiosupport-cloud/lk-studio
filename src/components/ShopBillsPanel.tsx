@@ -78,7 +78,7 @@ export function ShopBillsPanel({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="page-title">{t(locale, "payments")}</h1>
+        <h1 className="page-title">{t(locale, "bills")}</h1>
         <Link
           href="/shop/bills/new"
           className="btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm"

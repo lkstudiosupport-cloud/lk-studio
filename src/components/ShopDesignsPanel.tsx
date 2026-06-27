@@ -26,11 +26,13 @@ export function ShopDesignsPanel({
   designs,
   shopId,
   category,
+  categoryCounts,
 }: {
   locale: Locale;
   designs: DesignListItem[];
   shopId: string;
   category: ServiceCategory;
+  categoryCounts: Record<ServiceCategory, number>;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -49,6 +51,26 @@ export function ShopDesignsPanel({
   const hasSizeTiers = categoryHasSizeTiers(category);
   const hasCatalogParts = categoryHasCatalogParts(category);
   const needsSubgroup = hasSizeTiers || hasCatalogParts;
+
+  const tierCounts = useMemo(() => {
+    if (!hasSizeTiers) return null;
+    const counts = { SMALL: 0, MEDIUM: 0, BIG: 0 } as Record<DesignSizeTier, number>;
+    for (const d of designs) {
+      if (!d.sizeTier) continue;
+      counts[d.sizeTier]++;
+    }
+    return counts;
+  }, [designs, hasSizeTiers]);
+
+  const partCounts = useMemo(() => {
+    if (!hasCatalogParts) return null;
+    const counts = { MAIN: 0, HAND_SLEEVES: 0 } as Record<CatalogPart, number>;
+    for (const d of designs) {
+      if (!d.catalogPart) continue;
+      counts[d.catalogPart]++;
+    }
+    return counts;
+  }, [designs, hasCatalogParts]);
 
   const visibleDesigns = useMemo(() => {
     let list = designs;
@@ -126,6 +148,7 @@ export function ShopDesignsPanel({
             } ${category === c.key ? "category-tab-active" : "opacity-90"}`}
           >
             <span className="block leading-tight">{t(locale, c.labelKey)}</span>
+            <span className="mt-1 block text-xs opacity-90">({categoryCounts[c.key] ?? 0})</span>
           </Link>
         ))}
       </div>
@@ -143,7 +166,12 @@ export function ShopDesignsPanel({
 
         {hasSizeTiers && (
           <div className="space-y-2">
-            <SizeTierButtons locale={locale} active={sizeTier} onPick={setSizeTier} />
+            <SizeTierButtons
+              locale={locale}
+              active={sizeTier}
+              onPick={setSizeTier}
+              counts={tierCounts ?? undefined}
+            />
             {!sizeTier && (
               <p className="card-premium p-4 text-center text-sm text-zinc-600">
                 {t(locale, "customerPickSizeTierHint")}
@@ -159,6 +187,7 @@ export function ShopDesignsPanel({
               category={category}
               active={catalogPart}
               onPick={setCatalogPart}
+              counts={partCounts ?? undefined}
             />
             {!catalogPart && (
               <p className="card-premium p-4 text-center text-sm text-zinc-600">
