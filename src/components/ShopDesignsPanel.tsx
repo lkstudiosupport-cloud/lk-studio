@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
@@ -19,6 +19,7 @@ import { CatalogPartButtons } from "@/components/CatalogPartButtons";
 import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
 import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
 import { compressImageFile } from "@/lib/compress-image";
+import { useCatalogBrowseSwitch } from "@/hooks/useCatalogBrowseSwitch";
 import { Loader2, Plus } from "lucide-react";
 
 const BASE_PATH = "/shop/designs";
@@ -67,6 +68,24 @@ export function ShopDesignsPanel({
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
 
+  const pageUrl = useCallback(
+    (tier?: DesignSizeTier, part?: CatalogPart) => shopDesignsUrl(category, tier, part),
+    [category]
+  );
+  const browse = useCatalogBrowseSwitch({
+    category,
+    initialSizeTier: sizeTier ?? defaultSizeTierForCategory(category),
+    initialCatalogPart: catalogPart ?? defaultCatalogPartForCategory(category),
+    initialDesigns: designs,
+    initialTotal: total,
+    initialHasMore: hasMore,
+    initialApiQuery: apiQuery,
+    pageUrl,
+  });
+  const activeSizeTier = browse.sizeTier;
+  const activeCatalogPart = browse.catalogPart;
+  const visibleDesigns = browse.designs;
+
   const canUpload = isCategoryShopUpload(category);
   const activeCategory = CATEGORIES.find((c) => c.key === category)!;
   const hasSizeTiers = categoryHasSizeTiers(category);
@@ -74,15 +93,9 @@ export function ShopDesignsPanel({
   const needsSubgroup = hasSizeTiers || hasCatalogParts;
 
   const subgroupReady =
-    !needsSubgroup || (hasSizeTiers && sizeTier) || (hasCatalogParts && catalogPart);
-
-  function pickSizeTier(tier: DesignSizeTier) {
-    router.push(shopDesignsUrl(category, tier, catalogPart));
-  }
-
-  function pickCatalogPart(part: CatalogPart) {
-    router.push(shopDesignsUrl(category, sizeTier, part));
-  }
+    !needsSubgroup ||
+    (hasSizeTiers && activeSizeTier) ||
+    (hasCatalogParts && activeCatalogPart);
 
   function canManageDesign(design: DesignListItem): boolean {
     return canUpload && isShopOwnedUploadCategory(category) && !design.isCatalog && design.shopId === shopId;
@@ -163,15 +176,15 @@ export function ShopDesignsPanel({
           <div className="space-y-2">
             <SizeTierButtons
               locale={locale}
-              active={sizeTier}
-              onPick={pickSizeTier}
+              active={activeSizeTier}
+              onPick={browse.pickSizeTier}
               counts={
                 tierCounts
                   ? { SMALL: tierCounts.SMALL, MEDIUM: tierCounts.MEDIUM, BIG: tierCounts.BIG }
                   : undefined
               }
             />
-            {!sizeTier && (
+            {!activeSizeTier && (
               <p className="card-premium p-4 text-center text-sm text-zinc-600">
                 {t(locale, "customerPickSizeTierHint")}
               </p>
@@ -184,15 +197,15 @@ export function ShopDesignsPanel({
             <CatalogPartButtons
               locale={locale}
               category={category}
-              active={catalogPart}
-              onPick={pickCatalogPart}
+              active={activeCatalogPart}
+              onPick={browse.pickCatalogPart}
               counts={
                 partCounts
                   ? { MAIN: partCounts.MAIN, HAND_SLEEVES: partCounts.HAND_SLEEVES }
                   : undefined
               }
             />
-            {!catalogPart && (
+            {!activeCatalogPart && (
               <p className="card-premium p-4 text-center text-sm text-zinc-600">
                 {t(locale, "customerPickCatalogPartHint")}
               </p>
@@ -209,13 +222,22 @@ export function ShopDesignsPanel({
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         {subgroupReady && (
-          <CatalogDesignPager
-            locale={locale}
-            initialDesigns={designs}
-            total={total}
-            hasMore={hasMore}
-            apiQuery={apiQuery}
-          >
+          <div className="relative space-y-4">
+            {browse.switching && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70">
+                <Loader2 className="h-8 w-8 animate-spin text-brand-green" />
+              </div>
+            )}
+            {browse.switchError && (
+              <p className="text-center text-sm text-red-600">{browse.switchError}</p>
+            )}
+            <CatalogDesignPager
+              locale={locale}
+              initialDesigns={visibleDesigns}
+              total={browse.total}
+              hasMore={browse.hasMore}
+              apiQuery={browse.apiQuery}
+            >
             {(pagedDesigns) => (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {canUpload && (
@@ -249,21 +271,22 @@ export function ShopDesignsPanel({
               </div>
             )}
           </CatalogDesignPager>
+          </div>
         )}
 
-        {designs.length === 0 && !canUpload && needsSubgroup && !subgroupReady && (
+        {visibleDesigns.length === 0 && !canUpload && needsSubgroup && !subgroupReady && (
           <p className="card-premium py-10 text-center text-sm text-zinc-500">
             {hasCatalogParts ? t(locale, "customerPickCatalogPartHint") : t(locale, "customerPickSizeTierHint")}
           </p>
         )}
 
-        {designs.length === 0 && !canUpload && subgroupReady && (
+        {visibleDesigns.length === 0 && !canUpload && subgroupReady && (
           <p className="card-premium py-10 text-center text-sm text-zinc-500">
             {t(locale, "noCatalogDesignsYet")}
           </p>
         )}
 
-        {designs.length === 0 && canUpload && (
+        {visibleDesigns.length === 0 && canUpload && (
           <p className="text-center text-sm text-zinc-500">{t(locale, "noStitchedDesignsYet")}</p>
         )}
 

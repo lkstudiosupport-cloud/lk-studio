@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -17,6 +16,8 @@ import { CatalogDesignPager } from "@/components/CatalogDesignPager";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { CatalogPartButtons } from "@/components/CatalogPartButtons";
 import { withQueryParam } from "@/lib/query-string";
+import { useCatalogBrowseSwitch } from "@/hooks/useCatalogBrowseSwitch";
+import { Loader2 } from "lucide-react";
 
 function catalogUrl(
   category: ServiceCategory,
@@ -60,9 +61,22 @@ export function CustomerCatalogPanel({
 }) {
   const tabs = CATEGORIES.filter((c) => CATALOG_CATEGORIES.includes(c.key));
   const category = initialCategory;
-  const sizeTier = initialSizeTier ?? defaultSizeTierForCategory(category);
-  const catalogPart = initialCatalogPart ?? defaultCatalogPartForCategory(category);
-  const router = useRouter();
+  const pageUrl = useCallback(
+    (sizeTier?: DesignSizeTier, catalogPart?: CatalogPart) =>
+      catalogUrl(category, sizeTier, catalogPart),
+    [category]
+  );
+  const browse = useCatalogBrowseSwitch({
+    category,
+    initialSizeTier: initialSizeTier ?? defaultSizeTierForCategory(category),
+    initialCatalogPart: initialCatalogPart ?? defaultCatalogPartForCategory(category),
+    initialDesigns: designs,
+    initialTotal: total,
+    initialHasMore: hasMore,
+    initialApiQuery: apiQuery,
+    pageUrl,
+  });
+  const { sizeTier, catalogPart, pickSizeTier, pickCatalogPart } = browse;
   const favorites = useMemo(() => new Set(favoriteDesignIds), [favoriteDesignIds]);
   const hasSizeTiers = categoryHasSizeTiers(category);
   const hasCatalogParts = categoryHasCatalogParts(category);
@@ -70,14 +84,6 @@ export function CustomerCatalogPanel({
 
   const subgroupReady =
     !needsSubgroup || (hasSizeTiers && sizeTier) || (hasCatalogParts && catalogPart);
-
-  function pickSizeTier(tier: DesignSizeTier) {
-    router.push(catalogUrl(category, tier, catalogPart));
-  }
-
-  function pickCatalogPart(part: CatalogPart) {
-    router.push(catalogUrl(category, sizeTier, part));
-  }
 
   return (
     <div className="space-y-6">
@@ -139,25 +145,35 @@ export function CustomerCatalogPanel({
       )}
 
       {category && subgroupReady && (
-        <CatalogDesignPager
-          locale={locale}
-          initialDesigns={designs}
-          total={total}
-          hasMore={hasMore}
-          apiQuery={apiQuery}
-        >
-          {(pagedDesigns) => (
-            <ShopDesignCollections
-              locale={locale}
-              designs={pagedDesigns}
-              shopId={priceShopId}
-              favoriteDesignIds={favorites}
-              detailHrefForDesign={(d) =>
-                withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
-              }
-            />
+        <div className="relative space-y-4">
+          {browse.switching && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70">
+              <Loader2 className="h-8 w-8 animate-spin text-brand-green" />
+            </div>
           )}
-        </CatalogDesignPager>
+          {browse.switchError && (
+            <p className="text-center text-sm text-red-600">{browse.switchError}</p>
+          )}
+          <CatalogDesignPager
+            locale={locale}
+            initialDesigns={browse.designs}
+            total={browse.total}
+            hasMore={browse.hasMore}
+            apiQuery={browse.apiQuery}
+          >
+            {(pagedDesigns) => (
+              <ShopDesignCollections
+                locale={locale}
+                designs={pagedDesigns}
+                shopId={priceShopId}
+                favoriteDesignIds={favorites}
+                detailHrefForDesign={(d) =>
+                  withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
+                }
+              />
+            )}
+          </CatalogDesignPager>
+        </div>
       )}
     </div>
   );

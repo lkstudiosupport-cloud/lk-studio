@@ -1,5 +1,11 @@
 import type { Prisma } from "@prisma/client";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
+import {
+  catalogBrowseApiQuery,
+  type CatalogBrowseQuery,
+} from "@/lib/catalog-browse-query";
+
+export { catalogBrowseApiQuery, type CatalogBrowseQuery };
 import { prisma } from "@/lib/prisma";
 import {
   isShopOwnedUploadCategory,
@@ -11,12 +17,6 @@ import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
 import { designListSelect, type DesignListItem } from "@/lib/design-list-select";
 import { CATALOG_MAX_PAGE, CATALOG_PAGE_SIZE } from "@/lib/limits";
 import { withDbRetry } from "@/lib/safe-db";
-
-export type CatalogBrowseQuery = {
-  category: ServiceCategory;
-  sizeTier?: DesignSizeTier;
-  catalogPart?: CatalogPart;
-};
 
 export type CatalogAdminQuery = {
   category: ServiceCategory;
@@ -140,14 +140,6 @@ export function parseAdminPartView(raw?: string): CatalogAdminQuery["partView"] 
   if (u === "unassigned" || !u) return "unassigned";
   const part = parseCatalogPart(raw);
   return part ?? "unassigned";
-}
-
-export function catalogBrowseApiQuery(query: CatalogBrowseQuery & { mode?: string }): string {
-  const params = new URLSearchParams({ category: query.category });
-  if (query.sizeTier) params.set("size", query.sizeTier);
-  if (query.catalogPart) params.set("part", query.catalogPart);
-  if (query.mode) params.set("mode", query.mode);
-  return params.toString();
 }
 
 export function catalogAdminApiQuery(query: CatalogAdminQuery): string {
