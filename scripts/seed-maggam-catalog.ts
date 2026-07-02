@@ -1,16 +1,20 @@
 /**
- * Seeds 100 catalog maggam designs per size tier (SMALL / MEDIUM / BIG).
- * Uploads full JPG + thumb JPG to R2 (Option B) with 30-day browser cache via /api/media (G1).
+ * Seeds maggam catalog images on R2 (Option B + G1).
  *
- * Run all tiers:     npm run db:seed-maggam
- * One tier:          npm run db:seed-maggam -- --tier=medium
- * Force regenerate:  npm run db:seed-maggam -- --force
+ * Default (safe): sync thumbs only — does NOT create synthetic designs.
+ * Placeholders (demo only): npm run db:seed-maggam -- --placeholders
+ *
  * Thumbs only:       npm run catalog:sync-maggam-thumbs
+ * Remove placeholders: CONFIRM=yes npm run catalog:remove-seed-maggam
  */
 import { PrismaClient, type DesignSizeTier } from "@prisma/client";
 import { deleteStoredUpload, saveCatalogAsset } from "../src/lib/storage";
 import { fetchStoredObject } from "../src/lib/fetch-stored-object";
 import { storageKeyFromStoredUrl } from "../src/lib/storage-url";
+import {
+  isAdminCatalogUploadImagePath,
+  isSeedMaggamPlaceholderImagePath,
+} from "../src/lib/seed-maggam-placeholder";
 import {
   catalogNumberFor,
   folderSlugForTier,
@@ -24,6 +28,7 @@ import {
 const prisma = new PrismaClient();
 const TARGET_COUNT = 100;
 const FORCE = process.argv.includes("--force");
+const PLACEHOLDERS = process.argv.includes("--placeholders");
 const TIERS: DesignSizeTier[] = ["SMALL", "MEDIUM", "BIG"];
 
 function tierArg(): DesignSizeTier[] | "all" {
@@ -65,12 +70,33 @@ async function seedTier(tier: DesignSizeTier) {
   let updated = 0;
   let skipped = 0;
   let thumbsUploaded = 0;
+  let protectedAdmin = 0;
 
-  console.log(`\nGenerating maggam ${tier} (${TARGET_COUNT} images)…`);
+  console.log(`\nMaggam ${tier}${PLACEHOLDERS ? " (creating placeholders)" : " (thumbs sync only)"}…`);
 
   for (let n = 1; n <= TARGET_COUNT; n++) {
     const catalogNumber = catalogNumberFor(tier, n);
     const existing = await prisma.design.findFirst({ where: { catalogNumber } });
+
+    if (existing && isAdminCatalogUploadImagePath(existing.imagePath)) {
+      protectedAdmin++;
+      continue;
+    }
+
+    if (!PLACEHOLDERS) {
+      if (!existing || !isSeedMaggamPlaceholderImagePath(existing.imagePath)) {
+        skipped++;
+        continue;
+      }
+      try {
+        const full = await fullBufferForTier(tier, n, catalogNumber);
+        await saveThumb(tier, catalogNumber, full);
+        thumbsUploaded++;
+      } catch (e) {
+        console.warn(`  thumb skip ${catalogNumber}:`, e instanceof Error ? e.message : e);
+      }
+      continue;
+    }
 
     if (existing && isStaticAssetPath(existing.imagePath, tier) && !FORCE) {
       skipped++;
@@ -139,7 +165,7 @@ async function seedTier(tier: DesignSizeTier) {
   });
 
   console.log(
-    `Maggam ${tier}: ${total} in catalog (${created} created, ${updated} updated, ${skipped} skipped, ${thumbsUploaded} thumbs on R2).`
+    `Maggam ${tier}: ${total} in catalog (${created} created, ${updated} updated, ${skipped} skipped, ${protectedAdmin} admin protected, ${thumbsUploaded} thumbs on R2).`
   );
 }
 
@@ -147,12 +173,19 @@ async function main() {
   const selected = tierArg();
   const tiers = selected === "all" ? TIERS : selected;
 
+  if (!PLACEHOLDERS) {
+    console.log("Safe mode: thumbs sync for existing seed placeholders only.");
+    console.log("Will NOT create synthetic designs. Admin uploads are never touched.");
+    console.log("Demo placeholders: npm run db:seed-maggam -- --placeholders\n");
+  }
+
   for (const tier of tiers) {
     await seedTier(tier);
   }
 
-  console.log("\nDone. Thumbs-only backfill: npm run catalog:sync-maggam-thumbs");
-  console.log("Export for download: npm run catalog:export-maggam");
+  console.log("\nDone.");
+  console.log("Remove seed placeholders: CONFIRM=yes npm run catalog:remove-seed-maggam");
+  console.log("Assign admin uploads: npm run catalog:assign-unassigned -- --category=maggam --tier=small --apply");
 }
 
 main()

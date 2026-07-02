@@ -19,6 +19,8 @@
     "db:seed-maggam-small": "tsx scripts/seed-maggam-small-catalog.ts",
     "db:seed-maggam": "tsx scripts/seed-maggam-catalog.ts",
     "catalog:sync-maggam-thumbs": "tsx scripts/sync-maggam-catalog-thumbs.ts",
+    "catalog:remove-seed-maggam": "tsx scripts/remove-seed-maggam-placeholders.ts",
+    "catalog:assign-unassigned": "tsx scripts/assign-unassigned-catalog.ts",
     "db:import-catalog": "tsx scripts/import-catalog-from-r2.ts",
     "db:seed-admin": "tsx scripts/seed-admin.ts",
     "catalog:export-maggam": "tsx scripts/export-maggam-catalog.ts",
