@@ -285,6 +285,10 @@ function buildSvg(index: number, tier: DesignSizeTier, catalogNumber: string): s
 </svg>`;
 }
 
+/** Grid / card thumbnail size — keeps APK payload small. */
+export const MAGGAM_THUMB_WIDTH = 240;
+export const MAGGAM_THUMB_HEIGHT = 320;
+
 export async function renderMaggamBlouse(
   index: number,
   tier: DesignSizeTier,
@@ -292,6 +296,21 @@ export async function renderMaggamBlouse(
 ): Promise<Buffer> {
   const svg = buildSvg(index, tier, catalogNumber);
   return sharp(Buffer.from(svg)).jpeg({ quality: 90 }).toBuffer();
+}
+
+export async function renderMaggamBlouseThumb(fullJpeg: Buffer): Promise<Buffer> {
+  return sharp(fullJpeg)
+    .resize(MAGGAM_THUMB_WIDTH, MAGGAM_THUMB_HEIGHT, { fit: "cover" })
+    .jpeg({ quality: 82, mozjpeg: true })
+    .toBuffer();
+}
+
+export function maggamCatalogFullRelPath(tier: DesignSizeTier, catalogNumber: string): string {
+  return `assets/catalog/${folderSlugForTier(tier)}/${catalogNumber}.jpg`;
+}
+
+export function maggamCatalogThumbRelPath(tier: DesignSizeTier, catalogNumber: string): string {
+  return `assets/catalog/${folderSlugForTier(tier)}/thumbs/${catalogNumber}.jpg`;
 }
 
 export function catalogNumberFor(tier: DesignSizeTier, index: number): string {

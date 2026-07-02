@@ -11,6 +11,7 @@ import { categoryLabelKey } from "@/lib/categories";
 import { WorkTypeSelect } from "./WorkTypeSelect";
 import { CheckCircle2 } from "lucide-react";
 import type { Person, ServiceCategory, WorkType } from "@prisma/client";
+import { designImageSrc } from "@/lib/design-images";
 
 type FavoriteItem = {
   id: string;
@@ -71,7 +72,7 @@ export function PlaceOrderFromFavoritesForm({
               />
               <div className="relative aspect-square">
                 <Image
-                  src={fav.design.imagePath}
+                  src={designImageSrc(fav.design.imagePath)}
                   alt={fav.design.title}
                   fill
                   className="object-cover"

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Expand } from "lucide-react";
-import { parseDesignImages } from "@/lib/design-images";
+import { parseDesignImageSrcs } from "@/lib/design-images";
 import { ImagePreviewLightbox } from "@/components/ImagePreviewLightbox";
 
 const FALLBACK_DESIGN_IMAGE = "/placeholder-design.svg";
@@ -43,7 +43,8 @@ export function DesignImagesView({
   previewCloseLabel?: string;
   previewLabel?: string;
 }) {
-  const images = parseDesignImages(imagesJson, imagePath);
+  const imageSrcs = parseDesignImageSrcs(imagesJson, imagePath);
+  const fullImages = imageSrcs.map((s) => s.full);
   const [active, setActive] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -63,11 +64,21 @@ export function DesignImagesView({
   const tapClass =
     "block w-full overflow-hidden border-0 bg-zinc-100 p-0 text-left appearance-none ring-offset-2 transition hover:ring-2 hover:ring-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold";
 
-  function ImageTile({ src, altText, sizes }: { src: string; altText: string; sizes: string }) {
-    const [imgSrc, setImgSrc] = useState(src);
+  function ImageTile({
+    displaySrc,
+    fullSrc,
+    altText,
+    sizes,
+  }: {
+    displaySrc: string;
+    fullSrc: string;
+    altText: string;
+    sizes: string;
+  }) {
+    const [imgSrc, setImgSrc] = useState(displaySrc);
     useEffect(() => {
-      setImgSrc(src);
-    }, [src]);
+      setImgSrc(displaySrc);
+    }, [displaySrc]);
 
     return (
       <span className="relative block h-full w-full bg-zinc-200">
@@ -80,31 +91,47 @@ export function DesignImagesView({
           sizes={sizes}
           unoptimized={isUnoptimizedSrc(imgSrc)}
           onError={() => {
-            if (imgSrc !== FALLBACK_DESIGN_IMAGE) setImgSrc(FALLBACK_DESIGN_IMAGE);
+            if (imgSrc !== fullSrc) setImgSrc(fullSrc);
+            else if (imgSrc !== FALLBACK_DESIGN_IMAGE) setImgSrc(FALLBACK_DESIGN_IMAGE);
           }}
         />
       </span>
     );
   }
 
+  function srcForIndex(i: number) {
+    const entry = imageSrcs[i];
+    if (entry) return entry;
+    const full = fullImages[i] ?? imagePath;
+    return { display: full, full };
+  }
+
   if (layout === "grid") {
     return (
       <>
         <div className={`grid grid-cols-2 gap-2 ${className}`}>
-          {images.map((src, i) => (
-            <button
-              key={`${src}-${i}`}
-              type="button"
-              onClick={() => openPreview(i)}
-              className={`${tapClass} relative aspect-square rounded-xl`}
-            >
-              <ImageTile src={src} altText={`${alt} ${i + 1}`} sizes="(max-width: 640px) 50vw, 25vw" />
-              {previewBtn}
-            </button>
-          ))}
+          {fullImages.map((_, i) => {
+            const { display, full } = srcForIndex(i);
+            return (
+              <button
+                key={`${full}-${i}`}
+                type="button"
+                onClick={() => openPreview(i)}
+                className={`${tapClass} relative aspect-square rounded-xl`}
+              >
+                <ImageTile
+                  displaySrc={display}
+                  fullSrc={full}
+                  altText={`${alt} ${i + 1}`}
+                  sizes="(max-width: 640px) 50vw, 25vw"
+                />
+                {previewBtn}
+              </button>
+            );
+          })}
         </div>
         <ImagePreviewLightbox
-          images={images}
+          images={fullImages}
           startIndex={previewIndex}
           alt={alt}
           open={previewOpen}
@@ -116,18 +143,23 @@ export function DesignImagesView({
   }
 
   if (layout === "cover") {
-    const cover = images[0] ?? imagePath;
+    const { display, full } = srcForIndex(0);
     const inner = (
       <button
         type="button"
         onClick={() => openPreview(0)}
         className={`${tapClass} relative ${aspectClass}`}
       >
-        <ImageTile src={cover} altText={alt} sizes="(max-width: 640px) 100vw, 33vw" />
+        <ImageTile
+          displaySrc={display}
+          fullSrc={full}
+          altText={alt}
+          sizes="(max-width: 640px) 100vw, 33vw"
+        />
         {previewBtn}
-        {images.length > 1 && (
+        {fullImages.length > 1 && (
           <span className="absolute bottom-2 right-2 rounded-full bg-brand-green/90 px-2.5 py-1 text-xs font-bold text-brand-gold">
-            {photosBadge ?? `${images.length} photos`}
+            {photosBadge ?? `${fullImages.length} photos`}
           </span>
         )}
       </button>
@@ -147,7 +179,7 @@ export function DesignImagesView({
           )}
         </div>
         <ImagePreviewLightbox
-          images={images}
+          images={fullImages}
           startIndex={previewIndex}
           alt={alt}
           open={previewOpen}
@@ -158,9 +190,10 @@ export function DesignImagesView({
     );
   }
 
-  const current = images[active] ?? imagePath;
+  const current = srcForIndex(active);
 
-  if (images.length <= 1) {
+  if (fullImages.length <= 1) {
+    const single = srcForIndex(0);
     return (
       <>
         <button
@@ -168,11 +201,16 @@ export function DesignImagesView({
           onClick={() => openPreview(0)}
           className={`${tapClass} relative ${aspectClass} ${className}`}
         >
-          <ImageTile src={current} altText={alt} sizes="(max-width: 640px) 100vw, 33vw" />
+          <ImageTile
+            displaySrc={single.display}
+            fullSrc={single.full}
+            altText={alt}
+            sizes="(max-width: 640px) 100vw, 33vw"
+          />
           {previewBtn}
         </button>
         <ImagePreviewLightbox
-          images={images.length ? images : [imagePath]}
+          images={fullImages.length ? fullImages : [imagePath]}
           startIndex={0}
           alt={alt}
           open={previewOpen}
@@ -191,44 +229,56 @@ export function DesignImagesView({
           onClick={() => openPreview(active)}
           className={`${tapClass} relative ${aspectClass}`}
         >
-          <ImageTile src={current} altText={alt} sizes="(max-width: 640px) 100vw, 33vw" />
+          <ImageTile
+            displaySrc={current.display}
+            fullSrc={current.full}
+            altText={alt}
+            sizes="(max-width: 640px) 100vw, 33vw"
+          />
           {previewBtn}
           <span className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-xs font-bold text-white">
-            {active + 1}/{images.length}
+            {active + 1}/{fullImages.length}
           </span>
         </button>
         <div className="grid grid-cols-3 gap-1 bg-zinc-50 p-1 sm:grid-cols-4">
-          {images.map((src, i) => (
-            <button
-              key={`${src}-${i}`}
-              type="button"
-              onClick={() => setActive(i)}
-              onDoubleClick={() => openPreview(i)}
-              className={`relative aspect-square overflow-hidden rounded-md border-2 ${
-                i === active ? "border-brand-gold" : "border-transparent"
-              }`}
-            >
-              <Image
-                src={src}
-                alt=""
-                fill
-                loading="lazy"
-                className="object-cover"
-                sizes="64px"
-                unoptimized={isUnoptimizedSrc(src)}
-                onError={(e) => {
-                  const el = e.currentTarget;
-                  if (el.src && !el.src.includes("placeholder-design")) {
-                    el.src = FALLBACK_DESIGN_IMAGE;
-                  }
-                }}
-              />
-            </button>
-          ))}
+          {fullImages.map((full, i) => {
+            const { display } = srcForIndex(i);
+            return (
+              <button
+                key={`${full}-${i}`}
+                type="button"
+                onClick={() => setActive(i)}
+                onDoubleClick={() => openPreview(i)}
+                className={`relative aspect-square overflow-hidden rounded-md border-2 ${
+                  i === active ? "border-brand-gold" : "border-transparent"
+                }`}
+              >
+                <Image
+                  src={display}
+                  alt=""
+                  fill
+                  loading="lazy"
+                  className="object-cover"
+                  sizes="64px"
+                  unoptimized={isUnoptimizedSrc(display)}
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    if (display !== full && el.src !== full) {
+                      el.src = full;
+                      return;
+                    }
+                    if (el.src && !el.src.includes("placeholder-design")) {
+                      el.src = FALLBACK_DESIGN_IMAGE;
+                    }
+                  }}
+                />
+              </button>
+            );
+          })}
         </div>
       </div>
       <ImagePreviewLightbox
-        images={images}
+        images={fullImages}
         startIndex={previewIndex}
         alt={alt}
         open={previewOpen}

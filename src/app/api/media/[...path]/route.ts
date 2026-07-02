@@ -1,4 +1,5 @@
 import { fetchStoredObject } from "@/lib/fetch-stored-object";
+import { cacheControlForMediaKey } from "@/lib/catalog-image-cache";
 import { storageBackend } from "@/lib/storage-backend";
 
 export const runtime = "nodejs";
@@ -23,7 +24,7 @@ export async function GET(
     return new Response(new Uint8Array(body), {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=604800, immutable",
+        "Cache-Control": cacheControlForMediaKey(key),
         "Access-Control-Allow-Origin": "*",
       },
     });

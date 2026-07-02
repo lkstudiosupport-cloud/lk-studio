@@ -6,7 +6,7 @@ import { t } from "@/lib/i18n";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { FavoritePriceQuoteForm } from "@/components/FavoritePriceQuoteForm";
 import type { ServiceCategory, WorkType } from "@prisma/client";
-import { parseDesignImages } from "@/lib/design-images";
+import { parseDesignImages, designImageSrc } from "@/lib/design-images";
 
 type FavoriteRow = {
   id: string;
@@ -98,7 +98,7 @@ export function CustomerFavoritesPanel({
                             className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg"
                           >
                             <Image
-                              src={fav.design.imagePath}
+                              src={designImageSrc(fav.design.imagePath)}
                               alt={fav.design.title}
                               fill
                               className="object-cover"

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, UserRound } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { parseDesignImages } from "@/lib/design-images";
+import { designImageSrc } from "@/lib/design-images";
 import {
   createShopOrder,
   lookupShopOrderCustomer,
@@ -505,7 +505,7 @@ export function CreateShopOrderFlow({
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {customer.favorites.map((fav) => {
                     const checked = selectedDesigns.includes(fav.designId);
-                    const thumb = parseDesignImages(fav.design.imagesJson, fav.design.imagePath)[0];
+                    const thumb = designImageSrc(fav.design.imagePath);
                     return (
                       <label
                         key={fav.designId}

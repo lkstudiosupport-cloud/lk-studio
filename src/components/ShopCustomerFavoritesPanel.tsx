@@ -4,6 +4,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { ServiceCategory } from "@prisma/client";
 import { UserRound } from "lucide-react";
+import { designImageSrc } from "@/lib/design-images";
 
 type FavoriteRow = {
   id: string;
@@ -60,7 +61,7 @@ export function ShopCustomerFavoritesPanel({
                         >
                           <div className="relative aspect-square">
                             <Image
-                              src={item.design.imagePath}
+                              src={designImageSrc(item.design.imagePath)}
                               alt={item.design.title}
                               fill
                               className="object-cover"

@@ -16,6 +16,7 @@ import {
   shopMeasurementsToRecord,
 } from "@/lib/shop-measurements";
 import type { Design, Measurement, Order, OrderImage, OrderFavorite, Person, ShopProfile, ShopRating, ServiceCategory } from "@prisma/client";
+import { designImageSrc } from "@/lib/design-images";
 
 type DesignPreview = Pick<Design, "id" | "title" | "imagePath" | "category">;
 
@@ -88,7 +89,7 @@ export function CustomerOrderCard({ order, locale }: { order: OrderView; locale:
                 {order.design?.imagePath ? (
                   <div className="relative aspect-[4/3] max-h-48 w-full">
                     <Image
-                      src={order.design.imagePath}
+                      src={designImageSrc(order.design.imagePath)}
                       alt={designLabel}
                       fill
                       className="object-cover"

@@ -1,17 +1,23 @@
 /**
  * Seeds 100 catalog maggam designs per size tier (SMALL / MEDIUM / BIG).
- * Images are procedurally generated — original artwork, safe for commercial use in LK Studio.
+ * Uploads full JPG + thumb JPG to R2 (Option B) with 30-day browser cache via /api/media (G1).
  *
- * Run all tiers:  npm run db:seed-maggam
- * One tier:       npm run db:seed-maggam -- --tier=medium
- * Force regenerate: npm run db:seed-maggam -- --force
+ * Run all tiers:     npm run db:seed-maggam
+ * One tier:          npm run db:seed-maggam -- --tier=medium
+ * Force regenerate:  npm run db:seed-maggam -- --force
+ * Thumbs only:       npm run catalog:sync-maggam-thumbs
  */
 import { PrismaClient, type DesignSizeTier } from "@prisma/client";
 import { deleteStoredUpload, saveCatalogAsset } from "../src/lib/storage";
+import { fetchStoredObject } from "../src/lib/fetch-stored-object";
+import { storageKeyFromStoredUrl } from "../src/lib/storage-url";
 import {
   catalogNumberFor,
   folderSlugForTier,
+  maggamCatalogFullRelPath,
+  maggamCatalogThumbRelPath,
   renderMaggamBlouse,
+  renderMaggamBlouseThumb,
   titleForIndex,
 } from "../src/lib/maggam-catalog-image";
 
@@ -27,22 +33,38 @@ function tierArg(): DesignSizeTier[] | "all" {
   throw new Error(`Unknown tier "${raw}". Use small, medium, big, or all.`);
 }
 
-function assetUrlPrefix(tier: DesignSizeTier): string {
-  return `/assets/catalog/${folderSlugForTier(tier)}`;
-}
-
 function isStaticAssetPath(imagePath: string | null | undefined, tier: DesignSizeTier): boolean {
   if (!imagePath) return false;
   const slug = folderSlugForTier(tier);
-  return imagePath.startsWith(assetUrlPrefix(tier)) || imagePath.includes(`/${slug}/MAG-`);
+  return (
+    imagePath.includes(`/${slug}/MAG-`) &&
+    (imagePath.startsWith("/assets/catalog/") ||
+      imagePath.startsWith("/api/media/assets/catalog/") ||
+      imagePath.includes(`/api/media/assets/catalog/${slug}/`))
+  );
+}
+
+async function fullBufferForTier(tier: DesignSizeTier, index: number, catalogNumber: string): Promise<Buffer> {
+  const relPath = maggamCatalogFullRelPath(tier, catalogNumber);
+  const key = storageKeyFromStoredUrl(relPath) ?? relPath;
+  try {
+    const { body } = await fetchStoredObject(key);
+    return body;
+  } catch {
+    return renderMaggamBlouse(index, tier, catalogNumber);
+  }
+}
+
+async function saveThumb(tier: DesignSizeTier, catalogNumber: string, fullBuffer: Buffer): Promise<void> {
+  const thumbBuffer = await renderMaggamBlouseThumb(fullBuffer);
+  await saveCatalogAsset(thumbBuffer, maggamCatalogThumbRelPath(tier, catalogNumber));
 }
 
 async function seedTier(tier: DesignSizeTier) {
-  const urlPrefix = assetUrlPrefix(tier);
-
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  let thumbsUploaded = 0;
 
   console.log(`\nGenerating maggam ${tier} (${TARGET_COUNT} images)…`);
 
@@ -52,12 +74,20 @@ async function seedTier(tier: DesignSizeTier) {
 
     if (existing && isStaticAssetPath(existing.imagePath, tier) && !FORCE) {
       skipped++;
+      try {
+        const full = await fullBufferForTier(tier, n, catalogNumber);
+        await saveThumb(tier, catalogNumber, full);
+        thumbsUploaded++;
+      } catch (e) {
+        console.warn(`  thumb skip ${catalogNumber}:`, e instanceof Error ? e.message : e);
+      }
       continue;
     }
 
     const buffer = await renderMaggamBlouse(n, tier, catalogNumber);
-    const relPath = `assets/catalog/${folderSlugForTier(tier)}/${catalogNumber}.jpg`;
-    const imagePath = await saveCatalogAsset(buffer, relPath);
+    const imagePath = await saveCatalogAsset(buffer, maggamCatalogFullRelPath(tier, catalogNumber));
+    await saveThumb(tier, catalogNumber, buffer);
+    thumbsUploaded++;
     const title = titleForIndex(n);
 
     if (existing) {
@@ -109,9 +139,8 @@ async function seedTier(tier: DesignSizeTier) {
   });
 
   console.log(
-    `Maggam ${tier}: ${total} in catalog (${created} created, ${updated} updated, ${skipped} skipped).`
+    `Maggam ${tier}: ${total} in catalog (${created} created, ${updated} updated, ${skipped} skipped, ${thumbsUploaded} thumbs on R2).`
   );
-  console.log(`Files: ${urlPrefix}/${catalogNumberFor(tier, 1)}.jpg … ${catalogNumberFor(tier, TARGET_COUNT)}.jpg`);
 }
 
 async function main() {
@@ -122,7 +151,8 @@ async function main() {
     await seedTier(tier);
   }
 
-  console.log("\nDone. Export for download: npm run catalog:export-maggam");
+  console.log("\nDone. Thumbs-only backfill: npm run catalog:sync-maggam-thumbs");
+  console.log("Export for download: npm run catalog:export-maggam");
 }
 
 main()

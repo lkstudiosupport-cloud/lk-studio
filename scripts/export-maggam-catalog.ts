@@ -38,6 +38,21 @@ async function copyTier(tier: DesignSizeTier, destFolder: string): Promise<numbe
   for (const file of files) {
     await cp(path.join(src, file), path.join(dest, file));
   }
+
+  const thumbSrc = path.join(src, "thumbs");
+  try {
+    const thumbFiles = (await readdir(thumbSrc)).filter((f) => f.endsWith(".jpg")).sort();
+    if (thumbFiles.length > 0) {
+      const thumbDest = path.join(dest, "thumbs");
+      await mkdir(thumbDest, { recursive: true });
+      for (const file of thumbFiles) {
+        await cp(path.join(thumbSrc, file), path.join(thumbDest, file));
+      }
+    }
+  } catch {
+    // thumbs optional for local export
+  }
+
   return files.length;
 }
 

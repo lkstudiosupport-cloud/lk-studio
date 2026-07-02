@@ -3,6 +3,7 @@ import type { Design, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { categoryLabelKey } from "@/lib/categories";
+import { designImageSrc } from "@/lib/design-images";
 
 export type SelectedDesignItem = {
   design: Pick<Design, "id" | "title" | "imagePath" | "category">;
@@ -33,7 +34,7 @@ export function OrderSelectedDesigns({
           >
             <div className="relative aspect-square">
               <Image
-                src={design.imagePath}
+                src={designImageSrc(design.imagePath)}
                 alt={design.title}
                 fill
                 className="object-cover"

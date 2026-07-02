@@ -8,6 +8,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { categoryLabelKey } from "@/lib/categories";
 import type { ShopPriceRequestRow } from "@/lib/shop-price-request-types";
+import { designImageSrc } from "@/lib/design-images";
 import type { PriceRequestStatus, ServiceCategory } from "@prisma/client";
 
 function statusLabel(locale: Locale, status: PriceRequestStatus) {
@@ -69,7 +70,7 @@ function ShopPriceRequestCard({ locale, request }: { locale: Locale; request: Sh
               <div className="overflow-hidden rounded-lg border border-brand-green/15">
                 <div className="relative aspect-square">
                   <Image
-                    src={request.design.imagePath}
+                    src={designImageSrc(request.design.imagePath)}
                     alt={request.design.title}
                     fill
                     className="object-cover"

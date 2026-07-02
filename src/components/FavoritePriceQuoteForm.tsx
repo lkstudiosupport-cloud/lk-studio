@@ -12,6 +12,7 @@ import { FormPhotoAdd } from "@/components/FormPhotoAdd";
 import { CheckCircle2, Camera, IndianRupee } from "lucide-react";
 import type { ServiceCategory } from "@prisma/client";
 import { CATEGORIES } from "@/lib/categories";
+import { designImageSrc } from "@/lib/design-images";
 
 const OWN_PHOTO_CATEGORIES: ServiceCategory[] = ["MAGGAM", "COMPUTER_EMBROIDERY"];
 
@@ -106,7 +107,7 @@ export function FavoritePriceQuoteForm({
                 />
                 <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
                   <Image
-                    src={fav.design.imagePath}
+                    src={designImageSrc(fav.design.imagePath)}
                     alt={fav.design.title}
                     fill
                     className="object-cover"

@@ -4,6 +4,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { categoryLabelKey } from "@/lib/categories";
 import type { Design, PriceRequest, PriceRequestStatus, ServiceCategory, ShopProfile } from "@prisma/client";
+import { designImageSrc } from "@/lib/design-images";
 
 type Row = PriceRequest & {
   shop: Pick<ShopProfile, "id" | "shopName">;
@@ -45,7 +46,7 @@ export function CustomerPriceRequestsPanel({ locale, requests }: { locale: Local
             <div className="flex flex-wrap gap-3">
               {req.design && (
                 <div className="relative h-20 w-20 overflow-hidden rounded-lg border border-brand-green/15">
-                  <Image src={req.design.imagePath} alt={req.design.title} fill className="object-cover" unoptimized />
+                  <Image src={designImageSrc(req.design.imagePath)} alt={req.design.title} fill className="object-cover" unoptimized />
                 </div>
               )}
               {req.customerImagePath && (

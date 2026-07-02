@@ -1,3 +1,5 @@
+import { remoteFileStorageConfigured } from "@/lib/storage-backend";
+
 /** Shared helpers for stored upload URLs and /api/media proxy paths. */
 
 export function mediaProxyUrlForKey(key: string): string {
@@ -100,6 +102,14 @@ export function normalizeStoredImageUrl(pathOrUrl: string): string {
   if (trimmed.startsWith("/uploads/") || trimmed.startsWith("uploads/")) {
     const key = storageKeyFromStoredUrl(trimmed);
     if (key) return mediaProxyUrlForKey(key);
+  }
+
+  if (trimmed.startsWith("/assets/") || trimmed.startsWith("assets/")) {
+    const key = storageKeyFromStoredUrl(trimmed);
+    if (key && remoteFileStorageConfigured()) {
+      return mediaProxyUrlForKey(key);
+    }
+    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
   }
 
   return trimmed;
