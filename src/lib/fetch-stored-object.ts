@@ -1,3 +1,5 @@
+import { readFile } from "fs/promises";
+import path from "path";
 import { isR2Storage, r2GetObject } from "@/lib/r2-object";
 import { createS3Client } from "@/lib/s3-client";
 import { storageBackend } from "@/lib/storage-backend";
@@ -41,7 +43,17 @@ export async function fetchStoredObject(key: string): Promise<StoredObject> {
     return supabaseGetObject(key);
   }
 
-  throw new Error(
-    "File storage not configured. Set S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_ENDPOINT on Render (Cloudflare R2)."
-  );
+  // Local dev: serve catalog/upload files from public/ when R2 is not configured.
+  const localPath = path.join(process.cwd(), "public", key);
+  const body = await readFile(localPath);
+  const ext = path.extname(key).toLowerCase();
+  const contentType =
+    ext === ".jpg" || ext === ".jpeg"
+      ? "image/jpeg"
+      : ext === ".png"
+        ? "image/png"
+        : ext === ".webp"
+          ? "image/webp"
+          : "application/octet-stream";
+  return { body, contentType };
 }
