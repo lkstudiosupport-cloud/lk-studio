@@ -11,6 +11,7 @@ export function CatalogPartButtons({
   category,
   active,
   onPick,
+  onPrefetch,
   counts,
   showUnassigned,
   unassignedCount,
@@ -21,6 +22,7 @@ export function CatalogPartButtons({
   category: ServiceCategory;
   active?: CatalogPart;
   onPick: (part: CatalogPart) => void;
+  onPrefetch?: (part: CatalogPart) => void;
   counts?: Partial<Record<CatalogPart, number>>;
   showUnassigned?: boolean;
   unassignedCount?: number;
@@ -48,6 +50,8 @@ export function CatalogPartButtons({
           key={part}
           type="button"
           onClick={() => onPick(part)}
+          onMouseEnter={() => onPrefetch?.(part)}
+          onTouchStart={() => onPrefetch?.(part)}
           className={`rounded-full px-3 py-1.5 text-xs font-semibold transition sm:px-4 sm:py-2 sm:text-sm ${
             active === part
               ? "bg-brand-green text-brand-gold ring-2 ring-inset ring-brand-gold"

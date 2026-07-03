@@ -13,13 +13,13 @@ import {
 import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
 import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
 import {
+  cachedAllCatalogPartCounts,
+  cachedAllCatalogSizeTierCounts,
   cachedCatalogCategoryCounts,
-  cachedCatalogPartCounts,
-  cachedCatalogSizeTierCounts,
 } from "@/lib/catalog-design-counts";
 import {
   catalogBrowseApiQuery,
-  catalogBrowseWhere,
+  fetchCatalogBrowseBootstrap,
   fetchCatalogDesignPage,
 } from "@/lib/catalog-design-list";
 import { withDbRetry } from "@/lib/safe-db";
@@ -201,29 +201,26 @@ export default async function CustomerDesignsPage({
   });
   const priceShopId = savedShop?.shopId;
 
-  const [designPage, categoryCounts, tierCounts, partCounts, customerFavorites] = await Promise.all([
-    fetchCatalogDesignPage({
-      where: catalogBrowseWhere({ category, sizeTier: initialSizeTier, catalogPart: initialCatalogPart }),
-      page: 1,
-    }),
-    cachedCatalogCategoryCounts(),
-    categoryHasSizeTiers(category) ? cachedCatalogSizeTierCounts(category) : Promise.resolve(null),
-    categoryHasCatalogParts(category) ? cachedCatalogPartCounts(category) : Promise.resolve(null),
-    priceShopId
-      ? withDbRetry(() =>
-          prisma.customerFavorite.findMany({
-            where: { customerId: session!.id, shopId: priceShopId },
-            select: { designId: true },
-          })
-        )
-      : Promise.resolve([]),
-  ]);
+  const browseQuery = { category, sizeTier: initialSizeTier, catalogPart: initialCatalogPart };
 
-  const apiQuery = catalogBrowseApiQuery({
-    category,
-    sizeTier: initialSizeTier,
-    catalogPart: initialCatalogPart,
-  });
+  const [browseBootstrap, categoryCounts, allTierCounts, allPartCounts, customerFavorites] =
+    await Promise.all([
+      fetchCatalogBrowseBootstrap(browseQuery),
+      cachedCatalogCategoryCounts(),
+      cachedAllCatalogSizeTierCounts(),
+      cachedAllCatalogPartCounts(),
+      priceShopId
+        ? withDbRetry(() =>
+            prisma.customerFavorite.findMany({
+              where: { customerId: session!.id, shopId: priceShopId },
+              select: { designId: true },
+            })
+          )
+        : Promise.resolve([]),
+    ]);
+
+  const designPage = browseBootstrap.active;
+  const apiQuery = catalogBrowseApiQuery(browseQuery);
 
   return (
     <CustomerCatalogPanel
@@ -233,13 +230,14 @@ export default async function CustomerDesignsPage({
       hasMore={designPage.hasMore}
       apiQuery={apiQuery}
       categoryCounts={categoryCounts}
-      tierCounts={tierCounts}
-      partCounts={partCounts}
+      allTierCounts={allTierCounts}
+      allPartCounts={allPartCounts}
       favoriteDesignIds={customerFavorites.map((f) => f.designId)}
       priceShopId={priceShopId}
       initialCategory={category}
       initialSizeTier={initialSizeTier}
       initialCatalogPart={initialCatalogPart}
+      initialBrowseCache={browseBootstrap.cache}
     />
   );
 }

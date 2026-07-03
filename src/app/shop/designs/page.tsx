@@ -3,9 +3,10 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { ShopDesignsPanel } from "@/components/ShopDesignsPanel";
 import { isShopOwnedUploadCategory, shopStitchedDesignsWhere } from "@/lib/design-access";
-import { cachedCatalogCategoryCounts, cachedCatalogPartCounts, cachedCatalogSizeTierCounts, cachedShopStitchedCount } from "@/lib/catalog-design-counts";
+import { cachedAllCatalogPartCounts, cachedAllCatalogSizeTierCounts, cachedCatalogCategoryCounts, cachedShopStitchedCount } from "@/lib/catalog-design-counts";
 import {
   catalogBrowseApiQuery,
+  fetchCatalogBrowseBootstrap,
   fetchCatalogDesignPage,
   parseCatalogPart,
   parseSizeTier,
@@ -49,13 +50,22 @@ export default async function ShopDesignsPage({
     ? shopStitchedDesignsWhere(shopId)
     : shopDesignsWhere(shopId, browseQuery);
 
-  const [designPage, catalogCounts, stitchedCount, tierCounts, partCounts] = await Promise.all([
-    fetchCatalogDesignPage({ where: listWhere, page: 1 }),
+  const browseQuery = { category, sizeTier, catalogPart };
+
+  const [designBootstrap, catalogCounts, stitchedCount, allTierCounts, allPartCounts] = await Promise.all([
+    isShopOwnedUploadCategory(category)
+      ? fetchCatalogDesignPage({ where: listWhere, page: 1 }).then((active) => ({
+          active,
+          cache: { [`category=${category}`]: active },
+        }))
+      : fetchCatalogBrowseBootstrap(browseQuery),
     cachedCatalogCategoryCounts(),
     cachedShopStitchedCount(shopId),
-    categoryHasSizeTiers(category) ? cachedCatalogSizeTierCounts(category) : Promise.resolve(null),
-    categoryHasCatalogParts(category) ? cachedCatalogPartCounts(category) : Promise.resolve(null),
+    cachedAllCatalogSizeTierCounts(),
+    cachedAllCatalogPartCounts(),
   ]);
+
+  const designPage = designBootstrap.active;
 
   const categoryCounts = {
     ...catalogCounts,
@@ -73,13 +83,14 @@ export default async function ShopDesignsPage({
       total={designPage.total ?? designPage.items.length}
       hasMore={designPage.hasMore}
       apiQuery={apiQuery}
+      initialBrowseCache={isShopOwnedUploadCategory(category) ? undefined : designBootstrap.cache}
       shopId={shopId}
-      category={category}
+      initialCategory={category}
       sizeTier={sizeTier}
       catalogPart={catalogPart}
       categoryCounts={categoryCounts}
-      tierCounts={tierCounts}
-      partCounts={partCounts}
+      allTierCounts={allTierCounts}
+      allPartCounts={allPartCounts}
     />
   );
 }

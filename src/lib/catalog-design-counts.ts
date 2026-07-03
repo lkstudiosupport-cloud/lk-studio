@@ -3,6 +3,8 @@ import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/clien
 import { prisma } from "@/lib/prisma";
 import { CATALOG_CATEGORIES, shopStitchedDesignsWhere, sortedCatalogDesignWhere } from "@/lib/design-access";
 import { withDbRetry } from "@/lib/safe-db";
+import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
+import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 
 const COUNT_REVALIDATE_SEC = 45;
 
@@ -90,4 +92,24 @@ export function cachedShopStitchedCount(shopId: string) {
     ["shop-stitched-count", shopId],
     { revalidate: COUNT_REVALIDATE_SEC }
   )();
+}
+
+export async function cachedAllCatalogSizeTierCounts(): Promise<
+  Partial<Record<ServiceCategory, CatalogSizeTierCounts>>
+> {
+  const tierCategories = CATALOG_CATEGORIES.filter((cat) => categoryHasSizeTiers(cat));
+  const entries = await Promise.all(
+    tierCategories.map(async (cat) => [cat, await cachedCatalogSizeTierCounts(cat)] as const)
+  );
+  return Object.fromEntries(entries);
+}
+
+export async function cachedAllCatalogPartCounts(): Promise<
+  Partial<Record<ServiceCategory, CatalogPartCounts>>
+> {
+  const partCategories = CATALOG_CATEGORIES.filter((cat) => categoryHasCatalogParts(cat));
+  const entries = await Promise.all(
+    partCategories.map(async (cat) => [cat, await cachedCatalogPartCounts(cat)] as const)
+  );
+  return Object.fromEntries(entries);
 }

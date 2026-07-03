@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import {
+  browseApiCacheKey,
   catalogAdminWhere,
   catalogBrowseWhere,
+  fetchCachedCatalogDesignPage1,
   fetchCatalogDesignPage,
   parseAdminPartView,
   parseAdminSizeView,
@@ -53,10 +55,16 @@ export async function GET(req: Request) {
         ? parseAdminPartView(searchParams.get("partView") ?? undefined)
         : undefined;
 
-      const result = await fetchCatalogDesignPage({
-        where: catalogAdminWhere({ category, sizeView, partView }),
-        page,
-      });
+      const result =
+        page === 1
+          ? await fetchCachedCatalogDesignPage1(
+              `admin:${category}:${sizeView ?? ""}:${partView ?? ""}`,
+              catalogAdminWhere({ category, sizeView, partView })
+            )
+          : await fetchCatalogDesignPage({
+              where: catalogAdminWhere({ category, sizeView, partView }),
+              page,
+            });
       return NextResponse.json(result, { headers: CATALOG_JSON_HEADERS });
     }
 
@@ -76,10 +84,14 @@ export async function GET(req: Request) {
       if (session.role === "SHOP" && session.shopId !== targetShopId) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
-      const result = await fetchCatalogDesignPage({
-        where: shopStitchedDesignsWhere(targetShopId),
-        page,
-      });
+      const where = shopStitchedDesignsWhere(targetShopId);
+      const result =
+        page === 1
+          ? await fetchCachedCatalogDesignPage1(
+              browseApiCacheKey({ category, role: session.role, shopId: targetShopId }),
+              where
+            )
+          : await fetchCatalogDesignPage({ where, page });
       return NextResponse.json(result, { headers: CATALOG_JSON_HEADERS });
     }
 
@@ -100,7 +112,19 @@ export async function GET(req: Request) {
         ? shopDesignsWhere(session.shopId, browseQuery)
         : catalogBrowseWhere(browseQuery);
 
-    const result = await fetchCatalogDesignPage({ where, page });
+    const result =
+      page === 1
+        ? await fetchCachedCatalogDesignPage1(
+            browseApiCacheKey({
+              category,
+              sizeTier,
+              catalogPart,
+              role: session.role,
+              shopId: session.role === "SHOP" ? session.shopId ?? undefined : undefined,
+            }),
+            where
+          )
+        : await fetchCatalogDesignPage({ where, page });
     return NextResponse.json(result, { headers: CATALOG_JSON_HEADERS });
   } catch (err) {
     console.error("[catalog/designs]", err);

@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 import {
   catalogBrowseApiQuery,
   type CatalogBrowseQuery,
@@ -12,8 +13,10 @@ import {
   shopStitchedDesignsWhere,
   sortedCatalogDesignWhere,
 } from "@/lib/design-access";
-import { categoryHasSizeTiers } from "@/lib/design-size-tier";
+import { CATALOG_PARTS } from "@/lib/design-catalog-part";
 import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
+import { DESIGN_SIZE_TIERS } from "@/lib/design-size-tier";
+import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 import { designListSelect, type DesignListItem } from "@/lib/design-list-select";
 import { CATALOG_MAX_PAGE, CATALOG_PAGE_SIZE } from "@/lib/limits";
 import { withDbRetry } from "@/lib/safe-db";
@@ -136,6 +139,91 @@ export async function fetchCatalogDesignPage({
     pageSize: take,
     hasMore,
   };
+}
+
+export type CatalogBrowseBootstrap = Record<string, CatalogDesignPageResult>;
+
+/** Cached page-1 browse — speeds tier/part tab switches and API load-more page 1. */
+export async function fetchCachedCatalogDesignPage1(
+  cacheKey: string,
+  where: Prisma.DesignWhereInput
+): Promise<CatalogDesignPageResult> {
+  return unstable_cache(
+    () => fetchCatalogDesignPage({ where, page: 1 }),
+    ["catalog-design-page-1", cacheKey],
+    { revalidate: 45 }
+  )();
+}
+
+function browsePageCacheKey(category: ServiceCategory, sizeTier?: DesignSizeTier, catalogPart?: CatalogPart) {
+  return `browse:${category}:${sizeTier ?? ""}:${catalogPart ?? ""}`;
+}
+
+/** Preload page 1 for every size tier or catalog part — instant Small/Medium/Big switches. */
+export async function fetchCatalogBrowseBootstrap(query: CatalogBrowseQuery): Promise<{
+  active: CatalogDesignPageResult;
+  cache: CatalogBrowseBootstrap;
+}> {
+  const { category, sizeTier, catalogPart } = query;
+  const cache: CatalogBrowseBootstrap = {};
+
+  if (categoryHasSizeTiers(category)) {
+    const pages = await Promise.all(
+      DESIGN_SIZE_TIERS.map(async (tier) => {
+        const q: CatalogBrowseQuery = { category, sizeTier: tier, catalogPart };
+        const apiQuery = catalogBrowseApiQuery(q);
+        const page = await fetchCachedCatalogDesignPage1(
+          browsePageCacheKey(category, tier, catalogPart),
+          catalogBrowseWhere(q)
+        );
+        return { apiQuery, page };
+      })
+    );
+    for (const { apiQuery, page } of pages) cache[apiQuery] = page;
+    const activeKey = catalogBrowseApiQuery(query);
+    return { active: cache[activeKey]!, cache };
+  }
+
+  if (categoryHasCatalogParts(category)) {
+    const pages = await Promise.all(
+      CATALOG_PARTS.map(async (part) => {
+        const q: CatalogBrowseQuery = { category, sizeTier, catalogPart: part };
+        const apiQuery = catalogBrowseApiQuery(q);
+        const page = await fetchCachedCatalogDesignPage1(
+          browsePageCacheKey(category, sizeTier, part),
+          catalogBrowseWhere(q)
+        );
+        return { apiQuery, page };
+      })
+    );
+    for (const { apiQuery, page } of pages) cache[apiQuery] = page;
+    const activeKey = catalogBrowseApiQuery(query);
+    return { active: cache[activeKey]!, cache };
+  }
+
+  const apiQuery = catalogBrowseApiQuery(query);
+  const active = await fetchCachedCatalogDesignPage1(
+    browsePageCacheKey(category, sizeTier, catalogPart),
+    catalogBrowseWhere(query)
+  );
+  cache[apiQuery] = active;
+  return { active, cache };
+}
+
+export function browseApiCacheKey(input: {
+  category: ServiceCategory;
+  sizeTier?: DesignSizeTier;
+  catalogPart?: CatalogPart;
+  role: string;
+  shopId?: string;
+}) {
+  return [
+    input.category,
+    input.sizeTier ?? "",
+    input.catalogPart ?? "",
+    input.role,
+    input.shopId ?? "",
+  ].join(":");
 }
 
 export function parseCatalogPage(raw?: string): number {

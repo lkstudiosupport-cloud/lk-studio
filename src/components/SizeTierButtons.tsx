@@ -7,6 +7,7 @@ export function SizeTierButtons({
   locale,
   active,
   onPick,
+  onPrefetch,
   counts,
   showUnassigned,
   unassignedCount,
@@ -16,6 +17,7 @@ export function SizeTierButtons({
   locale: Locale;
   active?: DesignSizeTier;
   onPick: (tier: DesignSizeTier) => void;
+  onPrefetch?: (tier: DesignSizeTier) => void;
   counts?: Partial<Record<DesignSizeTier, number>>;
   showUnassigned?: boolean;
   unassignedCount?: number;
@@ -43,6 +45,8 @@ export function SizeTierButtons({
           key={tier}
           type="button"
           onClick={() => onPick(tier)}
+          onMouseEnter={() => onPrefetch?.(tier)}
+          onTouchStart={() => onPrefetch?.(tier)}
           className={`rounded-full px-3 py-1.5 text-xs font-semibold transition sm:px-4 sm:py-2 sm:text-sm ${
             active === tier
               ? "bg-brand-green text-brand-gold ring-2 ring-inset ring-brand-gold"

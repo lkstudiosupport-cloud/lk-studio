@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CATEGORIES, isCategoryShopUpload } from "@/lib/categories";
 import type { CatalogPartCounts, CatalogSizeTierCounts } from "@/lib/catalog-design-counts";
+import { CatalogCategoryTabs } from "@/components/CatalogCategoryTabs";
 import { CatalogDesignPager } from "@/components/CatalogDesignPager";
 import { isShopOwnedUploadCategory } from "@/lib/design-access";
 import type { DesignListItem } from "@/lib/design-list-select";
@@ -42,12 +42,13 @@ export function ShopDesignsPanel({
   hasMore,
   apiQuery,
   shopId,
-  category,
+  initialCategory,
   sizeTier,
   catalogPart,
   categoryCounts,
-  tierCounts,
-  partCounts,
+  allTierCounts,
+  allPartCounts,
+  initialBrowseCache,
 }: {
   locale: Locale;
   designs: DesignListItem[];
@@ -55,12 +56,13 @@ export function ShopDesignsPanel({
   hasMore: boolean;
   apiQuery: string;
   shopId: string;
-  category: ServiceCategory;
+  initialCategory: ServiceCategory;
   sizeTier?: DesignSizeTier;
   catalogPart?: CatalogPart;
   categoryCounts: Record<ServiceCategory, number>;
-  tierCounts: CatalogSizeTierCounts | null;
-  partCounts: CatalogPartCounts | null;
+  allTierCounts: Partial<Record<ServiceCategory, CatalogSizeTierCounts>>;
+  allPartCounts: Partial<Record<ServiceCategory, CatalogPartCounts>>;
+  initialBrowseCache?: Record<string, { items: DesignListItem[]; total: number | null; hasMore: boolean }>;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -69,22 +71,29 @@ export function ShopDesignsPanel({
   const [uploadProgress, setUploadProgress] = useState("");
 
   const pageUrl = useCallback(
-    (tier?: DesignSizeTier, part?: CatalogPart) => shopDesignsUrl(category, tier, part),
-    [category]
+    (cat: ServiceCategory, tier?: DesignSizeTier, part?: CatalogPart) =>
+      shopDesignsUrl(cat, tier, part),
+    []
   );
+  const shopCategories = CATEGORIES.map((c) => c.key);
   const browse = useCatalogBrowseSwitch({
-    category,
-    initialSizeTier: sizeTier ?? defaultSizeTierForCategory(category),
-    initialCatalogPart: catalogPart ?? defaultCatalogPartForCategory(category),
+    initialCategory,
+    catalogCategories: shopCategories,
+    initialSizeTier: sizeTier ?? defaultSizeTierForCategory(initialCategory),
+    initialCatalogPart: catalogPart ?? defaultCatalogPartForCategory(initialCategory),
     initialDesigns: designs,
     initialTotal: total,
     initialHasMore: hasMore,
     initialApiQuery: apiQuery,
+    initialBrowseCache,
     pageUrl,
   });
+  const category = browse.category;
   const activeSizeTier = browse.sizeTier;
   const activeCatalogPart = browse.catalogPart;
   const visibleDesigns = browse.designs;
+  const tierCounts = allTierCounts[category] ?? null;
+  const partCounts = allPartCounts[category] ?? null;
 
   const canUpload = isCategoryShopUpload(category);
   const activeCategory = CATEGORIES.find((c) => c.key === category)!;
@@ -140,26 +149,14 @@ export function ShopDesignsPanel({
         <h1 className="page-title">{t(locale, "designs")}</h1>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {CATEGORIES.map((c) => (
-          <Link
-            key={c.key}
-            href={shopDesignsUrl(
-              c.key,
-              defaultSizeTierForCategory(c.key),
-              defaultCatalogPartForCategory(c.key)
-            )}
-            scroll={false}
-            prefetch
-            className={`min-h-[4rem] rounded-2xl p-2.5 text-center text-xs font-semibold shadow-md transition hover:opacity-100 sm:min-h-[4.5rem] sm:p-3 sm:text-sm ${
-              c.color
-            } ${category === c.key ? "category-tab-active" : "opacity-90"}`}
-          >
-            <span className="block leading-tight">{t(locale, c.labelKey)}</span>
-            <span className="mt-1 block text-xs opacity-90">({categoryCounts[c.key] ?? 0})</span>
-          </Link>
-        ))}
-      </div>
+      <CatalogCategoryTabs
+        locale={locale}
+        tabs={CATEGORIES}
+        active={category}
+        counts={categoryCounts}
+        onPick={browse.pickCategory}
+        onPrefetch={browse.prefetchCategory}
+      />
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -178,6 +175,7 @@ export function ShopDesignsPanel({
               locale={locale}
               active={activeSizeTier}
               onPick={browse.pickSizeTier}
+              onPrefetch={browse.prefetchSizeTier}
               counts={
                 tierCounts
                   ? { SMALL: tierCounts.SMALL, MEDIUM: tierCounts.MEDIUM, BIG: tierCounts.BIG }
@@ -199,6 +197,7 @@ export function ShopDesignsPanel({
               category={category}
               active={activeCatalogPart}
               onPick={browse.pickCatalogPart}
+              onPrefetch={browse.prefetchCatalogPart}
               counts={
                 partCounts
                   ? { MAIN: partCounts.MAIN, HAND_SLEEVES: partCounts.HAND_SLEEVES }
@@ -224,13 +223,15 @@ export function ShopDesignsPanel({
         {subgroupReady && (
           <div className="relative space-y-4">
             {browse.switching && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70">
-                <Loader2 className="h-8 w-8 animate-spin text-brand-green" />
+              <div className="flex items-center justify-center gap-2 py-1 text-sm text-zinc-600">
+                <Loader2 className="h-4 w-4 animate-spin text-brand-green" />
+                {t(locale, "loadingDesigns")}
               </div>
             )}
             {browse.switchError && (
               <p className="text-center text-sm text-red-600">{browse.switchError}</p>
             )}
+            <div className={browse.switching ? "opacity-70 transition-opacity" : "transition-opacity"}>
             <CatalogDesignPager
               locale={locale}
               initialDesigns={visibleDesigns}
@@ -271,6 +272,7 @@ export function ShopDesignsPanel({
               </div>
             )}
           </CatalogDesignPager>
+            </div>
           </div>
         )}
 

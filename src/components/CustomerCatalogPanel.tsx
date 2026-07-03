@@ -13,6 +13,7 @@ import type { CatalogPartCounts, CatalogSizeTierCounts } from "@/lib/catalog-des
 import type { DesignListItem } from "@/lib/design-queries";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { CatalogDesignPager } from "@/components/CatalogDesignPager";
+import { CatalogCategoryTabs } from "@/components/CatalogCategoryTabs";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { CatalogPartButtons } from "@/components/CatalogPartButtons";
 import { withQueryParam } from "@/lib/query-string";
@@ -37,13 +38,14 @@ export function CustomerCatalogPanel({
   hasMore,
   apiQuery,
   categoryCounts,
-  tierCounts,
-  partCounts,
+  allTierCounts,
+  allPartCounts,
   favoriteDesignIds,
   priceShopId,
   initialCategory,
   initialSizeTier,
   initialCatalogPart,
+  initialBrowseCache,
 }: {
   locale: Locale;
   designs: DesignListItem[];
@@ -51,32 +53,36 @@ export function CustomerCatalogPanel({
   hasMore: boolean;
   apiQuery: string;
   categoryCounts: Partial<Record<ServiceCategory, number>>;
-  tierCounts: CatalogSizeTierCounts | null;
-  partCounts: CatalogPartCounts | null;
+  allTierCounts: Partial<Record<ServiceCategory, CatalogSizeTierCounts>>;
+  allPartCounts: Partial<Record<ServiceCategory, CatalogPartCounts>>;
   favoriteDesignIds: string[];
   priceShopId?: string;
   initialCategory: ServiceCategory;
   initialSizeTier?: DesignSizeTier;
   initialCatalogPart?: CatalogPart;
+  initialBrowseCache?: Record<string, { items: DesignListItem[]; total: number | null; hasMore: boolean }>;
 }) {
   const tabs = CATEGORIES.filter((c) => CATALOG_CATEGORIES.includes(c.key));
-  const category = initialCategory;
   const pageUrl = useCallback(
-    (sizeTier?: DesignSizeTier, catalogPart?: CatalogPart) =>
-      catalogUrl(category, sizeTier, catalogPart),
-    [category]
+    (cat: ServiceCategory, sizeTier?: DesignSizeTier, catalogPart?: CatalogPart) =>
+      catalogUrl(cat, sizeTier, catalogPart),
+    []
   );
   const browse = useCatalogBrowseSwitch({
-    category,
-    initialSizeTier: initialSizeTier ?? defaultSizeTierForCategory(category),
-    initialCatalogPart: initialCatalogPart ?? defaultCatalogPartForCategory(category),
+    initialCategory,
+    catalogCategories: CATALOG_CATEGORIES,
+    initialSizeTier: initialSizeTier ?? defaultSizeTierForCategory(initialCategory),
+    initialCatalogPart: initialCatalogPart ?? defaultCatalogPartForCategory(initialCategory),
     initialDesigns: designs,
     initialTotal: total,
     initialHasMore: hasMore,
     initialApiQuery: apiQuery,
+    initialBrowseCache,
     pageUrl,
   });
-  const { sizeTier, catalogPart, pickSizeTier, pickCatalogPart } = browse;
+  const { category, sizeTier, catalogPart, pickSizeTier, pickCatalogPart } = browse;
+  const tierCounts = allTierCounts[category] ?? null;
+  const partCounts = allPartCounts[category] ?? null;
   const favorites = useMemo(() => new Set(favoriteDesignIds), [favoriteDesignIds]);
   const hasSizeTiers = categoryHasSizeTiers(category);
   const hasCatalogParts = categoryHasCatalogParts(category);
@@ -91,22 +97,14 @@ export function CustomerCatalogPanel({
         <h1 className="page-title">{t(locale, "designs")}</h1>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {tabs.map((c) => (
-          <Link
-            key={c.key}
-            href={catalogUrl(c.key, defaultSizeTierForCategory(c.key), defaultCatalogPartForCategory(c.key))}
-            scroll={false}
-            prefetch
-            className={`min-h-[4rem] rounded-2xl p-2.5 text-center text-xs font-semibold shadow-md transition hover:opacity-100 sm:min-h-[4.5rem] sm:p-3 sm:text-sm ${
-              c.color
-            } ${category === c.key ? "category-tab-active" : "opacity-90"}`}
-          >
-            <span className="block leading-tight">{t(locale, c.labelKey)}</span>
-            <span className="mt-1 block text-xs opacity-90">({categoryCounts[c.key] ?? 0})</span>
-          </Link>
-        ))}
-      </div>
+      <CatalogCategoryTabs
+        locale={locale}
+        tabs={tabs}
+        active={category}
+        counts={categoryCounts}
+        onPick={browse.pickCategory}
+        onPrefetch={browse.prefetchCategory}
+      />
 
       {category && !priceShopId && (
         <p className="card-premium p-4 text-sm text-zinc-600">
@@ -122,6 +120,7 @@ export function CustomerCatalogPanel({
           locale={locale}
           active={sizeTier}
           onPick={pickSizeTier}
+          onPrefetch={browse.prefetchSizeTier}
           counts={
             tierCounts
               ? { SMALL: tierCounts.SMALL, MEDIUM: tierCounts.MEDIUM, BIG: tierCounts.BIG }
@@ -136,6 +135,7 @@ export function CustomerCatalogPanel({
           category={category}
           active={catalogPart}
           onPick={pickCatalogPart}
+          onPrefetch={browse.prefetchCatalogPart}
           counts={
             partCounts
               ? { MAIN: partCounts.MAIN, HAND_SLEEVES: partCounts.HAND_SLEEVES }
@@ -147,32 +147,35 @@ export function CustomerCatalogPanel({
       {category && subgroupReady && (
         <div className="relative space-y-4">
           {browse.switching && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70">
-              <Loader2 className="h-8 w-8 animate-spin text-brand-green" />
+            <div className="flex items-center justify-center gap-2 py-1 text-sm text-zinc-600">
+              <Loader2 className="h-4 w-4 animate-spin text-brand-green" />
+              {t(locale, "loadingDesigns")}
             </div>
           )}
           {browse.switchError && (
             <p className="text-center text-sm text-red-600">{browse.switchError}</p>
           )}
-          <CatalogDesignPager
-            locale={locale}
-            initialDesigns={browse.designs}
-            total={browse.total}
-            hasMore={browse.hasMore}
-            apiQuery={browse.apiQuery}
-          >
-            {(pagedDesigns) => (
-              <ShopDesignCollections
-                locale={locale}
-                designs={pagedDesigns}
-                shopId={priceShopId}
-                favoriteDesignIds={favorites}
-                detailHrefForDesign={(d) =>
-                  withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
-                }
-              />
-            )}
-          </CatalogDesignPager>
+          <div className={browse.switching ? "opacity-70 transition-opacity" : "transition-opacity"}>
+            <CatalogDesignPager
+              locale={locale}
+              initialDesigns={browse.designs}
+              total={browse.total}
+              hasMore={browse.hasMore}
+              apiQuery={browse.apiQuery}
+            >
+              {(pagedDesigns) => (
+                <ShopDesignCollections
+                  locale={locale}
+                  designs={pagedDesigns}
+                  shopId={priceShopId}
+                  favoriteDesignIds={favorites}
+                  detailHrefForDesign={(d) =>
+                    withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
+                  }
+                />
+              )}
+            </CatalogDesignPager>
+          </div>
         </div>
       )}
     </div>
