@@ -1,12 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { CitySelect } from "@/components/CitySelect";
-import { MapLocationPicker, type PickedLocation } from "@/components/MapLocationPicker";
 import { SERVICE_CITIES } from "@/lib/cities";
+import type { PickedLocation } from "@/components/MapLocationPicker";
+
+const MapLocationPicker = dynamic(
+  () => import("@/components/MapLocationPicker").then((m) => m.MapLocationPicker),
+  { ssr: false }
+);
 
 type Props = {
   locale: Locale;

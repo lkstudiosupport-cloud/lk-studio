@@ -5,7 +5,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: npx next start -H 0.0.0.0 -p $PORT
+    startCommand: npx tsx scripts/ensure-city-schema.ts && npx next start -H 0.0.0.0 -p $PORT
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
