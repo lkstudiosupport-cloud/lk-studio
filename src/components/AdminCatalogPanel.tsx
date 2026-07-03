@@ -116,7 +116,9 @@ export function AdminCatalogPanel({
     fd.set("category", category);
     fd.set("designImage0", file);
     const { res, data } = await fetchApi("/api/admin/designs", { method: "POST", body: fd });
-    if (!res.ok) throw new Error(String(data.error ?? "Upload failed"));
+    if (!res.ok || data.error) {
+      throw new Error(String(data.error ?? `Upload failed (${res.status})`));
+    }
     return String(data.catalogNumber ?? "");
   }
 
@@ -131,6 +133,10 @@ export function AdminCatalogPanel({
       for (let i = 0; i < files.length; i++) {
         setUploadProgress(`${i + 1}/${files.length}`);
         last = await uploadOne(files[i]!);
+        // Brief pause between uploads — avoids Render timeout on bulk batches.
+        if (i < files.length - 1) {
+          await new Promise((r) => setTimeout(r, 300));
+        }
       }
       if (last) setLastCode(last);
       router.push(adminDesignsUrl(category, "unassigned", partView));
@@ -177,7 +183,7 @@ export function AdminCatalogPanel({
     }
   }
 
-  async function compressFilesInBatches(files: File[], batchSize = 12): Promise<File[]> {
+  async function compressFilesInBatches(files: File[], batchSize = 8): Promise<File[]> {
     const compressed: File[] = [];
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);

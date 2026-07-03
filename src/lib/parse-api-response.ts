@@ -1,3 +1,25 @@
+function errorForNonJsonResponse(res: Response, text: string): string {
+  const status = res.status;
+  const snippet = text.trim().slice(0, 80).toLowerCase();
+
+  if (status === 401 || status === 403) {
+    return "Session expired — log in again and retry.";
+  }
+  if (status === 413 || snippet.includes("too large") || snippet.includes("entity too large")) {
+    return "Photo too large — upload fewer images at once or use smaller photos.";
+  }
+  if (status === 502 || status === 503 || status === 504 || snippet.includes("<!doctype html")) {
+    return `Server busy or timed out (${status}). Upload 5–10 photos at a time, wait a minute, then retry.`;
+  }
+  if (snippet.startsWith("<!doctype") || snippet.startsWith("<html")) {
+    return `Server returned a web page instead of data (${status}). Check Render is Live, then retry.`;
+  }
+  if (status >= 500) {
+    return `Server error (${status}). Try again in a minute.`;
+  }
+  return `Unexpected server response (${status}). Try again or upload fewer photos at once.`;
+}
+
 export async function parseApiResponse(res: Response): Promise<Record<string, unknown>> {
   const text = await res.text();
   if (!text.trim()) {
@@ -6,7 +28,7 @@ export async function parseApiResponse(res: Response): Promise<Record<string, un
   try {
     return JSON.parse(text) as Record<string, unknown>;
   } catch {
-    return { error: "Server returned invalid response. Is npm run mobile:dev running?" };
+    return { error: errorForNonJsonResponse(res, text) };
   }
 }
 

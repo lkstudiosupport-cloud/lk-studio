@@ -13,6 +13,8 @@ import { deleteStoredUpload } from "@/lib/storage";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 
 export const runtime = "nodejs";
+/** Render: allow R2 upload + image processing per photo. */
+export const maxDuration = 60;
 
 function requireAdmin() {
   return getSession().then((s) => (s?.role === "ADMIN" ? s : null));

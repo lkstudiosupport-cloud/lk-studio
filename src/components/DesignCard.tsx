@@ -14,6 +14,7 @@ export function DesignCard({
   photosBadge,
   shopId,
   isFavorite,
+  onOpenPreview,
 }: {
   design: DesignListItem;
   locale: Locale;
@@ -23,6 +24,7 @@ export function DesignCard({
   photosBadge?: string;
   shopId?: string;
   isFavorite?: boolean;
+  onOpenPreview?: (photoIndex: number) => void;
 }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
@@ -35,6 +37,7 @@ export function DesignCard({
         photosBadge={photosBadge}
         previewCloseLabel={t(locale, "closePreview")}
         previewLabel={t(locale, "tapToPreview")}
+        onOpenPreview={onOpenPreview}
       />
       <div className="p-3">
         {design.catalogNumber && (

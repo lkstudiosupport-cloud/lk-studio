@@ -31,6 +31,7 @@ export function DesignImagesView({
   photosBadge,
   previewCloseLabel = "Close",
   previewLabel = "Preview",
+  onOpenPreview,
 }: {
   imagePath: string;
   imagesJson?: string | null;
@@ -42,6 +43,8 @@ export function DesignImagesView({
   photosBadge?: string;
   previewCloseLabel?: string;
   previewLabel?: string;
+  /** When set, full-view opens catalog lightbox (browse designs) instead of per-card lightbox. */
+  onOpenPreview?: (photoIndex: number) => void;
 }) {
   const imageSrcs = parseDesignImageSrcs(imagesJson, imagePath);
   const fullImages = imageSrcs.map((s) => s.full);
@@ -50,6 +53,10 @@ export function DesignImagesView({
   const [previewIndex, setPreviewIndex] = useState(0);
 
   function openPreview(index: number) {
+    if (onOpenPreview) {
+      onOpenPreview(index);
+      return;
+    }
     setPreviewIndex(index);
     setPreviewOpen(true);
   }
@@ -130,14 +137,16 @@ export function DesignImagesView({
             );
           })}
         </div>
-        <ImagePreviewLightbox
-          images={fullImages}
-          startIndex={previewIndex}
-          alt={alt}
-          open={previewOpen}
-          onClose={() => setPreviewOpen(false)}
-          closeLabel={previewCloseLabel}
-        />
+        {!onOpenPreview && (
+          <ImagePreviewLightbox
+            images={fullImages}
+            startIndex={previewIndex}
+            alt={alt}
+            open={previewOpen}
+            onClose={() => setPreviewOpen(false)}
+            closeLabel={previewCloseLabel}
+          />
+        )}
       </>
     );
   }
@@ -178,14 +187,16 @@ export function DesignImagesView({
             </Link>
           )}
         </div>
-        <ImagePreviewLightbox
-          images={fullImages}
-          startIndex={previewIndex}
-          alt={alt}
-          open={previewOpen}
-          onClose={() => setPreviewOpen(false)}
-          closeLabel={previewCloseLabel}
-        />
+        {!onOpenPreview && (
+          <ImagePreviewLightbox
+            images={fullImages}
+            startIndex={previewIndex}
+            alt={alt}
+            open={previewOpen}
+            onClose={() => setPreviewOpen(false)}
+            closeLabel={previewCloseLabel}
+          />
+        )}
       </>
     );
   }
@@ -209,14 +220,16 @@ export function DesignImagesView({
           />
           {previewBtn}
         </button>
-        <ImagePreviewLightbox
-          images={fullImages.length ? fullImages : [imagePath]}
-          startIndex={0}
-          alt={alt}
-          open={previewOpen}
-          onClose={() => setPreviewOpen(false)}
-          closeLabel={previewCloseLabel}
-        />
+        {!onOpenPreview && (
+          <ImagePreviewLightbox
+            images={fullImages.length ? fullImages : [imagePath]}
+            startIndex={0}
+            alt={alt}
+            open={previewOpen}
+            onClose={() => setPreviewOpen(false)}
+            closeLabel={previewCloseLabel}
+          />
+        )}
       </>
     );
   }
@@ -277,14 +290,16 @@ export function DesignImagesView({
           })}
         </div>
       </div>
-      <ImagePreviewLightbox
-        images={fullImages}
-        startIndex={previewIndex}
-        alt={alt}
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        closeLabel={previewCloseLabel}
-      />
+      {!onOpenPreview && (
+        <ImagePreviewLightbox
+          images={fullImages}
+          startIndex={previewIndex}
+          alt={alt}
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          closeLabel={previewCloseLabel}
+        />
+      )}
     </>
   );
 }

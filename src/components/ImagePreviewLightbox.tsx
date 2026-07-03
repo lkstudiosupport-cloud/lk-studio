@@ -13,20 +13,32 @@ function clampScale(value: number) {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
 }
 
-function touchDistance(t1: Touch, t2: Touch) {
+type TouchPoint = { clientX: number; clientY: number };
+
+function touchDistance(t1: TouchPoint, t2: TouchPoint) {
   const dx = t1.clientX - t2.clientX;
   const dy = t1.clientY - t2.clientY;
   return Math.hypot(dx, dy);
 }
 
-function ZoomablePreviewImage({ src, alt }: { src: string; alt: string }) {
+function ZoomablePreviewImage({
+  src,
+  alt,
+  onVerticalSwipe,
+}: {
+  src: string;
+  alt: string;
+  onVerticalSwipe?: (direction: "up" | "down") => void;
+}) {
   const [scale, setScale] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [animate, setAnimate] = useState(false);
 
   const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
+  const swipeRef = useRef<{ startX: number; startY: number } | null>(null);
   const lastTapRef = useRef(0);
+  const lastWheelNavRef = useRef(0);
 
   useEffect(() => {
     setScale(1);
@@ -63,18 +75,27 @@ function ZoomablePreviewImage({ src, alt }: { src: string; alt: string }) {
     setAnimate(false);
     if (e.touches.length === 2) {
       panRef.current = null;
+      swipeRef.current = null;
       pinchRef.current = {
         startDist: touchDistance(e.touches[0]!, e.touches[1]!),
         startScale: scale,
       };
-    } else if (e.touches.length === 1 && scale > MIN_SCALE) {
+    } else if (e.touches.length === 1) {
       pinchRef.current = null;
-      panRef.current = {
+      swipeRef.current = {
         startX: e.touches[0]!.clientX,
         startY: e.touches[0]!.clientY,
-        posX: pos.x,
-        posY: pos.y,
       };
+      if (scale > MIN_SCALE) {
+        panRef.current = {
+          startX: e.touches[0]!.clientX,
+          startY: e.touches[0]!.clientY,
+          posX: pos.x,
+          posY: pos.y,
+        };
+      } else {
+        panRef.current = null;
+      }
     }
   }
 
@@ -97,8 +118,22 @@ function ZoomablePreviewImage({ src, alt }: { src: string; alt: string }) {
 
   function onTouchEnd(e: React.TouchEvent) {
     if (e.touches.length === 0) {
+      if (
+        swipeRef.current &&
+        scale <= MIN_SCALE &&
+        onVerticalSwipe &&
+        e.changedTouches.length === 1
+      ) {
+        const t = e.changedTouches[0]!;
+        const dx = t.clientX - swipeRef.current.startX;
+        const dy = t.clientY - swipeRef.current.startY;
+        if (Math.abs(dy) >= 50 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+          onVerticalSwipe(dy < 0 ? "up" : "down");
+        }
+      }
       pinchRef.current = null;
       panRef.current = null;
+      swipeRef.current = null;
     }
     if (e.changedTouches.length === 1 && e.touches.length === 0 && !pinchRef.current) {
       const now = Date.now();
@@ -138,6 +173,16 @@ function ZoomablePreviewImage({ src, alt }: { src: string; alt: string }) {
   }
 
   function onWheel(e: React.WheelEvent) {
+    if (scale <= MIN_SCALE && onVerticalSwipe) {
+      e.preventDefault();
+      const now = Date.now();
+      if (now - lastWheelNavRef.current < 350) return;
+      if (Math.abs(e.deltaY) >= 8) {
+        lastWheelNavRef.current = now;
+        onVerticalSwipe(e.deltaY < 0 ? "up" : "down");
+      }
+      return;
+    }
     e.preventDefault();
     setAnimate(false);
     const delta = e.deltaY < 0 ? 0.15 : -0.15;
@@ -215,16 +260,22 @@ export function ImagePreviewLightbox({
   images,
   startIndex = 0,
   alt = "Photo",
+  labels,
   open,
   onClose,
   closeLabel = "Close",
+  loop = true,
 }: {
   images: string[];
   startIndex?: number;
   alt?: string;
+  /** Optional caption per slide (e.g. catalog code). */
+  labels?: string[];
   open: boolean;
   onClose: () => void;
   closeLabel?: string;
+  /** When false, stop at first/last slide (catalog grid browsing). */
+  loop?: boolean;
 }) {
   const [index, setIndex] = useState(startIndex);
   const [mounted, setMounted] = useState(false);
@@ -238,12 +289,18 @@ export function ImagePreviewLightbox({
   }, [open, startIndex]);
 
   const goPrev = useCallback(() => {
-    setIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
-  }, [images.length]);
+    setIndex((i) => {
+      if (i <= 0) return loop ? images.length - 1 : 0;
+      return i - 1;
+    });
+  }, [images.length, loop]);
 
   const goNext = useCallback(() => {
-    setIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
-  }, [images.length]);
+    setIndex((i) => {
+      if (i >= images.length - 1) return loop ? 0 : images.length - 1;
+      return i + 1;
+    });
+  }, [images.length, loop]);
 
   useEffect(() => {
     if (!open) return;
@@ -261,8 +318,8 @@ export function ImagePreviewLightbox({
     if (!open) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") goPrev();
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") goNext();
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown") goPrev();
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") goNext();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -271,6 +328,12 @@ export function ImagePreviewLightbox({
   if (!open || images.length === 0 || !mounted) return null;
 
   const src = images[index] ?? images[0]!;
+  const caption = labels?.[index] ?? (images.length > 1 ? `${index + 1} / ${images.length}` : alt);
+
+  function onVerticalSwipe(direction: "up" | "down") {
+    if (direction === "up") goNext();
+    else goPrev();
+  }
 
   return createPortal(
     <div
@@ -290,12 +353,15 @@ export function ImagePreviewLightbox({
         className="relative flex min-h-0 flex-1 items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <ZoomablePreviewImage key={src} src={src} alt={`${alt} ${index + 1}`} />
+        <ZoomablePreviewImage
+          key={src}
+          src={src}
+          alt={`${alt} ${index + 1}`}
+          onVerticalSwipe={images.length > 1 ? onVerticalSwipe : undefined}
+        />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-3 pb-8 pt-2">
-          <span className="pointer-events-auto text-sm font-medium text-white">
-            {images.length > 1 ? `${index + 1} / ${images.length}` : alt}
-          </span>
+          <span className="pointer-events-auto text-sm font-medium text-white">{caption}</span>
           <button
             type="button"
             onClick={onClose}
@@ -310,17 +376,17 @@ export function ImagePreviewLightbox({
           <>
             <button
               type="button"
-              onClick={goPrev}
+              onClick={goNext}
               className="absolute left-1/2 top-[calc(env(safe-area-inset-top,0px)+3.25rem)] z-10 -translate-x-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70"
-              aria-label="Previous photo"
+              aria-label="Next photo"
             >
               <ChevronUp className="h-8 w-8" />
             </button>
             <button
               type="button"
-              onClick={goNext}
+              onClick={goPrev}
               className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70"
-              aria-label="Next photo"
+              aria-label="Previous photo"
             >
               <ChevronDown className="h-8 w-8" />
             </button>
