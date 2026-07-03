@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { ShopDesignsPanel } from "@/components/ShopDesignsPanel";
@@ -49,8 +48,6 @@ export default async function ShopDesignsPage({
   const listWhere = isShopOwnedUploadCategory(category)
     ? shopStitchedDesignsWhere(shopId)
     : shopDesignsWhere(shopId, browseQuery);
-
-  const browseQuery = { category, sizeTier, catalogPart };
 
   const [designBootstrap, catalogCounts, stitchedCount, allTierCounts, allPartCounts] = await Promise.all([
     isShopOwnedUploadCategory(category)
