@@ -25,26 +25,100 @@ function ZoomablePreviewImage({
   src,
   alt,
   onVerticalSwipe,
+  onSwipeHandled,
 }: {
   src: string;
   alt: string;
   onVerticalSwipe?: (direction: "up" | "down") => void;
+  onSwipeHandled?: () => void;
 }) {
   const [scale, setScale] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [animate, setAnimate] = useState(false);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scaleRef = useRef(1);
+  const onVerticalSwipeRef = useRef(onVerticalSwipe);
+  const onSwipeHandledRef = useRef(onSwipeHandled);
   const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
-  const swipeRef = useRef<{ startX: number; startY: number } | null>(null);
   const lastTapRef = useRef(0);
   const lastWheelNavRef = useRef(0);
+
+  useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
+
+  useEffect(() => {
+    onVerticalSwipeRef.current = onVerticalSwipe;
+  }, [onVerticalSwipe]);
+
+  useEffect(() => {
+    onSwipeHandledRef.current = onSwipeHandled;
+  }, [onSwipeHandled]);
 
   useEffect(() => {
     setScale(1);
     setPos({ x: 0, y: 0 });
     setAnimate(false);
+    scaleRef.current = 1;
   }, [src]);
+
+  /** Native capture listeners — React touch handlers miss swipes on the img in mobile WebViews. */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !onVerticalSwipe) return;
+
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+
+    function onStart(e: TouchEvent) {
+      if (scaleRef.current > MIN_SCALE || e.touches.length !== 1) {
+        tracking = false;
+        return;
+      }
+      tracking = true;
+      startX = e.touches[0]!.clientX;
+      startY = e.touches[0]!.clientY;
+    }
+
+    function onMove(e: TouchEvent) {
+      if (!tracking || scaleRef.current > MIN_SCALE || e.touches.length !== 1) return;
+      const dy = e.touches[0]!.clientY - startY;
+      const dx = e.touches[0]!.clientX - startX;
+      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) {
+        e.preventDefault();
+      }
+    }
+
+    function onEnd(e: TouchEvent) {
+      if (!tracking) return;
+      tracking = false;
+      const swipe = onVerticalSwipeRef.current;
+      if (scaleRef.current > MIN_SCALE || !swipe || e.changedTouches.length !== 1) return;
+
+      const t = e.changedTouches[0]!;
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      if (Math.abs(dy) >= 40 && Math.abs(dy) > Math.abs(dx) * 1.1) {
+        onSwipeHandledRef.current?.();
+        swipe(dy < 0 ? "up" : "down");
+      }
+    }
+
+    el.addEventListener("touchstart", onStart, { capture: true, passive: true });
+    el.addEventListener("touchmove", onMove, { capture: true, passive: false });
+    el.addEventListener("touchend", onEnd, { capture: true, passive: true });
+    el.addEventListener("touchcancel", onEnd, { capture: true, passive: true });
+
+    return () => {
+      el.removeEventListener("touchstart", onStart, { capture: true });
+      el.removeEventListener("touchmove", onMove, { capture: true });
+      el.removeEventListener("touchend", onEnd, { capture: true });
+      el.removeEventListener("touchcancel", onEnd, { capture: true });
+    };
+  }, [onVerticalSwipe, src]);
 
   const resetZoom = useCallback(() => {
     setAnimate(true);
@@ -75,17 +149,12 @@ function ZoomablePreviewImage({
     setAnimate(false);
     if (e.touches.length === 2) {
       panRef.current = null;
-      swipeRef.current = null;
       pinchRef.current = {
         startDist: touchDistance(e.touches[0]!, e.touches[1]!),
         startScale: scale,
       };
     } else if (e.touches.length === 1) {
       pinchRef.current = null;
-      swipeRef.current = {
-        startX: e.touches[0]!.clientX,
-        startY: e.touches[0]!.clientY,
-      };
       if (scale > MIN_SCALE) {
         panRef.current = {
           startX: e.touches[0]!.clientX,
@@ -118,22 +187,8 @@ function ZoomablePreviewImage({
 
   function onTouchEnd(e: React.TouchEvent) {
     if (e.touches.length === 0) {
-      if (
-        swipeRef.current &&
-        scale <= MIN_SCALE &&
-        onVerticalSwipe &&
-        e.changedTouches.length === 1
-      ) {
-        const t = e.changedTouches[0]!;
-        const dx = t.clientX - swipeRef.current.startX;
-        const dy = t.clientY - swipeRef.current.startY;
-        if (Math.abs(dy) >= 50 && Math.abs(dy) > Math.abs(dx) * 1.2) {
-          onVerticalSwipe(dy < 0 ? "up" : "down");
-        }
-      }
       pinchRef.current = null;
       panRef.current = null;
-      swipeRef.current = null;
     }
     if (e.changedTouches.length === 1 && e.touches.length === 0 && !pinchRef.current) {
       const now = Date.now();
@@ -200,7 +255,8 @@ function ZoomablePreviewImage({
 
   return (
     <div
-      className="flex h-full w-full items-center justify-center overflow-hidden"
+      ref={containerRef}
+      className="relative flex h-full w-full items-center justify-center overflow-hidden"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -216,11 +272,12 @@ function ZoomablePreviewImage({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onDoubleClick={onDoubleClick}
-        className="max-h-full max-w-full select-none object-contain touch-none"
+        className="max-h-full max-w-full select-none object-contain"
         style={{
           transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
           transition: animate ? "transform 0.2s ease-out" : "none",
           cursor: scale > MIN_SCALE ? "grab" : "zoom-in",
+          touchAction: "none",
         }}
       />
 
@@ -302,6 +359,8 @@ export function ImagePreviewLightbox({
     });
   }, [images.length, loop]);
 
+  const suppressCloseRef = useRef(false);
+
   useEffect(() => {
     if (!open) return;
     const prevOverflow = document.body.style.overflow;
@@ -335,6 +394,13 @@ export function ImagePreviewLightbox({
     else goPrev();
   }
 
+  function markSwipeHandled() {
+    suppressCloseRef.current = true;
+    window.setTimeout(() => {
+      suppressCloseRef.current = false;
+    }, 400);
+  }
+
   return createPortal(
     <div
       className="fixed inset-0 z-[200] flex h-[100dvh] w-full flex-col bg-black touch-none"
@@ -347,10 +413,13 @@ export function ImagePreviewLightbox({
       role="dialog"
       aria-modal="true"
       aria-label={alt}
-      onClick={onClose}
+      onClick={() => {
+        if (suppressCloseRef.current) return;
+        onClose();
+      }}
     >
       <div
-        className="relative flex min-h-0 flex-1 items-center justify-center"
+        className="relative flex h-full min-h-0 w-full flex-1 items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         <ZoomablePreviewImage
@@ -358,6 +427,7 @@ export function ImagePreviewLightbox({
           src={src}
           alt={`${alt} ${index + 1}`}
           onVerticalSwipe={images.length > 1 ? onVerticalSwipe : undefined}
+          onSwipeHandled={images.length > 1 ? markSwipeHandled : undefined}
         />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-3 pb-8 pt-2">
