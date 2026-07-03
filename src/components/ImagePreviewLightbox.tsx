@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Minus, Plus, X } from "lucide-react";
 
@@ -8,6 +8,7 @@ const MIN_SCALE = 1;
 const MAX_SCALE = 4;
 const DOUBLE_TAP_MS = 300;
 const DOUBLE_TAP_SCALE = 2.5;
+const SWIPE_MIN_PX = 32;
 
 function clampScale(value: number) {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
@@ -21,60 +22,55 @@ function touchDistance(t1: TouchPoint, t2: TouchPoint) {
   return Math.hypot(dx, dy);
 }
 
-function ZoomablePreviewImage({
-  src,
-  alt,
-  onVerticalSwipe,
-  onSwipeHandled,
+export type NavigationGateRef = { current: { canNavigate: () => boolean } };
+
+/** Full-area swipe / scroll / drag — attached to the lightbox pane, not the img. */
+function useVerticalSlideNavigation({
+  targetRef,
+  enabled,
+  canNavigate,
+  onUp,
+  onDown,
+  onHandled,
 }: {
-  src: string;
-  alt: string;
-  onVerticalSwipe?: (direction: "up" | "down") => void;
-  onSwipeHandled?: () => void;
+  targetRef: RefObject<HTMLElement | null>;
+  enabled: boolean;
+  canNavigate: () => boolean;
+  onUp: () => void;
+  onDown: () => void;
+  onHandled?: () => void;
 }) {
-  const [scale, setScale] = useState(1);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [animate, setAnimate] = useState(false);
+  const onUpRef = useRef(onUp);
+  const onDownRef = useRef(onDown);
+  const onHandledRef = useRef(onHandled);
+  const canNavigateRef = useRef(canNavigate);
+  const lastWheelRef = useRef(0);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const scaleRef = useRef(1);
-  const onVerticalSwipeRef = useRef(onVerticalSwipe);
-  const onSwipeHandledRef = useRef(onSwipeHandled);
-  const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
-  const panRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
-  const lastTapRef = useRef(0);
-  const lastWheelNavRef = useRef(0);
+  onUpRef.current = onUp;
+  onDownRef.current = onDown;
+  onHandledRef.current = onHandled;
+  canNavigateRef.current = canNavigate;
 
   useEffect(() => {
-    scaleRef.current = scale;
-  }, [scale]);
-
-  useEffect(() => {
-    onVerticalSwipeRef.current = onVerticalSwipe;
-  }, [onVerticalSwipe]);
-
-  useEffect(() => {
-    onSwipeHandledRef.current = onSwipeHandled;
-  }, [onSwipeHandled]);
-
-  useEffect(() => {
-    setScale(1);
-    setPos({ x: 0, y: 0 });
-    setAnimate(false);
-    scaleRef.current = 1;
-  }, [src]);
-
-  /** Native capture listeners — React touch handlers miss swipes on the img in mobile WebViews. */
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || !onVerticalSwipe) return;
+    const el = targetRef.current;
+    if (!el || !enabled) return;
 
     let startX = 0;
     let startY = 0;
     let tracking = false;
+    let pointerId: number | null = null;
 
-    function onStart(e: TouchEvent) {
-      if (scaleRef.current > MIN_SCALE || e.touches.length !== 1) {
+    function tryNavigate(dx: number, dy: number) {
+      if (!canNavigateRef.current()) return false;
+      if (Math.abs(dy) < SWIPE_MIN_PX || Math.abs(dy) <= Math.abs(dx) * 1.05) return false;
+      onHandledRef.current?.();
+      if (dy < 0) onUpRef.current();
+      else onDownRef.current();
+      return true;
+    }
+
+    function onTouchStart(e: TouchEvent) {
+      if (!canNavigateRef.current() || e.touches.length !== 1) {
         tracking = false;
         return;
       }
@@ -83,42 +79,115 @@ function ZoomablePreviewImage({
       startY = e.touches[0]!.clientY;
     }
 
-    function onMove(e: TouchEvent) {
-      if (!tracking || scaleRef.current > MIN_SCALE || e.touches.length !== 1) return;
+    function onTouchMove(e: TouchEvent) {
+      if (!tracking || !canNavigateRef.current() || e.touches.length !== 1) return;
       const dy = e.touches[0]!.clientY - startY;
       const dx = e.touches[0]!.clientX - startX;
-      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
         e.preventDefault();
       }
     }
 
-    function onEnd(e: TouchEvent) {
+    function onTouchEnd(e: TouchEvent) {
       if (!tracking) return;
       tracking = false;
-      const swipe = onVerticalSwipeRef.current;
-      if (scaleRef.current > MIN_SCALE || !swipe || e.changedTouches.length !== 1) return;
+      const t = e.changedTouches[0];
+      if (!t) return;
+      tryNavigate(t.clientX - startX, t.clientY - startY);
+    }
 
-      const t = e.changedTouches[0]!;
-      const dx = t.clientX - startX;
-      const dy = t.clientY - startY;
-      if (Math.abs(dy) >= 40 && Math.abs(dy) > Math.abs(dx) * 1.1) {
-        onSwipeHandledRef.current?.();
-        swipe(dy < 0 ? "up" : "down");
+    function onPointerDown(e: PointerEvent) {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (!canNavigateRef.current()) return;
+      pointerId = e.pointerId;
+      tracking = true;
+      startX = e.clientX;
+      startY = e.clientY;
+    }
+
+    function onPointerMove(e: PointerEvent) {
+      if (!tracking || pointerId !== e.pointerId) return;
+      if (!canNavigateRef.current()) return;
+      const dy = e.clientY - startY;
+      const dx = e.clientX - startX;
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
+        e.preventDefault();
       }
     }
 
-    el.addEventListener("touchstart", onStart, { capture: true, passive: true });
-    el.addEventListener("touchmove", onMove, { capture: true, passive: false });
-    el.addEventListener("touchend", onEnd, { capture: true, passive: true });
-    el.addEventListener("touchcancel", onEnd, { capture: true, passive: true });
+    function onPointerUp(e: PointerEvent) {
+      if (!tracking || pointerId !== e.pointerId) return;
+      tracking = false;
+      pointerId = null;
+      tryNavigate(e.clientX - startX, e.clientY - startY);
+    }
+
+    function onWheel(e: WheelEvent) {
+      if (!canNavigateRef.current()) return;
+      e.preventDefault();
+      const now = Date.now();
+      if (now - lastWheelRef.current < 300) return;
+      if (Math.abs(e.deltaY) < 6) return;
+      lastWheelRef.current = now;
+      onHandledRef.current?.();
+      if (e.deltaY < 0) onUpRef.current();
+      else onDownRef.current();
+    }
+
+    el.addEventListener("touchstart", onTouchStart, { capture: true, passive: true });
+    el.addEventListener("touchmove", onTouchMove, { capture: true, passive: false });
+    el.addEventListener("touchend", onTouchEnd, { capture: true, passive: true });
+    el.addEventListener("touchcancel", onTouchEnd, { capture: true, passive: true });
+    el.addEventListener("pointerdown", onPointerDown, { capture: true });
+    el.addEventListener("pointermove", onPointerMove, { capture: true });
+    el.addEventListener("pointerup", onPointerUp, { capture: true });
+    el.addEventListener("pointercancel", onPointerUp, { capture: true });
+    el.addEventListener("wheel", onWheel, { capture: true, passive: false });
 
     return () => {
-      el.removeEventListener("touchstart", onStart, { capture: true });
-      el.removeEventListener("touchmove", onMove, { capture: true });
-      el.removeEventListener("touchend", onEnd, { capture: true });
-      el.removeEventListener("touchcancel", onEnd, { capture: true });
+      el.removeEventListener("touchstart", onTouchStart, { capture: true });
+      el.removeEventListener("touchmove", onTouchMove, { capture: true });
+      el.removeEventListener("touchend", onTouchEnd, { capture: true });
+      el.removeEventListener("touchcancel", onTouchEnd, { capture: true });
+      el.removeEventListener("pointerdown", onPointerDown, { capture: true });
+      el.removeEventListener("pointermove", onPointerMove, { capture: true });
+      el.removeEventListener("pointerup", onPointerUp, { capture: true });
+      el.removeEventListener("pointercancel", onPointerUp, { capture: true });
+      el.removeEventListener("wheel", onWheel, { capture: true });
     };
-  }, [onVerticalSwipe, src]);
+  }, [enabled, targetRef]);
+}
+
+function ZoomablePreviewImage({
+  src,
+  alt,
+  navigationGate,
+}: {
+  src: string;
+  alt: string;
+  navigationGate: NavigationGateRef;
+}) {
+  const [scale, setScale] = useState(1);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [animate, setAnimate] = useState(false);
+
+  const scaleRef = useRef(1);
+  const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
+  const panRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
+  const lastTapRef = useRef(0);
+
+  useEffect(() => {
+    scaleRef.current = scale;
+    navigationGate.current = { canNavigate: () => scaleRef.current <= MIN_SCALE + 0.001 };
+  }, [scale, navigationGate]);
+
+  useEffect(() => {
+    setScale(1);
+    setPos({ x: 0, y: 0 });
+    setAnimate(false);
+    scaleRef.current = 1;
+    navigationGate.current = { canNavigate: () => true };
+  }, [src, navigationGate]);
 
   const resetZoom = useCallback(() => {
     setAnimate(true);
@@ -146,37 +215,24 @@ function ZoomablePreviewImage({
   }
 
   function onTouchStart(e: React.TouchEvent) {
+    if (e.touches.length !== 2) return;
     setAnimate(false);
-    if (e.touches.length === 2) {
-      panRef.current = null;
-      pinchRef.current = {
-        startDist: touchDistance(e.touches[0]!, e.touches[1]!),
-        startScale: scale,
-      };
-    } else if (e.touches.length === 1) {
-      pinchRef.current = null;
-      if (scale > MIN_SCALE) {
-        panRef.current = {
-          startX: e.touches[0]!.clientX,
-          startY: e.touches[0]!.clientY,
-          posX: pos.x,
-          posY: pos.y,
-        };
-      } else {
-        panRef.current = null;
-      }
-    }
+    panRef.current = null;
+    pinchRef.current = {
+      startDist: touchDistance(e.touches[0]!, e.touches[1]!),
+      startScale: scale,
+    };
   }
 
   function onTouchMove(e: React.TouchEvent) {
     if (e.touches.length === 2 && pinchRef.current) {
-      e.preventDefault();
+      e.stopPropagation();
       const dist = touchDistance(e.touches[0]!, e.touches[1]!);
       const next = clampScale(pinchRef.current.startScale * (dist / pinchRef.current.startDist));
       setScale(next);
       if (next <= MIN_SCALE) setPos({ x: 0, y: 0 });
     } else if (e.touches.length === 1 && panRef.current && scale > MIN_SCALE) {
-      e.preventDefault();
+      e.stopPropagation();
       const t = e.touches[0]!;
       setPos({
         x: panRef.current.posX + (t.clientX - panRef.current.startX),
@@ -190,7 +246,7 @@ function ZoomablePreviewImage({
       pinchRef.current = null;
       panRef.current = null;
     }
-    if (e.changedTouches.length === 1 && e.touches.length === 0 && !pinchRef.current) {
+    if (e.changedTouches.length === 1 && e.touches.length === 0 && scale <= MIN_SCALE) {
       const now = Date.now();
       if (now - lastTapRef.current < DOUBLE_TAP_MS) {
         onDoubleTap();
@@ -204,6 +260,7 @@ function ZoomablePreviewImage({
   function onPointerDown(e: React.PointerEvent) {
     if (e.pointerType === "touch") return;
     if (scale <= MIN_SCALE) return;
+    e.stopPropagation();
     setAnimate(false);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     panRef.current = {
@@ -216,6 +273,7 @@ function ZoomablePreviewImage({
 
   function onPointerMove(e: React.PointerEvent) {
     if (!panRef.current || e.pointerType === "touch") return;
+    e.stopPropagation();
     setPos({
       x: panRef.current.posX + (e.clientX - panRef.current.startX),
       y: panRef.current.posY + (e.clientY - panRef.current.startY),
@@ -227,40 +285,18 @@ function ZoomablePreviewImage({
     panRef.current = null;
   }
 
-  function onWheel(e: React.WheelEvent) {
-    if (scale <= MIN_SCALE && onVerticalSwipe) {
-      e.preventDefault();
-      const now = Date.now();
-      if (now - lastWheelNavRef.current < 350) return;
-      if (Math.abs(e.deltaY) >= 8) {
-        lastWheelNavRef.current = now;
-        onVerticalSwipe(e.deltaY < 0 ? "up" : "down");
-      }
-      return;
-    }
-    e.preventDefault();
-    setAnimate(false);
-    const delta = e.deltaY < 0 ? 0.15 : -0.15;
-    setScale((s) => {
-      const next = clampScale(s + delta);
-      if (next <= MIN_SCALE) setPos({ x: 0, y: 0 });
-      return next;
-    });
-  }
-
   function onDoubleClick(e: React.MouseEvent) {
     e.preventDefault();
+    e.stopPropagation();
     onDoubleTap();
   }
 
   return (
     <div
-      ref={containerRef}
-      className="relative flex h-full w-full items-center justify-center overflow-hidden"
+      className="relative z-[1] flex h-full w-full items-center justify-center overflow-hidden"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      onWheel={onWheel}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -281,7 +317,7 @@ function ZoomablePreviewImage({
         }}
       />
 
-      <div className="pointer-events-auto absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-2 py-1.5 text-white">
+      <div className="pointer-events-auto absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-2 py-1.5 text-white">
         <button
           type="button"
           onClick={() => zoomBy(-0.5)}
@@ -326,16 +362,17 @@ export function ImagePreviewLightbox({
   images: string[];
   startIndex?: number;
   alt?: string;
-  /** Optional caption per slide (e.g. catalog code). */
   labels?: string[];
   open: boolean;
   onClose: () => void;
   closeLabel?: string;
-  /** When false, stop at first/last slide (catalog grid browsing). */
   loop?: boolean;
 }) {
   const [index, setIndex] = useState(startIndex);
   const [mounted, setMounted] = useState(false);
+  const paneRef = useRef<HTMLDivElement>(null);
+  const navigationGate = useRef({ canNavigate: () => true });
+  const suppressCloseRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -359,7 +396,25 @@ export function ImagePreviewLightbox({
     });
   }, [images.length, loop]);
 
-  const suppressCloseRef = useRef(false);
+  const markSwipeHandled = useCallback(() => {
+    suppressCloseRef.current = true;
+    window.setTimeout(() => {
+      suppressCloseRef.current = false;
+    }, 400);
+  }, []);
+
+  const canNavigate = useCallback(() => navigationGate.current.canNavigate(), []);
+
+  const multi = images.length > 1;
+
+  useVerticalSlideNavigation({
+    targetRef: paneRef,
+    enabled: open && multi,
+    canNavigate,
+    onUp: goNext,
+    onDown: goPrev,
+    onHandled: markSwipeHandled,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -387,23 +442,11 @@ export function ImagePreviewLightbox({
   if (!open || images.length === 0 || !mounted) return null;
 
   const src = images[index] ?? images[0]!;
-  const caption = labels?.[index] ?? (images.length > 1 ? `${index + 1} / ${images.length}` : alt);
-
-  function onVerticalSwipe(direction: "up" | "down") {
-    if (direction === "up") goNext();
-    else goPrev();
-  }
-
-  function markSwipeHandled() {
-    suppressCloseRef.current = true;
-    window.setTimeout(() => {
-      suppressCloseRef.current = false;
-    }, 400);
-  }
+  const caption = labels?.[index] ?? (multi ? `${index + 1} / ${images.length}` : alt);
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex h-[100dvh] w-full flex-col bg-black touch-none"
+      className="fixed inset-0 z-[200] flex h-[100dvh] w-full flex-col bg-black"
       style={{
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
@@ -419,18 +462,18 @@ export function ImagePreviewLightbox({
       }}
     >
       <div
-        className="relative flex h-full min-h-0 w-full flex-1 items-center justify-center"
+        ref={paneRef}
+        className="relative flex h-full min-h-0 w-full flex-1 touch-none"
         onClick={(e) => e.stopPropagation()}
       >
         <ZoomablePreviewImage
-          key={src}
+          key={`preview-${index}`}
           src={src}
           alt={`${alt} ${index + 1}`}
-          onVerticalSwipe={images.length > 1 ? onVerticalSwipe : undefined}
-          onSwipeHandled={images.length > 1 ? markSwipeHandled : undefined}
+          navigationGate={navigationGate}
         />
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-3 pb-8 pt-2">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-3 pb-8 pt-2">
           <span className="pointer-events-auto text-sm font-medium text-white">{caption}</span>
           <button
             type="button"
@@ -442,36 +485,48 @@ export function ImagePreviewLightbox({
           </button>
         </div>
 
-        {images.length > 1 && (
+        {multi && (
           <>
             <button
               type="button"
-              onClick={goNext}
-              className="absolute left-1/2 top-[calc(env(safe-area-inset-top,0px)+3.25rem)] z-10 -translate-x-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70"
+              onClick={(e) => {
+                e.stopPropagation();
+                goNext();
+              }}
+              className="absolute left-1/2 top-[calc(env(safe-area-inset-top,0px)+3.25rem)] z-30 -translate-x-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70"
               aria-label="Next photo"
             >
               <ChevronUp className="h-8 w-8" />
             </button>
             <button
               type="button"
-              onClick={goPrev}
-              className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70"
+              onClick={(e) => {
+                e.stopPropagation();
+                goPrev();
+              }}
+              className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70"
               aria-label="Previous photo"
             >
               <ChevronDown className="h-8 w-8" />
             </button>
             <button
               type="button"
-              onClick={goPrev}
-              className="absolute left-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70 sm:block sm:left-4"
+              onClick={(e) => {
+                e.stopPropagation();
+                goPrev();
+              }}
+              className="absolute left-2 top-1/2 z-30 hidden -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70 sm:block sm:left-4"
               aria-label="Previous photo"
             >
               <ChevronLeft className="h-8 w-8" />
             </button>
             <button
               type="button"
-              onClick={goNext}
-              className="absolute right-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70 sm:block sm:right-4"
+              onClick={(e) => {
+                e.stopPropagation();
+                goNext();
+              }}
+              className="absolute right-2 top-1/2 z-30 hidden -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white active:bg-black/70 sm:block sm:right-4"
               aria-label="Next photo"
             >
               <ChevronRight className="h-8 w-8" />
