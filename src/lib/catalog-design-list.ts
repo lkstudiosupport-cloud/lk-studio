@@ -18,6 +18,15 @@ import { designListSelect, type DesignListItem } from "@/lib/design-list-select"
 import { CATALOG_MAX_PAGE, CATALOG_PAGE_SIZE } from "@/lib/limits";
 import { withDbRetry } from "@/lib/safe-db";
 
+export type CatalogDesignPageResult = {
+  items: DesignListItem[];
+  /** Omitted on page > 1 — client keeps the total from page 1. */
+  total: number | null;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+};
+
 export type CatalogAdminQuery = {
   category: ServiceCategory;
   /** unassigned | SMALL | MEDIUM | BIG */
@@ -76,6 +85,18 @@ function clampPage(page: number): number {
   return Math.min(Math.floor(page), CATALOG_MAX_PAGE);
 }
 
+function findDesignPage(where: Prisma.DesignWhereInput, skip: number, take: number) {
+  return withDbRetry(() =>
+    prisma.design.findMany({
+      where,
+      select: designListSelect,
+      orderBy: designOrderBy,
+      skip,
+      take,
+    })
+  );
+}
+
 export async function fetchCatalogDesignPage({
   where,
   page = 1,
@@ -84,30 +105,36 @@ export async function fetchCatalogDesignPage({
   where: Prisma.DesignWhereInput;
   page?: number;
   pageSize?: number;
-}): Promise<{ items: DesignListItem[]; total: number; page: number; pageSize: number; hasMore: boolean }> {
+}): Promise<CatalogDesignPageResult> {
   const p = clampPage(page);
   const take = Math.min(Math.max(pageSize, 1), CATALOG_PAGE_SIZE);
   const skip = (p - 1) * take;
 
-  const [items, total] = await Promise.all([
-    withDbRetry(() =>
-      prisma.design.findMany({
-        where,
-        select: designListSelect,
-        orderBy: designOrderBy,
-        skip,
-        take,
-      })
-    ),
-    withDbRetry(() => prisma.design.count({ where })),
-  ]);
+  if (p === 1) {
+    const [items, total] = await Promise.all([
+      findDesignPage(where, skip, take),
+      withDbRetry(() => prisma.design.count({ where })),
+    ]);
+    return {
+      items,
+      total,
+      page: p,
+      pageSize: take,
+      hasMore: skip + items.length < total,
+    };
+  }
+
+  /** Page 2+: skip COUNT (slow on large catalogs) — fetch one extra row for hasMore. */
+  const rows = await findDesignPage(where, skip, take + 1);
+  const hasMore = rows.length > take;
+  const items = hasMore ? rows.slice(0, take) : rows;
 
   return {
     items,
-    total,
+    total: null,
     page: p,
     pageSize: take,
-    hasMore: skip + items.length < total,
+    hasMore,
   };
 }
 

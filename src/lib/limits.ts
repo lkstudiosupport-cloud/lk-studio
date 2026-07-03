@@ -1,5 +1,5 @@
-/** Designs shown per grid page — keeps memory and payload small at 5000+ catalog size. */
-export const CATALOG_PAGE_SIZE = 24;
+/** Designs shown per grid page — balance between payload size and load-more round trips. */
+export const CATALOG_PAGE_SIZE = 36;
 
 /** Total catalog designs the app is designed to support (paginated, not loaded at once). */
 export const CATALOG_MAX_DESIGNS = 5000;

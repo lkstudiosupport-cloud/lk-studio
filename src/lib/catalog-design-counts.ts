@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { CATALOG_CATEGORIES, sortedCatalogDesignWhere } from "@/lib/design-access";
+import { CATALOG_CATEGORIES, shopStitchedDesignsWhere, sortedCatalogDesignWhere } from "@/lib/design-access";
 import { withDbRetry } from "@/lib/safe-db";
 
 const COUNT_REVALIDATE_SEC = 45;
@@ -67,3 +67,27 @@ export const cachedAdminCategoryCounts = unstable_cache(
   ["admin-category-counts"],
   { revalidate: COUNT_REVALIDATE_SEC }
 );
+
+export function cachedCatalogSizeTierCounts(category: ServiceCategory) {
+  return unstable_cache(
+    () => fetchCatalogSizeTierCounts(category),
+    ["catalog-size-tier-counts", category],
+    { revalidate: COUNT_REVALIDATE_SEC }
+  )();
+}
+
+export function cachedCatalogPartCounts(category: ServiceCategory) {
+  return unstable_cache(
+    () => fetchCatalogPartCounts(category),
+    ["catalog-part-counts", category],
+    { revalidate: COUNT_REVALIDATE_SEC }
+  )();
+}
+
+export function cachedShopStitchedCount(shopId: string) {
+  return unstable_cache(
+    () => withDbRetry(() => prisma.design.count({ where: shopStitchedDesignsWhere(shopId) })),
+    ["shop-stitched-count", shopId],
+    { revalidate: COUNT_REVALIDATE_SEC }
+  )();
+}

@@ -4,6 +4,7 @@ import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { CustomerCatalogPanel } from "@/components/CustomerCatalogPanel";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
+import { CatalogDesignPager } from "@/components/CatalogDesignPager";
 import { isShopActive } from "@/lib/subscription";
 import {
   isCatalogCategory,
@@ -13,15 +14,14 @@ import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-s
 import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
 import {
   cachedCatalogCategoryCounts,
-  fetchCatalogPartCounts,
-  fetchCatalogSizeTierCounts,
+  cachedCatalogPartCounts,
+  cachedCatalogSizeTierCounts,
 } from "@/lib/catalog-design-counts";
 import {
   catalogBrowseApiQuery,
   catalogBrowseWhere,
   fetchCatalogDesignPage,
 } from "@/lib/catalog-design-list";
-import { DESIGN_CARD_SELECT } from "@/lib/design-queries";
 import { withDbRetry } from "@/lib/safe-db";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import Link from "next/link";
@@ -55,11 +55,10 @@ async function CustomerShopStitchedPage({
     );
   }
 
-  const [designs, ratingMap, customerFavorites, savedShop] = await Promise.all([
-    prisma.design.findMany({
+  const [designPage, ratingMap, customerFavorites, savedShop] = await Promise.all([
+    fetchCatalogDesignPage({
       where: shopStitchedDesignsWhere(shop.id),
-      select: DESIGN_CARD_SELECT,
-      orderBy: { createdAt: "desc" },
+      page: 1,
     }),
     shopRatingSummaries([shop.id]),
     prisma.customerFavorite.findMany({
@@ -84,7 +83,8 @@ async function CustomerShopStitchedPage({
         </Link>
         <h1 className="page-title mt-2">{shop.shopName}</h1>
         <p className="text-sm text-zinc-500">
-          {shop.shopCode} · {designs.length} {t(locale, "shopStitchedDesignsCount")}
+          {shop.shopCode} · {designPage.total ?? designPage.items.length}{" "}
+          {t(locale, "shopStitchedDesignsCount")}
         </p>
         <div className="mt-1">
           <ShopRatingBadge locale={locale} average={rating?.average ?? 0} count={rating?.count ?? 0} />
@@ -108,12 +108,22 @@ async function CustomerShopStitchedPage({
 
       <p className="text-sm text-zinc-600">{t(locale, "shopStitchedDesignsHint")}</p>
 
-      <ShopDesignCollections
+      <CatalogDesignPager
         locale={locale}
-        designs={designs}
-        shopId={shop.id}
-        favoriteDesignIds={favoriteDesignIds}
-      />
+        initialDesigns={designPage.items}
+        total={designPage.total ?? designPage.items.length}
+        hasMore={designPage.hasMore}
+        apiQuery={`category=STITCHED_DESIGNS&shopId=${shop.id}`}
+      >
+        {(pagedDesigns) => (
+          <ShopDesignCollections
+            locale={locale}
+            designs={pagedDesigns}
+            shopId={shop.id}
+            favoriteDesignIds={favoriteDesignIds}
+          />
+        )}
+      </CatalogDesignPager>
     </div>
   );
 }
@@ -197,8 +207,8 @@ export default async function CustomerDesignsPage({
       page: 1,
     }),
     cachedCatalogCategoryCounts(),
-    categoryHasSizeTiers(category) ? fetchCatalogSizeTierCounts(category) : Promise.resolve(null),
-    categoryHasCatalogParts(category) ? fetchCatalogPartCounts(category) : Promise.resolve(null),
+    categoryHasSizeTiers(category) ? cachedCatalogSizeTierCounts(category) : Promise.resolve(null),
+    categoryHasCatalogParts(category) ? cachedCatalogPartCounts(category) : Promise.resolve(null),
     priceShopId
       ? withDbRetry(() =>
           prisma.customerFavorite.findMany({
@@ -219,7 +229,7 @@ export default async function CustomerDesignsPage({
     <CustomerCatalogPanel
       locale={locale}
       designs={designPage.items}
-      total={designPage.total}
+      total={designPage.total ?? designPage.items.length}
       hasMore={designPage.hasMore}
       apiQuery={apiQuery}
       categoryCounts={categoryCounts}

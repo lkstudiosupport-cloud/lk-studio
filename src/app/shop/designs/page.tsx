@@ -3,7 +3,7 @@ import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { ShopDesignsPanel } from "@/components/ShopDesignsPanel";
 import { isShopOwnedUploadCategory, shopStitchedDesignsWhere } from "@/lib/design-access";
-import { cachedCatalogCategoryCounts, fetchCatalogPartCounts, fetchCatalogSizeTierCounts } from "@/lib/catalog-design-counts";
+import { cachedCatalogCategoryCounts, cachedCatalogPartCounts, cachedCatalogSizeTierCounts, cachedShopStitchedCount } from "@/lib/catalog-design-counts";
 import {
   catalogBrowseApiQuery,
   fetchCatalogDesignPage,
@@ -14,7 +14,6 @@ import {
 import { CATEGORIES } from "@/lib/categories";
 import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
 import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
-import { withDbRetry } from "@/lib/safe-db";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 
 const CATEGORY_KEYS = new Set(CATEGORIES.map((c) => c.key));
@@ -53,9 +52,9 @@ export default async function ShopDesignsPage({
   const [designPage, catalogCounts, stitchedCount, tierCounts, partCounts] = await Promise.all([
     fetchCatalogDesignPage({ where: listWhere, page: 1 }),
     cachedCatalogCategoryCounts(),
-    withDbRetry(() => prisma.design.count({ where: shopStitchedDesignsWhere(shopId) })),
-    categoryHasSizeTiers(category) ? fetchCatalogSizeTierCounts(category) : Promise.resolve(null),
-    categoryHasCatalogParts(category) ? fetchCatalogPartCounts(category) : Promise.resolve(null),
+    cachedShopStitchedCount(shopId),
+    categoryHasSizeTiers(category) ? cachedCatalogSizeTierCounts(category) : Promise.resolve(null),
+    categoryHasCatalogParts(category) ? cachedCatalogPartCounts(category) : Promise.resolve(null),
   ]);
 
   const categoryCounts = {
@@ -71,7 +70,7 @@ export default async function ShopDesignsPage({
     <ShopDesignsPanel
       locale={locale}
       designs={designPage.items}
-      total={designPage.total}
+      total={designPage.total ?? designPage.items.length}
       hasMore={designPage.hasMore}
       apiQuery={apiQuery}
       shopId={shopId}

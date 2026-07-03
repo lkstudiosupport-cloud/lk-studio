@@ -5,8 +5,8 @@ import { AdminCatalogPanel } from "@/components/AdminCatalogPanel";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import {
   cachedAdminCategoryCounts,
-  fetchCatalogPartCounts,
-  fetchCatalogSizeTierCounts,
+  cachedCatalogPartCounts,
+  cachedCatalogSizeTierCounts,
 } from "@/lib/catalog-design-counts";
 import {
   catalogAdminApiQuery,
@@ -48,8 +48,8 @@ export default async function AdminDesignsPage({
   const [designPage, categoryCounts, tierCounts, partCounts] = await Promise.all([
     fetchCatalogDesignPage({ where: catalogAdminWhere(adminQuery), page: 1 }),
     cachedAdminCategoryCounts(),
-    categoryHasSizeTiers(category) ? fetchCatalogSizeTierCounts(category) : Promise.resolve(null),
-    categoryHasCatalogParts(category) ? fetchCatalogPartCounts(category) : Promise.resolve(null),
+    categoryHasSizeTiers(category) ? cachedCatalogSizeTierCounts(category) : Promise.resolve(null),
+    categoryHasCatalogParts(category) ? cachedCatalogPartCounts(category) : Promise.resolve(null),
   ]);
 
   return (
@@ -59,7 +59,7 @@ export default async function AdminDesignsPage({
       sizeView={sizeView}
       partView={partView}
       designs={designPage.items}
-      total={designPage.total}
+      total={designPage.total ?? designPage.items.length}
       hasMore={designPage.hasMore}
       apiQuery={catalogAdminApiQuery(adminQuery)}
       categoryCounts={categoryCounts}

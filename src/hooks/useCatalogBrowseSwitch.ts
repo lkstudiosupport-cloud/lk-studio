@@ -7,7 +7,7 @@ import type { DesignListItem } from "@/lib/design-list-select";
 
 type PageResult = {
   items: DesignListItem[];
-  total: number;
+  total: number | null;
   hasMore: boolean;
   error?: string;
 };
@@ -71,7 +71,7 @@ export function useCatalogBrowseSwitch({
         const data = (await res.json()) as PageResult;
         if (!res.ok) throw new Error(data.error ?? "Load failed");
         setDesigns(data.items);
-        setTotal(data.total);
+        if (data.total != null) setTotal(data.total);
         setHasMore(data.hasMore);
         setApiQuery(q);
         setSizeTier(tier);

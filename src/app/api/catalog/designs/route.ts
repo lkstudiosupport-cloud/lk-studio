@@ -11,10 +11,14 @@ import {
   parseSizeTier,
   shopDesignsWhere,
 } from "@/lib/catalog-design-list";
-import { isCatalogCategory, isShopOwnedUploadCategory } from "@/lib/design-access";
+import { isCatalogCategory, isShopOwnedUploadCategory, shopStitchedDesignsWhere } from "@/lib/design-access";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
 import type { ServiceCategory } from "@prisma/client";
+
+const CATALOG_JSON_HEADERS = {
+  "Cache-Control": "private, max-age=20, stale-while-revalidate=60",
+};
 
 /** Paginated catalog designs — customer, shop, and admin (supports 5000+ total via pages). */
 export async function GET(req: Request) {
@@ -53,7 +57,7 @@ export async function GET(req: Request) {
         where: catalogAdminWhere({ category, sizeView, partView }),
         page,
       });
-      return NextResponse.json(result);
+      return NextResponse.json(result, { headers: CATALOG_JSON_HEADERS });
     }
 
     if (session.role !== "SHOP" && session.role !== "CUSTOMER") {
@@ -64,14 +68,19 @@ export async function GET(req: Request) {
     const catalogPart = parseCatalogPart(searchParams.get("part") ?? undefined);
 
     if (isShopOwnedUploadCategory(category)) {
-      if (session.role !== "SHOP" || !session.shopId) {
+      const targetShopId =
+        session.role === "SHOP" ? session.shopId : searchParams.get("shopId")?.trim();
+      if (!targetShopId) {
+        return NextResponse.json({ error: "shopId required" }, { status: 400 });
+      }
+      if (session.role === "SHOP" && session.shopId !== targetShopId) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
       const result = await fetchCatalogDesignPage({
-        where: shopDesignsWhere(session.shopId, { category }),
+        where: shopStitchedDesignsWhere(targetShopId),
         page,
       });
-      return NextResponse.json(result);
+      return NextResponse.json(result, { headers: CATALOG_JSON_HEADERS });
     }
 
     if (!isCatalogCategory(category)) {
@@ -92,7 +101,7 @@ export async function GET(req: Request) {
         : catalogBrowseWhere(browseQuery);
 
     const result = await fetchCatalogDesignPage({ where, page });
-    return NextResponse.json(result);
+    return NextResponse.json(result, { headers: CATALOG_JSON_HEADERS });
   } catch (err) {
     console.error("[catalog/designs]", err);
     return NextResponse.json({ error: "Could not load designs" }, { status: 503 });
