@@ -12,6 +12,7 @@ type ShopBrowseCardProps = {
     id: string;
     shopName: string;
     shopCode: string;
+    city?: string | null;
     address: string | null;
     profilePhoto: string | null;
   };
@@ -77,6 +78,10 @@ export function ShopBrowseCard({
               compact
             />
           </div>
+
+          {shop.city && (
+            <p className="mt-0.5 text-xs font-semibold text-brand-green-soft">{shop.city}</p>
+          )}
 
           {shop.address ? (
             <p className="mt-1 flex items-start gap-1 text-xs text-zinc-600">

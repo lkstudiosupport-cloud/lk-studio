@@ -2,34 +2,45 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { User } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { updateCustomerProfile } from "@/app/customer/actions";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
+import { LiveLocationFields } from "@/components/LiveLocationFields";
 
 type UserProfile = {
   name: string;
   phone: string | null;
   whatsapp: string | null;
   profilePhoto: string | null;
+  city: string | null;
+  address: string | null;
+  locationLink: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export function CustomerProfileForm({ locale, user }: { locale: Locale; user: UserProfile }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [savedCity, setSavedCity] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setSaved(false);
+    setSavedCity(null);
     setPending(true);
     const fd = new FormData(e.currentTarget);
+    const city = String(fd.get("city") ?? "").trim();
     try {
       await updateCustomerProfile(fd);
       setSaved(true);
+      setSavedCity(city || null);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed");
@@ -65,8 +76,32 @@ export function CustomerProfileForm({ locale, user }: { locale: Locale; user: Us
         />
       </label>
 
+      <LiveLocationFields
+        key={`${user.city ?? ""}-${user.address ?? ""}`}
+        locale={locale}
+        defaultCity={user.city ?? ""}
+        defaultAddress={user.address ?? ""}
+        defaultLink={user.locationLink ?? ""}
+        defaultLat={user.latitude}
+        defaultLng={user.longitude}
+        cityRequired
+        hintKey="customerCityHint"
+      />
+
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {saved && <p className="text-sm font-semibold text-emerald-700">{t(locale, "profileSaved")}</p>}
+      {saved && (
+        <div className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <p className="font-semibold">{t(locale, "profileSaved")}</p>
+          {savedCity && (
+            <>
+              <p>{t(locale, "citySavedHint", { city: savedCity })}</p>
+              <Link href="/customer/shops" className="inline-block font-semibold text-brand-green underline">
+                {t(locale, "viewShopsInCity", { city: savedCity })} →
+              </Link>
+            </>
+          )}
+        </div>
+      )}
 
       <button type="submit" disabled={pending} className="btn-primary w-full py-3">
         {pending ? "..." : t(locale, "save")}

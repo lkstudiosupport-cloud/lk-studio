@@ -12,6 +12,7 @@ import { LiveLocationFields } from "@/components/LiveLocationFields";
 
 type ShopProfileData = {
   shopName: string;
+  city: string | null;
   address: string | null;
   locationLink: string | null;
   latitude: number | null;
@@ -97,12 +98,16 @@ export function ShopProfileForm({
         />
       </label>
       <LiveLocationFields
+        key={`${profile.city ?? ""}-${profile.latitude ?? ""}-${profile.longitude ?? ""}`}
         locale={locale}
         addressName="address"
+        defaultCity={profile.city ?? ""}
         defaultAddress={profile.address ?? ""}
         defaultLink={profile.locationLink ?? ""}
         defaultLat={profile.latitude}
         defaultLng={profile.longitude}
+        locationMode="map"
+        hintKey="shopMapLocationHint"
       />
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "upiId")}</span>

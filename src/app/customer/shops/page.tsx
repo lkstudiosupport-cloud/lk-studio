@@ -8,6 +8,7 @@ import { shopRatingSummaries } from "@/lib/shop-rating";
 import { cachedLocale, cachedCustomerSession } from "@/lib/cached-server";
 import { ShopCodeSearch } from "@/components/ShopCodeSearch";
 import { ShopBrowseCard } from "@/components/ShopBrowseCard";
+import { shopMatchesCustomerCity } from "@/lib/cities";
 import { SHOP_UPLOAD_CATEGORY } from "@/lib/design-access";
 
 function firstPreviewByShop(
@@ -39,6 +40,7 @@ type ShopRow = {
   id: string;
   shopName: string;
   shopCode: string;
+  city: string | null;
   address: string | null;
   locationLink: string | null;
   latitude: number | null;
@@ -64,13 +66,14 @@ export default async function CustomerShopsPage({
   const [customer, shops, savedRows] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session!.id },
-      select: { latitude: true, longitude: true },
+      select: { city: true, latitude: true, longitude: true },
     }),
     prisma.shopProfile.findMany({
       select: {
         id: true,
         shopName: true,
         shopCode: true,
+        city: true,
         address: true,
         locationLink: true,
         latitude: true,
@@ -90,7 +93,14 @@ export default async function CustomerShopsPage({
   ]);
 
   const savedIds = new Set(savedRows.map((r) => r.shopId));
-  const active = shops.filter((s) => isShopActive(s.subscriptionStatus, s.subscriptionEndsAt));
+  const customerCity = customer?.city ?? null;
+  const hasCustomerCity = Boolean(customerCity?.trim());
+
+  const active = shops.filter(
+    (s) =>
+      isShopActive(s.subscriptionStatus, s.subscriptionEndsAt) &&
+      shopMatchesCustomerCity(s.city, customerCity)
+  );
 
   const sorted: ShopWithDistance[] =
     customer?.latitude != null && customer?.longitude != null
@@ -105,6 +115,7 @@ export default async function CustomerShopsPage({
             id: true,
             shopName: true,
             shopCode: true,
+            city: true,
             address: true,
             locationLink: true,
             latitude: true,
@@ -117,13 +128,15 @@ export default async function CustomerShopsPage({
         })
       : null;
 
+  const codeShopActive =
+    codeMatch && isShopActive(codeMatch.subscriptionStatus, codeMatch.subscriptionEndsAt);
   const codeMatchActive =
-    codeMatch && isShopActive(codeMatch.subscriptionStatus, codeMatch.subscriptionEndsAt)
-      ? codeMatch
-      : null;
+    codeShopActive && shopMatchesCustomerCity(codeMatch!.city, customerCity) ? codeMatch : null;
 
   const codeNotFound = codeQuery != null && !codeMatch;
-  const codeInactive = codeQuery != null && codeMatch && !codeMatchActive;
+  const codeWrongCity =
+    codeQuery != null && codeShopActive && !shopMatchesCustomerCity(codeMatch!.city, customerCity);
+  const codeInactive = codeQuery != null && codeMatch && !codeShopActive;
 
   const hasCustomerLocation = customer?.latitude != null && customer?.longitude != null;
 
@@ -243,6 +256,27 @@ export default async function CustomerShopsPage({
         </p>
       )}
 
+      {codeWrongCity && hasCustomerCity && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {t(locale, "shopNotInYourCity", { city: customerCity! })}
+        </p>
+      )}
+
+      {!hasCustomerCity && (
+        <p className="rounded-lg border border-brand-green/20 bg-brand-cream px-4 py-3 text-sm text-brand-green">
+          {t(locale, "selectCityForShops")}{" "}
+          <Link href="/customer/profile" className="font-semibold underline">
+            {t(locale, "customerProfileTitle")}
+          </Link>
+        </p>
+      )}
+
+      {hasCustomerCity && active.length === 0 && !codeResult && !codeWrongCity && (
+        <p className="card-premium p-6 text-center text-zinc-600">
+          {t(locale, "noShopsInCity", { city: customerCity! })}
+        </p>
+      )}
+
       {codeResult && (
         <section className="space-y-2">
           <h2 className="text-sm font-bold uppercase tracking-wide text-brand-green">
@@ -287,20 +321,23 @@ export default async function CustomerShopsPage({
         <h2 className="text-sm font-bold uppercase tracking-wide text-brand-green">
           {hasCustomerLocation && (myShops.length > 0 || nearbyShops.length > 0)
             ? t(locale, "allShops")
-            : t(locale, "browseShops")}
+            : hasCustomerCity
+              ? t(locale, "shopsInCity", { city: customerCity! })
+              : t(locale, "browseShops")}
         </h2>
         <p className="text-sm font-semibold text-brand-green">
           {t(locale, "activeShopsCount", { count: active.length })}
         </p>
-        {allOtherShops.map((shop, index) =>
-          renderShop(
-            shop,
-            hasCustomerLocation && myShops.length === 0 && nearbyShops.length === 0 && index === 0
-          )
-        )}
+        {allOtherShops.length > 0 &&
+          allOtherShops.map((shop, index) =>
+            renderShop(
+              shop,
+              hasCustomerLocation && myShops.length === 0 && nearbyShops.length === 0 && index === 0
+            )
+          )}
       </section>
 
-      {active.length === 0 && (
+      {active.length === 0 && !hasCustomerCity && (
         <p className="card-premium p-8 text-center text-zinc-500">{t(locale, "noShops")}</p>
       )}
     </div>

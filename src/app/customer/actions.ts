@@ -9,6 +9,7 @@ import { designVisibleToCustomerShopWhere } from "@/lib/design-access";
 import type { ActionState } from "@/lib/action-state";
 import { appendOrderImagesFromForm } from "@/lib/save-order-images";
 import { saveUpload, deleteStoredUpload } from "@/lib/storage";
+import { normalizeCity } from "@/lib/cities";
 import { MAX_PERSON_PHOTOS, parsePersonPhotos } from "@/lib/person-photos";
 import { isShopActive } from "@/lib/subscription";
 
@@ -606,12 +607,20 @@ export async function updateCustomerProfile(formData: FormData) {
     profilePhoto = await saveUpload(photoFile, `profile/user-${session.id}`);
   }
 
+  const latRaw = String(formData.get("latitude") ?? "").trim();
+  const lngRaw = String(formData.get("longitude") ?? "").trim();
+
   await prisma.user.update({
     where: { id: session.id },
     data: {
       name: String(formData.get("name") ?? "").trim(),
       phone: String(formData.get("phone") ?? "").trim() || null,
       whatsapp: String(formData.get("whatsapp") ?? "").trim() || null,
+      city: normalizeCity(String(formData.get("city") ?? "")),
+      address: String(formData.get("address") ?? "").trim() || null,
+      locationLink: String(formData.get("locationLink") ?? "").trim() || null,
+      latitude: latRaw ? parseFloat(latRaw) : null,
+      longitude: lngRaw ? parseFloat(lngRaw) : null,
       ...(profilePhoto !== undefined
         ? { profilePhoto }
         : formData.get("removeProfilePhoto") === "true"
@@ -620,6 +629,7 @@ export async function updateCustomerProfile(formData: FormData) {
     },
   });
   revalidatePath("/customer/profile");
+  revalidatePath("/customer/shops");
   revalidatePath("/customer", "layout");
 }
 

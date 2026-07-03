@@ -81,6 +81,7 @@ model User {
   whatsapp     String?
   address      String?
   locationLink String?
+  city         String?
   latitude     Float?
   longitude    Float?
   role         UserRole
@@ -139,6 +140,7 @@ model ShopProfile {
   shopCode           String             @unique
   address            String?
   locationLink       String?
+  city               String?
   latitude           Float?
   longitude          Float?
   shopTimings        String?
@@ -166,6 +168,7 @@ model ShopProfile {
   priceRequests PriceRequest[]
 
   @@index([subscriptionStatus])
+  @@index([city])
 }
 
 model ShopRating {

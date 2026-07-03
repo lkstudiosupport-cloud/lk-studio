@@ -16,6 +16,7 @@ import type { ActionState } from "@/lib/action-state";
 import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
 import { CATALOG_CATEGORIES, shopManageableDesignWhere, isShopUploadCategory } from "@/lib/design-access";
 import { parseShopMeasurementsFromForm, inferOrderCategoryFromMeasurements } from "@/lib/shop-measurements";
+import { normalizeCity } from "@/lib/cities";
 
 const MAX_ORDER_DESIGN_PICKS = 3;
 
@@ -307,6 +308,7 @@ export async function updateShopProfile(formData: FormData) {
     where: { id },
     data: {
       shopName: String(formData.get("shopName") ?? ""),
+      city: normalizeCity(String(formData.get("city") ?? "")),
       address: String(formData.get("address") ?? "").trim() || null,
       locationLink: String(formData.get("locationLink") ?? "").trim() || null,
       latitude: latRaw ? parseFloat(latRaw) : null,
