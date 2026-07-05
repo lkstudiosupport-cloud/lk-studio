@@ -10,7 +10,7 @@ import { persistShopDesign } from "@/lib/shop-design-upload";
 import { MAX_DESIGN_IMAGES, parseDesignImages } from "@/lib/design-images";
 import { billItemsTotal, parseBillItems } from "@/lib/bill-items";
 import { billFullyPaid, billPending } from "@/lib/bill-payment";
-import { isShopActive, extendSubscriptionEnd, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
+import { isShopActive, canShopUseApp, extendSubscriptionEnd, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
 import { findUserByPhone } from "@/lib/auth-user";
 import type { ActionState } from "@/lib/action-state";
 import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
@@ -273,8 +273,16 @@ async function shopIdOnly() {
 async function shopId() {
   const id = await shopIdOnly();
   const shop = await prisma.shopProfile.findUnique({ where: { id } });
-  if (!shop || !isShopActive(shop.subscriptionStatus, shop.subscriptionEndsAt)) {
-    throw new Error("Shop subscription inactive — renew in Profile");
+  if (
+    !shop ||
+    !canShopUseApp(
+      shop.subscriptionStatus,
+      shop.subscriptionEndsAt,
+      shop.createdAt,
+      shop.autopayEnabled
+    )
+  ) {
+    throw new Error("Shop subscription inactive — set up autopay in Profile");
   }
   return id;
 }

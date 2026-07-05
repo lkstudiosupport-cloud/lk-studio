@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { MAX_DESIGN_IMAGES } from "@/lib/design-images";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { persistShopDesign } from "@/lib/shop-design-upload";
-import { isShopActive } from "@/lib/subscription";
+import { canShopUseApp } from "@/lib/subscription";
 import { isShopUploadCategory, SHOP_OWNED_UPLOAD_CATEGORY } from "@/lib/design-access";
 import type { ServiceCategory } from "@prisma/client";
 
@@ -31,14 +31,23 @@ export async function POST(req: Request) {
       shopCode: true,
       subscriptionStatus: true,
       subscriptionEndsAt: true,
+      createdAt: true,
+      autopayEnabled: true,
     },
   });
   if (!shop) {
     return NextResponse.json({ error: "Shop not found" }, { status: 404 });
   }
-  if (!isShopActive(shop.subscriptionStatus, shop.subscriptionEndsAt)) {
+  if (
+    !canShopUseApp(
+      shop.subscriptionStatus,
+      shop.subscriptionEndsAt,
+      shop.createdAt,
+      shop.autopayEnabled
+    )
+  ) {
     return NextResponse.json(
-      { error: "Shop subscription inactive — renew in Profile" },
+      { error: "Shop subscription inactive — set up autopay in Profile" },
       { status: 403 }
     );
   }

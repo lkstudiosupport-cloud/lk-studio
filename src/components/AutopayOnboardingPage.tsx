@@ -25,7 +25,7 @@ export function AutopayOnboardingPage({
   razorpayConfigured: boolean;
   payeeLabel: string;
   homePath: string;
-  /** Trial signup — only ₹1 mandate today, full price after 1 month. */
+  /** Active free trial — autopay optional; billing starts after trial ends. */
   inTrial?: boolean;
 }) {
   const router = useRouter();
@@ -75,6 +75,19 @@ export function AutopayOnboardingPage({
               router.refresh();
             }}
           />
+
+          {inTrial && (
+            <button
+              type="button"
+              onClick={() => {
+                router.push(homePath);
+                router.refresh();
+              }}
+              className="btn-secondary w-full py-3 text-sm"
+            >
+              {t(locale, "autopaySkipTrial")}
+            </button>
+          )}
 
           <div className="space-y-3 border-t border-zinc-200 pt-4 text-center text-sm">
             <ProfileLogout locale={locale} />

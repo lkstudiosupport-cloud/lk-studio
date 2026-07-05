@@ -13,7 +13,7 @@ export function CustomerDesignPaywall({ locale }: { locale: Locale }) {
       <p className="text-sm text-zinc-600">
         {t(locale, "customerDesignPaywallHint", { amount: CUSTOMER_MONTHLY_PRICE_INR })}
       </p>
-      <Link href="/customer/profile#subscription" className="btn-primary inline-block">
+      <Link href="/register/autopay" className="btn-primary inline-block">
         {t(locale, "customerDesignPaywallCta")}
       </Link>
     </div>

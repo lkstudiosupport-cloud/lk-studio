@@ -8,7 +8,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { updateCustomerProfile } from "@/app/customer/actions";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
-import { LiveLocationFields } from "@/components/LiveLocationFields";
+import { CitySelect } from "@/components/CitySelect";
 
 type UserProfile = {
   name: string;
@@ -16,10 +16,6 @@ type UserProfile = {
   whatsapp: string | null;
   profilePhoto: string | null;
   city: string | null;
-  address: string | null;
-  locationLink: string | null;
-  latitude: number | null;
-  longitude: number | null;
 };
 
 export function CustomerProfileForm({ locale, user }: { locale: Locale; user: UserProfile }) {
@@ -76,17 +72,11 @@ export function CustomerProfileForm({ locale, user }: { locale: Locale; user: Us
         />
       </label>
 
-      <LiveLocationFields
-        key={`${user.city ?? ""}-${user.address ?? ""}`}
-        locale={locale}
-        defaultCity={user.city ?? ""}
-        defaultAddress={user.address ?? ""}
-        defaultLink={user.locationLink ?? ""}
-        defaultLat={user.latitude}
-        defaultLng={user.longitude}
-        cityRequired
-        hintKey="customerCityHint"
-      />
+      <div className="space-y-3 rounded-xl border border-brand-green/10 bg-brand-cream/50 p-4">
+        <p className="text-sm font-semibold text-brand-green">{t(locale, "city")}</p>
+        <p className="text-xs text-zinc-600">{t(locale, "customerCityHint")}</p>
+        <CitySelect key={user.city ?? ""} locale={locale} defaultValue={user.city ?? ""} required />
+      </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       {saved && (

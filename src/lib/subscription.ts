@@ -1,17 +1,16 @@
 import type { SubscriptionStatus, UserRole } from "@prisma/client";
 
-/** Free trial length — one calendar month from signup (same day-of-month when possible). */
-export const TRIAL_CALENDAR_MONTHS = 1;
+/** Free trial length — days from signup / install. */
+export const TRIAL_DAYS = 25;
 /** Paid renewal period — one calendar month per billing cycle. */
 export const PAID_CALENDAR_MONTHS = 1;
-/** @deprecated Use calendar months; kept for Razorpay copy that mentions ~30 days. */
-export const TRIAL_DAYS = 30;
 export const PAID_BILL_DAYS = 30;
 export const PLAN_BILL_DAYS = PAID_BILL_DAYS;
 export const SHOP_MONTHLY_PRICE_INR = 1000;
 export const CUSTOMER_MONTHLY_PRICE_INR = 100;
-/** UPI mandate verification charged once at trial signup (both shop and customer). */
-export const TRIAL_MANDATE_AUTH_INR = 1;
+
+/** @deprecated No upfront ₹1 mandate — trial is fully free until day {TRIAL_DAYS}. */
+export const TRIAL_MANDATE_AUTH_INR = 0;
 
 /** Add whole calendar months; Jan 31 + 1 month → Feb 28/29. */
 export function addCalendarMonths(from: Date, months: number): Date {
@@ -66,13 +65,36 @@ export function isCustomerActive(
 export function canCustomerBrowseDesigns(
   status: SubscriptionStatus,
   endsAt: Date | null,
-  accountCreatedAt?: Date | null
+  accountCreatedAt?: Date | null,
+  autopayEnabled = false
 ) {
-  return isCustomerActive(status, endsAt, accountCreatedAt);
+  return hasFullAppAccess(status, endsAt, accountCreatedAt, autopayEnabled);
 }
 
 export function trialEndDate(from = new Date()) {
-  return addCalendarMonths(from, TRIAL_CALENDAR_MONTHS);
+  const result = new Date(from.getTime());
+  result.setDate(result.getDate() + TRIAL_DAYS);
+  return result;
+}
+
+/** Full app during free trial, or after trial when monthly autopay mandate is active. */
+export function hasFullAppAccess(
+  status: SubscriptionStatus,
+  endsAt: Date | null,
+  accountCreatedAt: Date | null | undefined,
+  autopayEnabled: boolean
+): boolean {
+  if (autopayEnabled) return true;
+  return isInTrial(status, endsAt, accountCreatedAt);
+}
+
+export function canShopUseApp(
+  status: SubscriptionStatus,
+  endsAt: Date | null,
+  accountCreatedAt: Date | null | undefined,
+  autopayEnabled: boolean
+) {
+  return hasFullAppAccess(status, endsAt, accountCreatedAt, autopayEnabled);
 }
 
 /** Extend access by one calendar month from current end, or from today if expired. */

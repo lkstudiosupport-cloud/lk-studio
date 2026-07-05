@@ -6,6 +6,7 @@ import {
   isInTrial,
   subscriptionDaysLeft,
   resolveSubscriptionEndsAt,
+  TRIAL_DAYS,
 } from "@/lib/subscription";
 import { AutoPayPanel } from "@/components/AutoPayPanel";
 import type { SubscriptionStatus } from "@prisma/client";
@@ -103,7 +104,7 @@ export function SubscriptionPanel({
 
         {trial && !autopayEnabled && (
           <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
-            {t(locale, "subRule1")}
+            {t(locale, "subRule1", { days: TRIAL_DAYS })}
           </p>
         )}
 

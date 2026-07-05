@@ -179,7 +179,10 @@ export async function POST(req: Request) {
       sessionVersion,
     });
 
-    return NextResponse.json({ ok: true, redirect: "/register/autopay" });
+    return NextResponse.json({
+      ok: true,
+      redirect: role === "SHOP" ? "/shop" : "/customer/designs",
+    });
   } catch (err) {
     console.error("Register error:", err);
     const message = err instanceof Error ? err.message : "Server error";

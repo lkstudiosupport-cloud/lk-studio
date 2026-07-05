@@ -607,9 +607,6 @@ export async function updateCustomerProfile(formData: FormData) {
     profilePhoto = await saveUpload(photoFile, `profile/user-${session.id}`);
   }
 
-  const latRaw = String(formData.get("latitude") ?? "").trim();
-  const lngRaw = String(formData.get("longitude") ?? "").trim();
-
   await prisma.user.update({
     where: { id: session.id },
     data: {
@@ -617,10 +614,6 @@ export async function updateCustomerProfile(formData: FormData) {
       phone: String(formData.get("phone") ?? "").trim() || null,
       whatsapp: String(formData.get("whatsapp") ?? "").trim() || null,
       city: normalizeCity(String(formData.get("city") ?? "")),
-      address: String(formData.get("address") ?? "").trim() || null,
-      locationLink: String(formData.get("locationLink") ?? "").trim() || null,
-      latitude: latRaw ? parseFloat(latRaw) : null,
-      longitude: lngRaw ? parseFloat(lngRaw) : null,
       ...(profilePhoto !== undefined
         ? { profilePhoto }
         : formData.get("removeProfilePhoto") === "true"

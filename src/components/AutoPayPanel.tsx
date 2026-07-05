@@ -6,7 +6,6 @@ import { ShieldCheck, Smartphone } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { AutopayRole } from "@/lib/subscription-autopay";
-import { TRIAL_MANDATE_AUTH_INR } from "@/lib/subscription";
 import { enableAutopayDemo } from "@/app/subscription-autopay-actions";
 import { readApiJson } from "@/lib/api-json";
 import { razorpayUpiCheckoutOptions } from "@/lib/razorpay-checkout";
@@ -64,7 +63,7 @@ export function AutoPayPanel({
   payeeLabel: string;
   embedded?: boolean;
   onboarding?: boolean;
-  /** Active free trial — checkout charges ₹1 mandate only until trial ends. */
+  /** Active free trial — billing starts after trial ends (no upfront charge). */
   inTrial?: boolean;
   onSuccess?: () => void;
 }) {
@@ -97,7 +96,6 @@ export function AutoPayPanel({
         payerEmail?: string;
         payerContact?: string;
         trialActive?: boolean;
-        mandateAuthInr?: number;
       }>(res);
       if (!res.ok) throw new Error(data.error ?? "Could not start autopay");
       if (!data.keyId || !data.subscriptionId) {
@@ -105,9 +103,6 @@ export function AutoPayPanel({
       }
 
       const checkoutInTrial = data.trialActive ?? inTrial;
-      const payTodayInr = checkoutInTrial
-        ? (data.mandateAuthInr ?? TRIAL_MANDATE_AUTH_INR)
-        : amountInr;
 
       const loaded = await loadRazorpayScript();
       if (!loaded || !window.Razorpay) throw new Error(t(locale, "autopayScriptFailed"));
@@ -118,10 +113,7 @@ export function AutoPayPanel({
           subscription_id: data.subscriptionId,
           name: t(locale, "appName"),
           description: checkoutInTrial
-            ? t(locale, "autopayDescriptionTrial", {
-                today: payTodayInr,
-                monthly: amountInr,
-              })
+            ? t(locale, "autopayDescriptionTrial", { monthly: amountInr })
             : t(locale, "autopayDescription", { amount: amountInr }),
           prefill: {
             name: payeeLabel,
@@ -160,7 +152,15 @@ export function AutoPayPanel({
       if (onSuccess) onSuccess();
       else router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t(locale, "autopayFailed"));
+      const message = err instanceof Error ? err.message : t(locale, "autopayFailed");
+      if (message === t(locale, "autopayCancelled")) {
+        await fetch("/api/subscription/autopay/abandon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role }),
+        }).catch(() => undefined);
+      }
+      setError(message);
     } finally {
       setBusy(false);
     }
@@ -193,7 +193,7 @@ export function AutoPayPanel({
                 2
               </span>
               {inTrial
-                ? t(locale, "autopayStep2Trial", { today: TRIAL_MANDATE_AUTH_INR })
+                ? t(locale, "autopayStep2TrialDeferred", { amount: amountInr })
                 : t(locale, "autopayStep2", { amount: amountInr })}
             </li>
             <li className="flex gap-2">
@@ -223,10 +223,10 @@ export function AutoPayPanel({
             ? t(locale, "autopayStarting")
             : onboarding
               ? inTrial
-                ? t(locale, "autopayOnboardingButton", { amount: amountInr })
+                ? t(locale, "autopayOnboardingButtonTrial", { amount: amountInr })
                 : t(locale, "autopayEnable", { amount: amountInr })
               : inTrial
-                ? t(locale, "autopayEnableTrial", { today: TRIAL_MANDATE_AUTH_INR })
+                ? t(locale, "autopayEnableTrialDeferred", { amount: amountInr })
                 : t(locale, "autopayEnable", { amount: amountInr })}
         </button>
       </div>

@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-/** Redirect to autopay setup until mandate is completed (registration onboarding). */
+/** Redirect to autopay setup when trial ended and mandate not completed. */
 export function AutopayGuard({
   autopayEnabled,
-  /** Demo accounts only — skip mandate requirement. */
+  /** Demo accounts or active free trial — app works without mandate. */
   trialBypass = false,
   setupPath,
   children,

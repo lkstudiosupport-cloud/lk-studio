@@ -33,6 +33,7 @@ export default async function CustomerDesignDetailPage({
       subscriptionStatus: true,
       subscriptionEndsAt: true,
       createdAt: true,
+      autopayEnabled: true,
       phone: true,
       phoneNormalized: true,
     },
@@ -42,7 +43,8 @@ export default async function CustomerDesignDetailPage({
     canCustomerBrowseDesigns(
       customer.subscriptionStatus,
       customer.subscriptionEndsAt,
-      customer.createdAt
+      customer.createdAt,
+      customer.autopayEnabled
     );
   if (!designAccess) {
     return <CustomerDesignPaywall locale={locale} />;

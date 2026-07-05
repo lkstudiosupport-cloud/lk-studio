@@ -286,15 +286,6 @@ export default async function CustomerShopsPage({
         </section>
       )}
 
-      {!hasCustomerLocation && (
-        <p className="text-xs text-zinc-500">
-          {t(locale, "enableLocationForNearby")}{" "}
-          <Link href="/customer/profile" className="font-semibold text-brand-green underline">
-            {t(locale, "customerProfileTitle")}
-          </Link>
-        </p>
-      )}
-
       {myShops.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-sm font-bold uppercase tracking-wide text-brand-green">
