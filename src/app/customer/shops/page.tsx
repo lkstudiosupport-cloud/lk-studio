@@ -10,6 +10,8 @@ import { ShopCodeSearch } from "@/components/ShopCodeSearch";
 import { ShopBrowseCard } from "@/components/ShopBrowseCard";
 import { shopMatchesCustomerCity } from "@/lib/cities";
 import { SHOP_UPLOAD_CATEGORY } from "@/lib/design-access";
+import { ServerRetryPanel } from "@/components/ServerRetryPanel";
+import { withDbRetry } from "@/lib/safe-db";
 
 function firstPreviewByShop(
   designs: { shopId: string | null; imagePath: string; isCatalog: boolean }[],
@@ -63,34 +65,47 @@ export default async function CustomerShopsPage({
   const params = await searchParams;
   const codeQuery = params.code?.trim() ? normalizeShopCode(params.code) : null;
 
-  const [customer, shops, savedRows] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session!.id },
-      select: { city: true, latitude: true, longitude: true },
-    }),
-    prisma.shopProfile.findMany({
-      select: {
-        id: true,
-        shopName: true,
-        shopCode: true,
-        city: true,
-        address: true,
-        locationLink: true,
-        latitude: true,
-        longitude: true,
-        phone: true,
-        profilePhoto: true,
-        subscriptionStatus: true,
-        subscriptionEndsAt: true,
-      },
-      orderBy: { shopName: "asc" },
-    }),
-    prisma.customerSavedShop.findMany({
-      where: { customerId: session!.id },
-      select: { shopId: true },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  let customer: { city: string | null; latitude: number | null; longitude: number | null } | null;
+  let shops: ShopRow[];
+  let savedRows: { shopId: string }[];
+
+  try {
+    [customer, shops, savedRows] = await withDbRetry(
+      () =>
+        Promise.all([
+          prisma.user.findUnique({
+            where: { id: session!.id },
+            select: { city: true, latitude: true, longitude: true },
+          }),
+          prisma.shopProfile.findMany({
+            select: {
+              id: true,
+              shopName: true,
+              shopCode: true,
+              city: true,
+              address: true,
+              locationLink: true,
+              latitude: true,
+              longitude: true,
+              phone: true,
+              profilePhoto: true,
+              subscriptionStatus: true,
+              subscriptionEndsAt: true,
+            },
+            orderBy: { shopName: "asc" },
+          }),
+          prisma.customerSavedShop.findMany({
+            where: { customerId: session!.id },
+            select: { shopId: true },
+            orderBy: { createdAt: "desc" },
+          }),
+        ]),
+      2
+    );
+  } catch (err) {
+    console.error("[lk-studio] customer shops page error:", err);
+    return <ServerRetryPanel locale={locale} />;
+  }
 
   const savedIds = new Set(savedRows.map((r) => r.shopId));
   const customerCity = customer?.city ?? null;

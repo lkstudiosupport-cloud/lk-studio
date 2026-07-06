@@ -9,19 +9,27 @@ export function isTransientDbError(err: unknown): boolean {
     msg.includes("Connection terminated") ||
     msg.includes("max clients reached") ||
     msg.includes("Timed out fetching a new connection") ||
+    msg.includes("Server has closed the connection") ||
+    msg.includes("Connection pool timeout") ||
     msg.includes("ECONNRESET") ||
-    msg.includes("ETIMEDOUT")
+    msg.includes("ETIMEDOUT") ||
+    msg.includes("ECONNREFUSED")
   );
 }
 
-export async function withDbRetry<T>(fn: () => Promise<T>, retries = 1): Promise<T> {
-  try {
-    return await fn();
-  } catch (err) {
-    if (retries > 0 && isTransientDbError(err)) {
-      await new Promise((r) => setTimeout(r, 250));
-      return withDbRetry(fn, retries - 1);
+export async function withDbRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries && isTransientDbError(err)) {
+        await new Promise((r) => setTimeout(r, 400 * Math.pow(2, attempt)));
+        continue;
+      }
+      throw err;
     }
-    throw err;
   }
+  throw lastErr;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function AppError({
   error,
@@ -9,9 +9,18 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const autoRetried = useRef(false);
+
   useEffect(() => {
     console.error("[lk-studio] page error:", error.digest ?? error.message);
   }, [error]);
+
+  useEffect(() => {
+    if (autoRetried.current) return;
+    autoRetried.current = true;
+    const timer = setTimeout(() => reset(), 2000);
+    return () => clearTimeout(timer);
+  }, [reset]);
 
   return (
     <main className="brand-page-bg flex min-h-dvh items-center justify-center p-6">
@@ -19,7 +28,8 @@ export default function AppError({
         <h1 className="text-lg font-bold text-brand-green">Something went wrong</h1>
         <p className="text-sm text-zinc-600">
           The server had a temporary problem loading this page. This often fixes itself after a
-          refresh — especially right after an app update or when the server was idle.
+          refresh — especially right after an app update or when the server was idle. Retrying
+          automatically…
         </p>
         <button type="button" onClick={() => reset()} className="btn-primary w-full py-3">
           Try again

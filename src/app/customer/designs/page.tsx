@@ -29,6 +29,7 @@ import { shopRatingSummaries } from "@/lib/shop-rating";
 import { ShopRatingBadge } from "@/components/ShopRatingBadge";
 import { SaveShopButton } from "@/components/SaveShopButton";
 import { CustomerDesignPaywall } from "@/components/CustomerDesignPaywall";
+import { ServerRetryPanel } from "@/components/ServerRetryPanel";
 import { canCustomerBrowseDesigns } from "@/lib/subscription";
 import { isDemoAccountUser } from "@/lib/demo-accounts";
 
@@ -137,109 +138,118 @@ export default async function CustomerDesignsPage({
   const locale = await getLocale();
   const params = await searchParams;
 
-  const customer = await prisma.user.findUnique({
-    where: { id: session!.id },
-    select: {
-      subscriptionStatus: true,
-      subscriptionEndsAt: true,
-      createdAt: true,
-      autopayEnabled: true,
-      phone: true,
-      phoneNormalized: true,
-    },
-  });
-  if (!customer) {
-    return (
-      <div className="card-premium p-6 text-center text-sm text-zinc-600">
-        {t(locale, "noData")}
-      </div>
+  try {
+    const customer = await withDbRetry(() =>
+      prisma.user.findUnique({
+        where: { id: session!.id },
+        select: {
+          subscriptionStatus: true,
+          subscriptionEndsAt: true,
+          createdAt: true,
+          autopayEnabled: true,
+          phone: true,
+          phoneNormalized: true,
+        },
+      })
     );
-  }
-  const designAccess =
-    isDemoAccountUser(customer) ||
-    canCustomerBrowseDesigns(
-      customer.subscriptionStatus,
-      customer.subscriptionEndsAt,
-      customer.createdAt,
-      customer.autopayEnabled
-    );
-  if (!designAccess) {
-    return <CustomerDesignPaywall locale={locale} />;
-  }
+    if (!customer) {
+      return (
+        <div className="card-premium p-6 text-center text-sm text-zinc-600">
+          {t(locale, "noData")}
+        </div>
+      );
+    }
+    const designAccess =
+      isDemoAccountUser(customer) ||
+      canCustomerBrowseDesigns(
+        customer.subscriptionStatus,
+        customer.subscriptionEndsAt,
+        customer.createdAt,
+        customer.autopayEnabled
+      );
+    if (!designAccess) {
+      return <CustomerDesignPaywall locale={locale} />;
+    }
 
-  const rawCategory = params.category as ServiceCategory | undefined;
-  const category: ServiceCategory =
-    rawCategory && isCatalogCategory(rawCategory) ? rawCategory : "MAGGAM";
-  const rawSize = params.size?.toUpperCase();
-  const sizeFromParams =
-    rawSize === "SMALL" || rawSize === "MEDIUM" || rawSize === "BIG"
-      ? (rawSize as DesignSizeTier)
+    const rawCategory = params.category as ServiceCategory | undefined;
+    const category: ServiceCategory =
+      rawCategory && isCatalogCategory(rawCategory) ? rawCategory : "MAGGAM";
+    const rawSize = params.size?.toUpperCase();
+    const sizeFromParams =
+      rawSize === "SMALL" || rawSize === "MEDIUM" || rawSize === "BIG"
+        ? (rawSize as DesignSizeTier)
+        : undefined;
+    const initialSizeTier = categoryHasSizeTiers(category)
+      ? sizeFromParams ?? defaultSizeTierForCategory(category)
       : undefined;
-  const initialSizeTier = categoryHasSizeTiers(category)
-    ? sizeFromParams ?? defaultSizeTierForCategory(category)
-    : undefined;
-  const rawPart = params.part?.toUpperCase();
-  const partFromParams =
-    rawPart === "MAIN" || rawPart === "HAND_SLEEVES" ? (rawPart as CatalogPart) : undefined;
-  const initialCatalogPart = categoryHasCatalogParts(category)
-    ? partFromParams ?? defaultCatalogPartForCategory(category)
-    : undefined;
-  const shopIdParam = params.shopId?.trim();
+    const rawPart = params.part?.toUpperCase();
+    const partFromParams =
+      rawPart === "MAIN" || rawPart === "HAND_SLEEVES" ? (rawPart as CatalogPart) : undefined;
+    const initialCatalogPart = categoryHasCatalogParts(category)
+      ? partFromParams ?? defaultCatalogPartForCategory(category)
+      : undefined;
+    const shopIdParam = params.shopId?.trim();
 
-  if (shopIdParam) {
+    if (shopIdParam) {
+      return (
+        <CustomerShopStitchedPage
+          locale={locale}
+          customerId={session!.id}
+          shopId={shopIdParam}
+        />
+      );
+    }
+
+    const savedShop = await withDbRetry(() =>
+      prisma.customerSavedShop.findFirst({
+        where: { customerId: session!.id },
+        orderBy: { createdAt: "desc" },
+        select: { shopId: true },
+      })
+    );
+    const priceShopId = savedShop?.shopId;
+
+    const browseQuery = { category, sizeTier: initialSizeTier, catalogPart: initialCatalogPart };
+
+    const [browseBootstrap, categoryCounts, allTierCounts, allPartCounts, customerFavorites] =
+      await Promise.all([
+        fetchCatalogBrowseBootstrap(browseQuery),
+        cachedCatalogCategoryCounts(),
+        cachedAllCatalogSizeTierCounts(),
+        cachedAllCatalogPartCounts(),
+        priceShopId
+          ? withDbRetry(() =>
+              prisma.customerFavorite.findMany({
+                where: { customerId: session!.id, shopId: priceShopId },
+                select: { designId: true },
+              })
+            )
+          : Promise.resolve([]),
+      ]);
+
+    const designPage = browseBootstrap.active;
+    const apiQuery = catalogBrowseApiQuery(browseQuery);
+
     return (
-      <CustomerShopStitchedPage
+      <CustomerCatalogPanel
         locale={locale}
-        customerId={session!.id}
-        shopId={shopIdParam}
+        designs={designPage.items}
+        total={designPage.total ?? designPage.items.length}
+        hasMore={designPage.hasMore}
+        apiQuery={apiQuery}
+        categoryCounts={categoryCounts}
+        allTierCounts={allTierCounts}
+        allPartCounts={allPartCounts}
+        favoriteDesignIds={customerFavorites.map((f) => f.designId)}
+        priceShopId={priceShopId}
+        initialCategory={category}
+        initialSizeTier={initialSizeTier}
+        initialCatalogPart={initialCatalogPart}
+        initialBrowseCache={browseBootstrap.cache}
       />
     );
+  } catch (err) {
+    console.error("[lk-studio] customer designs page error:", err);
+    return <ServerRetryPanel locale={locale} />;
   }
-
-  const savedShop = await prisma.customerSavedShop.findFirst({
-    where: { customerId: session!.id },
-    orderBy: { createdAt: "desc" },
-    select: { shopId: true },
-  });
-  const priceShopId = savedShop?.shopId;
-
-  const browseQuery = { category, sizeTier: initialSizeTier, catalogPart: initialCatalogPart };
-
-  const [browseBootstrap, categoryCounts, allTierCounts, allPartCounts, customerFavorites] =
-    await Promise.all([
-      fetchCatalogBrowseBootstrap(browseQuery),
-      cachedCatalogCategoryCounts(),
-      cachedAllCatalogSizeTierCounts(),
-      cachedAllCatalogPartCounts(),
-      priceShopId
-        ? withDbRetry(() =>
-            prisma.customerFavorite.findMany({
-              where: { customerId: session!.id, shopId: priceShopId },
-              select: { designId: true },
-            })
-          )
-        : Promise.resolve([]),
-    ]);
-
-  const designPage = browseBootstrap.active;
-  const apiQuery = catalogBrowseApiQuery(browseQuery);
-
-  return (
-    <CustomerCatalogPanel
-      locale={locale}
-      designs={designPage.items}
-      total={designPage.total ?? designPage.items.length}
-      hasMore={designPage.hasMore}
-      apiQuery={apiQuery}
-      categoryCounts={categoryCounts}
-      allTierCounts={allTierCounts}
-      allPartCounts={allPartCounts}
-      favoriteDesignIds={customerFavorites.map((f) => f.designId)}
-      priceShopId={priceShopId}
-      initialCategory={category}
-      initialSizeTier={initialSizeTier}
-      initialCatalogPart={initialCatalogPart}
-      initialBrowseCache={browseBootstrap.cache}
-    />
-  );
 }
