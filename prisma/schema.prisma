@@ -71,6 +71,20 @@ enum PriceRequestStatus {
   QUOTED
 }
 
+/** Role a shop needs from the work partner network. */
+enum WorkerPartnerRole {
+  MAGGAM_WORKER
+  STITCHING_WORKER
+  STITCHING_MASTER
+  OTHER
+}
+
+enum WorkerPartnerRequestStatus {
+  OPEN
+  FILLED
+  CANCELLED
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -167,6 +181,8 @@ model ShopProfile {
   savedByCustomers CustomerSavedShop[]
   priceRequests PriceRequest[]
 
+  workerPartnerRequests WorkerPartnerRequest[]
+
   @@index([subscriptionStatus])
   @@index([city])
 }
@@ -233,6 +249,22 @@ model PriceRequest {
 
   @@index([shopId, status, createdAt])
   @@index([customerId, createdAt])
+}
+
+model WorkerPartnerRequest {
+  id         String                     @id @default(cuid())
+  shopId     String
+  shop       ShopProfile                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  role       WorkerPartnerRole
+  customRole String?
+  notes      String?
+  city       String?
+  status     WorkerPartnerRequestStatus @default(OPEN)
+  createdAt  DateTime                   @default(now())
+  updatedAt  DateTime                   @updatedAt
+
+  @@index([shopId, createdAt])
+  @@index([status, role, city])
 }
 
 model OrderFavorite {

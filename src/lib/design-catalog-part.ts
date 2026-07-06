@@ -17,7 +17,7 @@ export function defaultCatalogPartForCategory(
 }
 
 export function catalogPartLabelKey(category: ServiceCategory, part: CatalogPart): string {
-  if (part === "HAND_SLEEVES") return "catalogPart.handSleeves";
-  if (category === "BLOUSE_DESIGN") return "catalogPart.blouses";
-  return "catalogPart.dressDesign";
+  if (part === "HAND_SLEEVES") return "catalogPartHandSleeves";
+  if (category === "BLOUSE_DESIGN") return "catalogPartBlouses";
+  return "catalogPartDressDesign";
 }

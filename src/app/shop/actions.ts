@@ -673,3 +673,52 @@ export async function replyPriceRequest(formData: FormData) {
   revalidatePath("/shop/price-requests");
   revalidatePath("/customer/price-requests");
 }
+
+export async function createWorkerPartnerRequest(formData: FormData) {
+  const id = await shopIdOnly();
+  const roleRaw = String(formData.get("role") ?? "").trim().toUpperCase();
+  const roles = ["MAGGAM_WORKER", "STITCHING_WORKER", "STITCHING_MASTER", "OTHER"] as const;
+  if (!roles.includes(roleRaw as (typeof roles)[number])) {
+    throw new Error("Select a worker type");
+  }
+  const role = roleRaw as (typeof roles)[number];
+  const customRole = String(formData.get("customRole") ?? "").trim() || null;
+  if (role === "OTHER" && !customRole) {
+    throw new Error("Describe the worker you need");
+  }
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+
+  const shop = await prisma.shopProfile.findUnique({
+    where: { id },
+    select: { city: true },
+  });
+  if (!shop) throw new Error("Shop not found");
+
+  await prisma.workerPartnerRequest.create({
+    data: {
+      shopId: id,
+      role,
+      customRole: role === "OTHER" ? customRole : null,
+      notes,
+      city: shop.city,
+      status: "OPEN",
+    },
+  });
+
+  revalidatePath("/shop/workers");
+}
+
+export async function cancelWorkerPartnerRequest(requestId: string) {
+  const id = await shopIdOnly();
+  const row = await prisma.workerPartnerRequest.findFirst({
+    where: { id: requestId, shopId: id, status: "OPEN" },
+  });
+  if (!row) throw new Error("Request not found");
+
+  await prisma.workerPartnerRequest.update({
+    where: { id: requestId },
+    data: { status: "CANCELLED" },
+  });
+
+  revalidatePath("/shop/workers");
+}

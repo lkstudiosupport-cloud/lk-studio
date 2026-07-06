@@ -4,7 +4,6 @@ import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { ShopProfileForm } from "@/components/ShopProfileForm";
 import { ProfileLogout } from "@/components/ProfileLogout";
-import { DeleteAccountSection } from "@/components/DeleteAccountSection";
 import { LegalFooter } from "@/components/LegalFooter";
 import { ProfileSubscriptionSection } from "@/components/ProfileSubscriptionSection";
 import { Store } from "lucide-react";
@@ -25,13 +24,10 @@ export default async function ShopProfilePage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <h1 className="page-title flex items-center gap-2">
-          <Store className="h-8 w-8 text-brand-green" />
-          {t(locale, "shopProfileTitle")}
-        </h1>
-        <DeleteAccountSection locale={locale} position="inline" />
-      </div>
+      <h1 className="page-title flex items-center gap-2">
+        <Store className="h-8 w-8 text-brand-green" />
+        {t(locale, "shopProfileTitle")}
+      </h1>
       <ShopProfileForm locale={locale} profile={profile} />
       <ProfileSubscriptionSection
         locale={locale}

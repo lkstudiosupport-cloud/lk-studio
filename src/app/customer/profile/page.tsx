@@ -8,7 +8,6 @@ import {
   CustomerProfileHeader,
 } from "@/components/CustomerProfileForm";
 import { ProfileLogout } from "@/components/ProfileLogout";
-import { DeleteAccountSection } from "@/components/DeleteAccountSection";
 import { LegalFooter } from "@/components/LegalFooter";
 import { ProfileSubscriptionSection } from "@/components/ProfileSubscriptionSection";
 import { LayoutDashboard, ChevronRight } from "lucide-react";
@@ -40,10 +39,7 @@ export default async function CustomerProfilePage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <CustomerProfileHeader locale={locale} />
-        <DeleteAccountSection locale={locale} position="inline" />
-      </div>
+      <CustomerProfileHeader locale={locale} />
 
       <Link
         href="/customer"
