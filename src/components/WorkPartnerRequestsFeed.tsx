@@ -5,6 +5,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { WorkerPartnerRequest, WorkerPartnerRole } from "@prisma/client";
 import { WORKER_PARTNER_ROLES, workerPartnerRoleLabelKey } from "@/lib/work-partner-roles";
+import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
 import { CitySelect } from "@/components/CitySelect";
 
 type ShopInfo = {
@@ -97,6 +98,10 @@ export function WorkPartnerRequestsFeed({
                 {req.city || req.shop.city ? ` · ${req.city ?? req.shop.city}` : ""}
               </p>
               {req.shop.address && <p className="text-sm text-zinc-600">{req.shop.address}</p>}
+              <p className="text-sm font-medium text-zinc-700">
+                {t(locale, "workerPartnerSchedule")}:{" "}
+                {formatWorkerPartnerSchedule(req.neededFrom, req.durationType, req.customDays, locale)}
+              </p>
               {req.notes && <p className="text-sm text-zinc-600">{req.notes}</p>}
               {(req.shop.phone || req.shop.whatsapp) && (
                 <p className="text-sm text-brand-green">

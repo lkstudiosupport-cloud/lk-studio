@@ -397,8 +397,13 @@
   "workersComingSoonHint": "Manage tailors and work partners in your shop. This feature is under development.",
   "workerPartnerPageHint": "Raise a request when you need maggam, stitching, or other workers. Open requests appear in the work partner app for your city.",
   "workerPartnerRequestTitle": "Need a worker?",
-  "workerPartnerRequestHint": "Choose the type you need. Your shop city is sent automatically so nearby work partners can respond.",
+  "workerPartnerRequestHint": "Choose worker type, pick a start date on the calendar, and select 1 day, 2 days, or custom days. Your shop city is sent automatically.",
   "workerPartnerRoleLabel": "Worker type",
+  "workerPartnerNeededFrom": "Start date",
+  "workerPartnerSelectDate": "Pick the first day you need the worker",
+  "workerPartnerDurationLabel": "How many days?",
+  "workerPartnerCustomDays": "Number of days",
+  "workerPartnerSchedule": "Needed on",
   "workerPartnerCustomRole": "Describe worker needed",
   "workerPartnerCustomRolePlaceholder": "e.g. Cutting master, ironing helper",
   "workerPartnerNotes": "Details (optional)",
@@ -420,6 +425,11 @@
     "stitchingWorker": "Stitching worker",
     "stitchingMaster": "Stitching master",
     "other": "Other worker"
+  },
+  "workerPartnerDuration": {
+    "oneDay": "1 day",
+    "twoDays": "2 days",
+    "customDays": "Custom days"
   },
   "comingSoonHint": "This feature is coming soon.",
   "shopCode": "Shop code",

@@ -85,6 +85,12 @@ enum WorkerPartnerRequestStatus {
   CANCELLED
 }
 
+enum WorkerPartnerDurationType {
+  ONE_DAY
+  TWO_DAYS
+  CUSTOM_DAYS
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -252,16 +258,19 @@ model PriceRequest {
 }
 
 model WorkerPartnerRequest {
-  id         String                     @id @default(cuid())
-  shopId     String
-  shop       ShopProfile                @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  role       WorkerPartnerRole
-  customRole String?
-  notes      String?
-  city       String?
-  status     WorkerPartnerRequestStatus @default(OPEN)
-  createdAt  DateTime                   @default(now())
-  updatedAt  DateTime                   @updatedAt
+  id           String                     @id @default(cuid())
+  shopId       String
+  shop         ShopProfile                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  role         WorkerPartnerRole
+  customRole   String?
+  neededFrom   DateTime                   @db.Date
+  durationType WorkerPartnerDurationType
+  customDays   Int?
+  notes        String?
+  city         String?
+  status       WorkerPartnerRequestStatus @default(OPEN)
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
 
   @@index([shopId, createdAt])
   @@index([status, role, city])

@@ -36,11 +36,20 @@ async function main() {
     END $$;
   `);
   await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      CREATE TYPE "WorkerPartnerDurationType" AS ENUM ('ONE_DAY', 'TWO_DAYS', 'CUSTOM_DAYS');
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "WorkerPartnerRequest" (
       "id" TEXT NOT NULL,
       "shopId" TEXT NOT NULL,
       "role" "WorkerPartnerRole" NOT NULL,
       "customRole" TEXT,
+      "neededFrom" DATE,
+      "durationType" "WorkerPartnerDurationType",
+      "customDays" INTEGER,
       "notes" TEXT,
       "city" TEXT,
       "status" "WorkerPartnerRequestStatus" NOT NULL DEFAULT 'OPEN',
@@ -51,6 +60,21 @@ async function main() {
         FOREIGN KEY ("shopId") REFERENCES "ShopProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE
     );
   `);
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "WorkerPartnerRequest" ADD COLUMN IF NOT EXISTS "neededFrom" DATE;`
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "WorkerPartnerRequest" ADD COLUMN IF NOT EXISTS "durationType" "WorkerPartnerDurationType";`
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "WorkerPartnerRequest" ADD COLUMN IF NOT EXISTS "customDays" INTEGER;`
+  );
+  await prisma.$executeRawUnsafe(
+    `UPDATE "WorkerPartnerRequest" SET "neededFrom" = CURRENT_DATE WHERE "neededFrom" IS NULL;`
+  );
+  await prisma.$executeRawUnsafe(
+    `UPDATE "WorkerPartnerRequest" SET "durationType" = 'ONE_DAY' WHERE "durationType" IS NULL;`
+  );
   await prisma.$executeRawUnsafe(
     `CREATE INDEX IF NOT EXISTS "WorkerPartnerRequest_shopId_createdAt_idx" ON "WorkerPartnerRequest" ("shopId", "createdAt");`
   );

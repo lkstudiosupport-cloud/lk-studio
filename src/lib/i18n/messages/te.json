@@ -396,8 +396,13 @@
   "workersComingSoonHint": "మీ షాప్ దర్జీలు మరియు వర్క్ పార్టనర్‌లను నిర్వహించండి. ఈ ఫీచర్ తయారవుతోంది.",
   "workerPartnerPageHint": "మగ్గం, కుట్టు లేదా ఇతర వర్కర్ అవసరమైతే అభ్యర్థన పంపండి. మీ షాప్ నగరం ప్రకారం వర్క్ పార్టనర్ యాప్‌లో కనిపిస్తుంది.",
   "workerPartnerRequestTitle": "వర్కర్ కావాలా?",
-  "workerPartnerRequestHint": "అవసరమైన రకం ఎంచుకోండి. మీ షాప్ నగరం ఆటోమేటిక్‌గా పంపబడుతుంది — సమీప వర్క్ పార్టనర్‌లు చూడగలరు.",
+  "workerPartnerRequestHint": "వర్కర్ రకం ఎంచుకోండి, క్యాలెండర్ నుండి ప్రారంభ తేదీ ఎంచుకోండి, 1 రోజు, 2 రోజులు లేదా కస్టమ్ రోజులు ఎంచుకోండి. మీ షాప్ నగరం ఆటోమేటిక్‌గా పంపబడుతుంది.",
   "workerPartnerRoleLabel": "వర్కర్ రకం",
+  "workerPartnerNeededFrom": "ప్రారంభ తేదీ",
+  "workerPartnerSelectDate": "వర్కర్ అవసరమైన మొదటి రోజు ఎంచుకోండి",
+  "workerPartnerDurationLabel": "ఎన్ని రోజులు?",
+  "workerPartnerCustomDays": "రోజుల సంఖ్య",
+  "workerPartnerSchedule": "అవసరమైన తేదీ",
   "workerPartnerCustomRole": "ఏ వర్కర్ కావాలో వ్రాయండి",
   "workerPartnerCustomRolePlaceholder": "ఉదా. కటింగ్ మాస్టర్, ఇస్త్రీ సహాయకుడు",
   "workerPartnerNotes": "వివరాలు (ఐచ్ఛికం)",
@@ -419,6 +424,11 @@
     "stitchingWorker": "స్టిచింగ్ వర్కర్",
     "stitchingMaster": "స్టిచింగ్ మాస్టర్",
     "other": "ఇతర వర్కర్"
+  },
+  "workerPartnerDuration": {
+    "oneDay": "1 రోజు",
+    "twoDays": "2 రోజులు",
+    "customDays": "కస్టమ్ రోజులు"
   },
   "comingSoonHint": "ఈ ఫీచర్ త్వరలో వస్తుంది.",
   "shopCode": "షాప్ కోడ్",

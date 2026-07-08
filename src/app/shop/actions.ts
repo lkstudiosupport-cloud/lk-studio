@@ -17,6 +17,11 @@ import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
 import { CATALOG_CATEGORIES, shopManageableDesignWhere, isShopUploadCategory } from "@/lib/design-access";
 import { parseShopMeasurementsFromForm, inferOrderCategoryFromMeasurements } from "@/lib/shop-measurements";
 import { normalizeCity } from "@/lib/cities";
+import {
+  parseNeededFromDate,
+  parseWorkerPartnerDurationType,
+  WORKER_PARTNER_DURATION_TYPES,
+} from "@/lib/work-partner-duration";
 
 const MAX_ORDER_DESIGN_PICKS = 3;
 
@@ -687,6 +692,21 @@ export async function createWorkerPartnerRequest(formData: FormData) {
     throw new Error("Describe the worker you need");
   }
   const notes = String(formData.get("notes") ?? "").trim() || null;
+  const neededFromRaw = String(formData.get("neededFrom") ?? "").trim();
+  const durationRaw = String(formData.get("durationType") ?? "").trim().toUpperCase();
+  const durationType = parseWorkerPartnerDurationType(durationRaw);
+  if (!durationType || !WORKER_PARTNER_DURATION_TYPES.includes(durationType)) {
+    throw new Error("Select how many days you need the worker");
+  }
+  const neededFrom = parseNeededFromDate(neededFromRaw);
+  let customDays: number | null = null;
+  if (durationType === "CUSTOM_DAYS") {
+    const n = Number(formData.get("customDays"));
+    if (!Number.isInteger(n) || n < 3 || n > 90) {
+      throw new Error("Enter number of days (3–90)");
+    }
+    customDays = n;
+  }
 
   const shop = await prisma.shopProfile.findUnique({
     where: { id },
@@ -699,6 +719,9 @@ export async function createWorkerPartnerRequest(formData: FormData) {
       shopId: id,
       role,
       customRole: role === "OTHER" ? customRole : null,
+      neededFrom,
+      durationType,
+      customDays,
       notes,
       city: shop.city,
       status: "OPEN",

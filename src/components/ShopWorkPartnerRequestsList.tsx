@@ -5,11 +5,21 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { WorkerPartnerRequest, WorkerPartnerRequestStatus, WorkerPartnerRole } from "@prisma/client";
 import { workerPartnerRoleLabelKey } from "@/lib/work-partner-roles";
+import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
 import { cancelWorkerPartnerRequest } from "@/app/shop/actions";
 
 type Row = Pick<
   WorkerPartnerRequest,
-  "id" | "role" | "customRole" | "notes" | "city" | "status" | "createdAt"
+  | "id"
+  | "role"
+  | "customRole"
+  | "neededFrom"
+  | "durationType"
+  | "customDays"
+  | "notes"
+  | "city"
+  | "status"
+  | "createdAt"
 >;
 
 function statusClass(status: WorkerPartnerRequestStatus) {
@@ -73,6 +83,10 @@ export function ShopWorkPartnerRequestsList({
               {t(locale, "city")}: {req.city}
             </p>
           )}
+          <p className="text-sm text-zinc-700">
+            <span className="font-semibold text-brand-green">{t(locale, "workerPartnerSchedule")}: </span>
+            {formatWorkerPartnerSchedule(req.neededFrom, req.durationType, req.customDays, locale)}
+          </p>
           {req.notes && <p className="text-sm text-zinc-600">{req.notes}</p>}
           <p className="text-xs text-zinc-400">
             {new Date(req.createdAt).toLocaleString()}
