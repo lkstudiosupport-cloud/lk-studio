@@ -18,8 +18,7 @@ import { CustomerPhoneField } from "@/components/CustomerPhoneField";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { MeasurementListView } from "@/components/MeasurementListView";
 import { ShopManualMeasurementsForm } from "@/components/ShopManualMeasurementsForm";
-import { pickMeasurementForType } from "@/lib/measurements";
-import type { MeasurementTypeId } from "@/lib/measurements";
+import { pickMeasurementForType, MEASUREMENT_TYPES, type MeasurementTypeId } from "@/lib/measurements";
 import {
   buildShopMeasurementsJson,
   captureMeasurementSnapshot,
@@ -455,7 +454,7 @@ export function CreateShopOrderFlow({
                     {selectedPerson && (
                       <>
                         <div className="flex flex-wrap gap-2">
-                          {(["blouse", "dress", "child"] as MeasurementTypeId[]).map((type) => (
+                          {MEASUREMENT_TYPES.map((type) => (
                             <button
                               key={type}
                               type="button"

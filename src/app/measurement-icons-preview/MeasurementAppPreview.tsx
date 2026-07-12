@@ -8,7 +8,6 @@ import { MEASUREMENT_TYPE_THEMES } from "@/lib/measurement-field-guide";
 const TYPE_TITLES: Record<MeasurementTypeId, string> = {
   blouse: "Blouse",
   dress: "Dress / Kurti",
-  child: "Children",
 };
 
 export function MeasurementAppPreview() {

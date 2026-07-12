@@ -24,7 +24,6 @@ const PANELS = {
     fields: ["bust", "underBust", "waist", "shoulder", "frontNeck", "backNeck", "armHole", "armLength", "bicep", "sleeve"],
   },
   dress: { left: 360, fields: ["length", "bust", "underBust", "waist", "armLength", "wrist", "bicep", "frontNeck", "backNeck"] },
-  child: { left: 700, fields: ["length", "chest", "waist", "hip", "shoulder", "armHole", "armLength", "neck", "blouseLen", "trouserThreeQuarter"] },
 };
 
 async function cropIcon(top, left, outPath) {

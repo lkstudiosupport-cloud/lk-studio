@@ -690,7 +690,6 @@ function childScene(field: MeasurementFieldKey, active?: boolean): ReactNode {
 const SCENE_RENDERERS: Record<MeasurementTypeId, (field: MeasurementFieldKey, active?: boolean) => ReactNode> = {
   blouse: blouseScene,
   dress: dressScene,
-  child: childScene,
 };
 
 /** Unique filled SVG scene per measurement field (72×96 coordinate space). */

@@ -16,7 +16,6 @@ export const metadata = {
 const TYPE_TITLES: Record<MeasurementTypeId, string> = {
   blouse: "Blouse",
   dress: "Dress / Kurti",
-  child: "Children",
 };
 
 function fieldTitle(type: MeasurementTypeId, key: MeasurementFieldKey): string {

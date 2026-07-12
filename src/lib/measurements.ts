@@ -1,6 +1,6 @@
 import type { ServiceCategory } from "@prisma/client";
 
-export const MEASUREMENT_TYPES = ["blouse", "dress", "child"] as const;
+export const MEASUREMENT_TYPES = ["blouse", "dress"] as const;
 export type MeasurementTypeId = (typeof MEASUREMENT_TYPES)[number];
 
 export type MeasurementFieldKey =
@@ -36,7 +36,7 @@ export type MeasurementFieldDef = { key: MeasurementFieldKey; letter?: string };
 
 export type MeasurementTypeConfig = {
   id: MeasurementTypeId;
-  prismaType: "BLOUSE" | "DRESS" | "CHILD";
+  prismaType: "BLOUSE" | "DRESS";
   views: readonly ("front" | "side" | "back")[];
   fields: readonly MeasurementFieldDef[];
   legendKeys: readonly MeasurementFieldKey[];
@@ -71,20 +71,6 @@ const DRESS_FIELDS: MeasurementFieldDef[] = [
   { key: "custom" },
 ];
 
-const CHILD_FIELDS: MeasurementFieldDef[] = [
-  { key: "length", letter: "1" },
-  { key: "chest", letter: "2" },
-  { key: "waist", letter: "3" },
-  { key: "hip", letter: "4" },
-  { key: "shoulder", letter: "5" },
-  { key: "armHole", letter: "6" },
-  { key: "armLength", letter: "7" },
-  { key: "neck", letter: "8" },
-  { key: "blouseLen", letter: "9" },
-  { key: "trouserThreeQuarter", letter: "10" },
-  { key: "custom" },
-];
-
 export const MEASUREMENT_TYPE_CONFIG: Record<MeasurementTypeId, MeasurementTypeConfig> = {
   blouse: {
     id: "blouse",
@@ -103,15 +89,6 @@ export const MEASUREMENT_TYPE_CONFIG: Record<MeasurementTypeId, MeasurementTypeC
     legendKeys: DRESS_FIELDS.filter((f) => f.letter).map((f) => f.key),
     diagramTitleKey: "dressMeasurementChart",
     diagramHintKey: "dressMeasurementHint",
-  },
-  child: {
-    id: "child",
-    prismaType: "CHILD",
-    views: ["side", "front"],
-    fields: CHILD_FIELDS,
-    legendKeys: CHILD_FIELDS.filter((f) => f.letter).map((f) => f.key),
-    diagramTitleKey: "childMeasurementChart",
-    diagramHintKey: "childMeasurementHint",
   },
 };
 
@@ -158,18 +135,16 @@ export function letterForField(type: MeasurementTypeId, key: MeasurementFieldKey
 }
 
 export function prismaTypeToId(type: string): MeasurementTypeId {
-  if (type === "DRESS") return "dress";
-  if (type === "CHILD") return "child";
+  if (type === "DRESS" || type === "CHILD") return "dress";
   return "blouse";
 }
 
-export function idToPrismaType(id: MeasurementTypeId): "BLOUSE" | "DRESS" | "CHILD" {
+export function idToPrismaType(id: MeasurementTypeId): "BLOUSE" | "DRESS" {
   return MEASUREMENT_TYPE_CONFIG[id].prismaType;
 }
 
 export function measurementTypeForCategory(category: ServiceCategory): MeasurementTypeId {
-  if (category === "DRESS_MODEL") return "dress";
-  if (category === "CHILDREN_WEAR") return "child";
+  if (category === "DRESS_MODEL" || category === "CHILDREN_WEAR") return "dress";
   return "blouse";
 }
 

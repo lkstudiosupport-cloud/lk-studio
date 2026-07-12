@@ -83,27 +83,9 @@ const DRESS_LINES: DiagramLine[] = [
   { key: "trouserThreeQuarter", view: "front", chart: true, x1: 112, y1: 162, x2: 112, y2: 328, lx: 128, ly: 245 },
 ];
 
-const CHILD_LINES: DiagramLine[] = [
-  { key: "bust", view: "side", chart: true, x1: 78, y1: 108, x2: 122, y2: 108, lx: 140, ly: 108 },
-  { key: "waist", view: "side", chart: true, x1: 84, y1: 148, x2: 124, y2: 148, lx: 140, ly: 148 },
-  { key: "hip", view: "side", chart: true, x1: 86, y1: 172, x2: 126, y2: 172, lx: 140, ly: 172 },
-  { key: "length", view: "side", chart: true, x1: 112, y1: 148, x2: 112, y2: 340, lx: 140, ly: 245 },
-  { key: "shoulder", view: "front", chart: true, x1: 58, y1: 88, x2: 142, y2: 88, lx: 158, ly: 88 },
-  { key: "chest", view: "front", chart: true, x1: 62, y1: 108, x2: 138, y2: 108, lx: 158, ly: 108 },
-  { key: "bust", view: "front", chart: true, x1: 64, y1: 122, x2: 136, y2: 122, lx: 158, ly: 122 },
-  { key: "waist", view: "front", chart: true, x1: 68, y1: 148, x2: 132, y2: 148, lx: 158, ly: 148 },
-  { key: "hip", view: "front", chart: true, x1: 66, y1: 172, x2: 134, y2: 172, lx: 158, ly: 172 },
-  { key: "blouseLen", view: "front", chart: true, x1: 100, y1: 90, x2: 100, y2: 210, lx: 114, ly: 150 },
-  { key: "length", view: "front", chart: true, x1: 72, y1: 28, x2: 72, y2: 340, lx: 56, ly: 185 },
-  { key: "armLength", view: "front", chart: true, x1: 32, y1: 90, x2: 32, y2: 210, lx: 18, ly: 150 },
-  { key: "sleeve", view: "front", chart: true, x1: 18, y1: 158, x2: 42, y2: 158, lx: 30, ly: 148 },
-  { key: "neck", view: "front", chart: true, x1: 90, y1: 68, x2: 110, y2: 68, lx: 100, ly: 58 },
-];
-
 const LINES_BY_TYPE: Record<MeasurementTypeId, DiagramLine[]> = {
   blouse: BLOUSE_LINES,
   dress: DRESS_LINES,
-  child: CHILD_LINES,
 };
 
 export function attachLetters(type: MeasurementTypeId, lines: DiagramLine[]): DiagramLine[] {

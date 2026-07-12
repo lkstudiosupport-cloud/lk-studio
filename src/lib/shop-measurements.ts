@@ -14,7 +14,7 @@ export type ShopMeasurementsData = {
 
 export function normalizeMeasurementTypeId(raw: string | null | undefined): MeasurementTypeId {
   const value = raw?.trim().toLowerCase();
-  if (value === "dress" || value === "child") return value;
+  if (value === "dress" || value === "child") return "dress";
   return "blouse";
 }
 
@@ -85,7 +85,6 @@ import type { Measurement, ServiceCategory } from "@prisma/client";
 
 export function serviceCategoryFromMeasurementType(type: MeasurementTypeId): ServiceCategory {
   if (type === "dress") return "DRESS_MODEL";
-  if (type === "child") return "CHILDREN_WEAR";
   return "BLOUSE_DESIGN";
 }
 

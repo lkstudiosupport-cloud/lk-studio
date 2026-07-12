@@ -42,14 +42,6 @@ export const MEASUREMENT_TYPE_THEMES: Record<MeasurementTypeId, MeasurementTypeT
     rowActiveBg: "bg-teal-100/80",
     accent: "text-teal-800",
   },
-  child: {
-    figureFill: "#eff6ff",
-    figureStroke: "#1d4ed8",
-    rowBorder: "border-blue-200",
-    rowBg: "bg-blue-50/60",
-    rowActiveBg: "bg-blue-100/80",
-    accent: "text-blue-800",
-  },
 };
 
 /** Circumference measurements shown with an "(All Around)" label suffix. */
@@ -100,24 +92,9 @@ const DRESS_GUIDES: Partial<Record<MeasurementFieldKey, GuideOverlay>> = {
   custom: { view: "front" },
 };
 
-const CHILD_GUIDES: Partial<Record<MeasurementFieldKey, GuideOverlay>> = {
-  shoulder: { view: "front", line: h(24, 18, 54) },
-  chest: { view: "front", line: h(32, 20, 52) },
-  bust: { view: "front", line: h(38, 20, 52) },
-  waist: { view: "front", line: h(48, 22, 50) },
-  hip: { view: "front", line: h(56, 20, 52) },
-  blouseLen: { view: "front", line: v(36, 24, 66) },
-  length: { view: "front", line: v(28, 10, 88) },
-  armLength: { view: "front", line: v(12, 24, 62) },
-  sleeve: { view: "front", line: h(52, 8, 16) },
-  neck: { view: "front", line: h(18, 30, 42) },
-  custom: { view: "front" },
-};
-
 const GUIDES_BY_TYPE: Record<MeasurementTypeId, Partial<Record<MeasurementFieldKey, GuideOverlay>>> = {
   blouse: BLOUSE_GUIDES,
   dress: DRESS_GUIDES,
-  child: CHILD_GUIDES,
 };
 
 export function guideOverlayForField(
