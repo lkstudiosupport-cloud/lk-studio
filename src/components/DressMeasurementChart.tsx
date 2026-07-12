@@ -16,24 +16,15 @@ export type DressDiagramLine = {
 };
 
 export const DRESS_CHART_LINES: DressDiagramLine[] = [
-  { key: "neck", num: "1", kind: "horizontal", x1: 108, y1: 52, x2: 172, y2: 52, lx: 190, ly: 52 },
-  { key: "overBust", num: "2", kind: "horizontal", x1: 72, y1: 88, x2: 208, y2: 88, lx: 224, ly: 88 },
-  { key: "bust", num: "3", kind: "horizontal", x1: 68, y1: 108, x2: 212, y2: 108, lx: 224, ly: 108 },
-  { key: "underBust", num: "4", kind: "horizontal", x1: 70, y1: 128, x2: 210, y2: 128, lx: 224, ly: 128 },
-  { key: "waist", num: "5", kind: "horizontal", x1: 74, y1: 158, x2: 206, y2: 158, lx: 224, ly: 158 },
-  { key: "hip", num: "6", kind: "horizontal", x1: 68, y1: 192, x2: 212, y2: 192, lx: 224, ly: 192 },
-  { key: "length", num: "7", kind: "vertical", x1: 140, y1: 48, x2: 140, y2: 420, lx: 156, ly: 234 },
-  { key: "neckToAboveKnee", num: "8", kind: "vertical", x1: 118, y1: 48, x2: 118, y2: 318, lx: 98, ly: 180 },
-  { key: "aboveKneeToAnkle", num: "9", kind: "vertical", x1: 162, y1: 318, x2: 162, y2: 420, lx: 178, ly: 368 },
-  { key: "armLength", num: "10", kind: "vertical", x1: 38, y1: 78, x2: 38, y2: 248, lx: 22, ly: 162 },
-  { key: "shoulder", num: "11", kind: "horizontal", x1: 58, y1: 68, x2: 222, y2: 68, lx: 240, ly: 68 },
-  { key: "armHole", num: "12", kind: "horizontal", x1: 54, y1: 98, x2: 226, y2: 98, lx: 240, ly: 98 },
-  { key: "bicep", num: "13", kind: "horizontal", x1: 28, y1: 138, x2: 58, y2: 138, lx: 14, ly: 138 },
-  { key: "foreArm", num: "14", kind: "horizontal", x1: 24, y1: 188, x2: 52, y2: 188, lx: 12, ly: 188 },
-  { key: "wrist", num: "15", kind: "horizontal", x1: 22, y1: 238, x2: 48, y2: 238, lx: 10, ly: 238 },
-  { key: "frontNeck", num: "16", kind: "diagonal", x1: 118, y1: 52, x2: 140, y2: 82, lx: 108, ly: 72 },
-  { key: "frontWaist", num: "17", kind: "vertical", x1: 68, y1: 68, x2: 68, y2: 158, lx: 52, ly: 112 },
-  { key: "trouserThreeQuarter", num: "18", kind: "vertical", x1: 198, y1: 158, x2: 198, y2: 318, lx: 214, ly: 238 },
+  { key: "length", num: "1", kind: "vertical", x1: 140, y1: 48, x2: 140, y2: 420, lx: 156, ly: 234 },
+  { key: "bust", num: "2", kind: "horizontal", x1: 68, y1: 108, x2: 212, y2: 108, lx: 224, ly: 108 },
+  { key: "underBust", num: "3", kind: "horizontal", x1: 70, y1: 128, x2: 210, y2: 128, lx: 224, ly: 128 },
+  { key: "waist", num: "4", kind: "horizontal", x1: 74, y1: 158, x2: 206, y2: 158, lx: 224, ly: 158 },
+  { key: "armLength", num: "5", kind: "vertical", x1: 38, y1: 78, x2: 38, y2: 248, lx: 22, ly: 162 },
+  { key: "wrist", num: "6", kind: "horizontal", x1: 22, y1: 238, x2: 48, y2: 238, lx: 10, ly: 238 },
+  { key: "bicep", num: "7", kind: "horizontal", x1: 28, y1: 138, x2: 58, y2: 138, lx: 14, ly: 138 },
+  { key: "frontNeck", num: "8", kind: "diagonal", x1: 118, y1: 52, x2: 140, y2: 82, lx: 108, ly: 72 },
+  { key: "backNeck", num: "9", kind: "horizontal", x1: 108, y1: 52, x2: 172, y2: 52, lx: 190, ly: 52 },
 ];
 
 export function DressChartDefs({ uid }: { uid: string }) {

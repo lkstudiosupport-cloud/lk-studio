@@ -57,18 +57,17 @@ const BLOUSE_FIELDS: MeasurementFieldDef[] = [
   { key: "shoulder", letter: "10" },
 ];
 
-/** Dress / kurti — matches reference tailoring app chart */
+/** Dress / kurti — 9 classic tailoring measurements (reference chart style) */
 const DRESS_FIELDS: MeasurementFieldDef[] = [
   { key: "length", letter: "1" },
-  { key: "shoulder", letter: "2" },
-  { key: "overBust", letter: "3" },
-  { key: "bust", letter: "4" },
-  { key: "waist", letter: "5" },
-  { key: "hip", letter: "6" },
-  { key: "armHole", letter: "7" },
-  { key: "armLength", letter: "8" },
-  { key: "bicep", letter: "9" },
-  { key: "wrist", letter: "10" },
+  { key: "bust", letter: "2" },
+  { key: "underBust", letter: "3" },
+  { key: "waist", letter: "4" },
+  { key: "armLength", letter: "5" },
+  { key: "wrist", letter: "6" },
+  { key: "bicep", letter: "7" },
+  { key: "frontNeck", letter: "8" },
+  { key: "backNeck", letter: "9" },
   { key: "custom" },
 ];
 
@@ -99,7 +98,7 @@ export const MEASUREMENT_TYPE_CONFIG: Record<MeasurementTypeId, MeasurementTypeC
   dress: {
     id: "dress",
     prismaType: "DRESS",
-    views: ["front"],
+    views: ["front", "back"],
     fields: DRESS_FIELDS,
     legendKeys: DRESS_FIELDS.filter((f) => f.letter).map((f) => f.key),
     diagramTitleKey: "dressMeasurementChart",

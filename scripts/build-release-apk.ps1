@@ -77,6 +77,9 @@ if (-not (Test-Path $gradlew)) {
 Write-Host "Building release APK (first time may take 10-20 min)..."
 Set-Location (Join-Path $root "android")
 & .\gradlew.bat assembleRelease
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Gradle assembleRelease failed (exit $LASTEXITCODE)."
+}
 
 $apk = Join-Path $root "android\app\build\outputs\apk\release\app-release.apk"
 if (Test-Path $apk) {

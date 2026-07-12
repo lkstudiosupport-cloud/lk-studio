@@ -5,13 +5,55 @@ import { createPortal } from "react-dom";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Minus, Plus, X } from "lucide-react";
 
 const MIN_SCALE = 1;
-const MAX_SCALE = 4;
+const MAX_SCALE = 5;
 const DOUBLE_TAP_MS = 300;
-const DOUBLE_TAP_SCALE = 2.5;
+const DOUBLE_TAP_SCALE = 3;
 const SWIPE_MIN_PX = 32;
 
 function clampScale(value: number) {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+}
+
+function touchMidpoint(t1: TouchPoint, t2: TouchPoint) {
+  return {
+    clientX: (t1.clientX + t2.clientX) / 2,
+    clientY: (t1.clientY + t2.clientY) / 2,
+  };
+}
+
+function posAtScale(
+  focal: { x: number; y: number },
+  startPos: { x: number; y: number },
+  startScale: number,
+  nextScale: number
+) {
+  if (nextScale <= MIN_SCALE) return { x: 0, y: 0 };
+  const ratio = nextScale / startScale;
+  return {
+    x: focal.x - (focal.x - startPos.x) * ratio,
+    y: focal.y - (focal.y - startPos.y) * ratio,
+  };
+}
+
+function clampPan(
+  pos: { x: number; y: number },
+  scale: number,
+  containerW: number,
+  containerH: number,
+  imgW: number,
+  imgH: number
+) {
+  if (scale <= MIN_SCALE) return { x: 0, y: 0 };
+  if (!imgW || !imgH) return pos;
+  const fit = Math.min(containerW / imgW, containerH / imgH);
+  const dispW = imgW * fit * scale;
+  const dispH = imgH * fit * scale;
+  const maxX = Math.max(0, (dispW - containerW) / 2);
+  const maxY = Math.max(0, (dispH - containerH) / 2);
+  return {
+    x: Math.min(maxX, Math.max(-maxX, pos.x)),
+    y: Math.min(maxY, Math.max(-maxY, pos.y)),
+  };
 }
 
 type TouchPoint = { clientX: number; clientY: number };
@@ -167,14 +209,27 @@ function ZoomablePreviewImage({
   alt: string;
   navigationGate: NavigationGateRef;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const [scale, setScale] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [animate, setAnimate] = useState(false);
+  const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
 
   const scaleRef = useRef(1);
-  const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
+  const posRef = useRef({ x: 0, y: 0 });
+  const pinchRef = useRef<{
+    startDist: number;
+    startScale: number;
+    startPos: { x: number; y: number };
+    focal: { x: number; y: number };
+  } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; posX: number; posY: number } | null>(null);
   const lastTapRef = useRef(0);
+
+  useEffect(() => {
+    posRef.current = pos;
+  }, [pos]);
 
   useEffect(() => {
     scaleRef.current = scale;
@@ -186,8 +241,53 @@ function ZoomablePreviewImage({
     setPos({ x: 0, y: 0 });
     setAnimate(false);
     scaleRef.current = 1;
+    posRef.current = { x: 0, y: 0 };
     navigationGate.current = { canNavigate: () => true };
   }, [src, navigationGate]);
+
+  const focalFromClient = useCallback((clientX: number, clientY: number) => {
+    const el = containerRef.current;
+    if (!el) return { x: 0, y: 0 };
+    const rect = el.getBoundingClientRect();
+    return {
+      x: clientX - (rect.left + rect.width / 2),
+      y: clientY - (rect.top + rect.height / 2),
+    };
+  }, []);
+
+  const applyPanClamp = useCallback(
+    (nextPos: { x: number; y: number }, nextScale: number) => {
+      const el = containerRef.current;
+      if (!el || nextScale <= MIN_SCALE) return { x: 0, y: 0 };
+      const rect = el.getBoundingClientRect();
+      return clampPan(nextPos, nextScale, rect.width, rect.height, imgSize.w, imgSize.h);
+    },
+    [imgSize]
+  );
+
+  useEffect(() => {
+    if (!imgSize.w || !imgSize.h || scale <= MIN_SCALE) return;
+    setPos((current) => applyPanClamp(current, scale));
+  }, [imgSize, scale, applyPanClamp]);
+
+  const setZoomAt = useCallback(
+    (nextScale: number, focal: { x: number; y: number }, withAnimate: boolean) => {
+      const clamped = clampScale(nextScale);
+      if (clamped <= MIN_SCALE) {
+        setAnimate(withAnimate);
+        setScale(1);
+        setPos({ x: 0, y: 0 });
+        return;
+      }
+      const startScale = scaleRef.current;
+      const startPos = posRef.current;
+      const nextPos = applyPanClamp(posAtScale(focal, startPos, startScale, clamped), clamped);
+      setAnimate(withAnimate);
+      setScale(clamped);
+      setPos(nextPos);
+    },
+    [applyPanClamp]
+  );
 
   const resetZoom = useCallback(() => {
     setAnimate(true);
@@ -195,49 +295,79 @@ function ZoomablePreviewImage({
     setPos({ x: 0, y: 0 });
   }, []);
 
-  const zoomBy = useCallback((delta: number) => {
-    setAnimate(true);
-    setScale((s) => {
-      const next = clampScale(s + delta);
-      if (next <= MIN_SCALE) setPos({ x: 0, y: 0 });
-      return next;
-    });
-  }, []);
+  const zoomBy = useCallback(
+    (delta: number) => {
+      setZoomAt(scaleRef.current + delta, { x: 0, y: 0 }, true);
+    },
+    [setZoomAt]
+  );
 
-  function onDoubleTap() {
-    setAnimate(true);
-    if (scale > MIN_SCALE) {
-      setScale(1);
-      setPos({ x: 0, y: 0 });
-    } else {
-      setScale(DOUBLE_TAP_SCALE);
-    }
-  }
+  const onDoubleTap = useCallback(
+    (clientX: number, clientY: number) => {
+      const focal = focalFromClient(clientX, clientY);
+      if (scaleRef.current > MIN_SCALE) {
+        resetZoom();
+      } else {
+        setZoomAt(DOUBLE_TAP_SCALE, focal, true);
+      }
+    },
+    [focalFromClient, resetZoom, setZoomAt]
+  );
 
   function onTouchStart(e: React.TouchEvent) {
-    if (e.touches.length !== 2) return;
-    setAnimate(false);
-    panRef.current = null;
-    pinchRef.current = {
-      startDist: touchDistance(e.touches[0]!, e.touches[1]!),
-      startScale: scale,
-    };
+    if (e.touches.length === 2) {
+      e.stopPropagation();
+      setAnimate(false);
+      const mid = touchMidpoint(e.touches[0]!, e.touches[1]!);
+      panRef.current = null;
+      pinchRef.current = {
+        startDist: touchDistance(e.touches[0]!, e.touches[1]!),
+        startScale: scaleRef.current,
+        startPos: { ...posRef.current },
+        focal: focalFromClient(mid.clientX, mid.clientY),
+      };
+    } else if (e.touches.length === 1 && scaleRef.current > MIN_SCALE) {
+      e.stopPropagation();
+      setAnimate(false);
+      pinchRef.current = null;
+      panRef.current = {
+        startX: e.touches[0]!.clientX,
+        startY: e.touches[0]!.clientY,
+        posX: posRef.current.x,
+        posY: posRef.current.y,
+      };
+    }
   }
 
   function onTouchMove(e: React.TouchEvent) {
     if (e.touches.length === 2 && pinchRef.current) {
+      e.preventDefault();
       e.stopPropagation();
       const dist = touchDistance(e.touches[0]!, e.touches[1]!);
-      const next = clampScale(pinchRef.current.startScale * (dist / pinchRef.current.startDist));
-      setScale(next);
-      if (next <= MIN_SCALE) setPos({ x: 0, y: 0 });
-    } else if (e.touches.length === 1 && panRef.current && scale > MIN_SCALE) {
+      const nextScale = clampScale(pinchRef.current.startScale * (dist / pinchRef.current.startDist));
+      const nextPos = applyPanClamp(
+        posAtScale(
+          pinchRef.current.focal,
+          pinchRef.current.startPos,
+          pinchRef.current.startScale,
+          nextScale
+        ),
+        nextScale
+      );
+      setScale(nextScale);
+      setPos(nextPos);
+    } else if (e.touches.length === 1 && panRef.current && scaleRef.current > MIN_SCALE) {
+      e.preventDefault();
       e.stopPropagation();
       const t = e.touches[0]!;
-      setPos({
-        x: panRef.current.posX + (t.clientX - panRef.current.startX),
-        y: panRef.current.posY + (t.clientY - panRef.current.startY),
-      });
+      const nextPos = applyPanClamp(
+        {
+          x: panRef.current.posX + (t.clientX - panRef.current.startX),
+          y: panRef.current.posY + (t.clientY - panRef.current.startY),
+        },
+        scaleRef.current
+      );
+      setPos(nextPos);
     }
   }
 
@@ -245,11 +375,23 @@ function ZoomablePreviewImage({
     if (e.touches.length === 0) {
       pinchRef.current = null;
       panRef.current = null;
+    } else if (e.touches.length === 1 && pinchRef.current) {
+      pinchRef.current = null;
+      if (scaleRef.current > MIN_SCALE) {
+        panRef.current = {
+          startX: e.touches[0]!.clientX,
+          startY: e.touches[0]!.clientY,
+          posX: posRef.current.x,
+          posY: posRef.current.y,
+        };
+      }
     }
-    if (e.changedTouches.length === 1 && e.touches.length === 0 && scale <= MIN_SCALE) {
+
+    if (e.changedTouches.length === 1 && e.touches.length === 0 && scaleRef.current <= MIN_SCALE + 0.001) {
+      const t = e.changedTouches[0]!;
       const now = Date.now();
       if (now - lastTapRef.current < DOUBLE_TAP_MS) {
-        onDoubleTap();
+        onDoubleTap(t.clientX, t.clientY);
         lastTapRef.current = 0;
       } else {
         lastTapRef.current = now;
@@ -259,25 +401,30 @@ function ZoomablePreviewImage({
 
   function onPointerDown(e: React.PointerEvent) {
     if (e.pointerType === "touch") return;
-    if (scale <= MIN_SCALE) return;
+    if (scaleRef.current <= MIN_SCALE) return;
     e.stopPropagation();
     setAnimate(false);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     panRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      posX: pos.x,
-      posY: pos.y,
+      posX: posRef.current.x,
+      posY: posRef.current.y,
     };
   }
 
   function onPointerMove(e: React.PointerEvent) {
     if (!panRef.current || e.pointerType === "touch") return;
     e.stopPropagation();
-    setPos({
-      x: panRef.current.posX + (e.clientX - panRef.current.startX),
-      y: panRef.current.posY + (e.clientY - panRef.current.startY),
-    });
+    setPos(
+      applyPanClamp(
+        {
+          x: panRef.current.posX + (e.clientX - panRef.current.startX),
+          y: panRef.current.posY + (e.clientY - panRef.current.startY),
+        },
+        scaleRef.current
+      )
+    );
   }
 
   function onPointerUp(e: React.PointerEvent) {
@@ -288,21 +435,37 @@ function ZoomablePreviewImage({
   function onDoubleClick(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    onDoubleTap();
+    onDoubleTap(e.clientX, e.clientY);
+  }
+
+  function onWheel(e: React.WheelEvent) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.deltaY < 0 ? 0.25 : -0.25;
+      setZoomAt(scaleRef.current + delta, focalFromClient(e.clientX, e.clientY), false);
+    }
   }
 
   return (
     <div
+      ref={containerRef}
       className="relative z-[1] flex h-full w-full items-center justify-center overflow-hidden"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onWheel={onWheel}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={imgRef}
         src={src}
         alt={alt}
         draggable={false}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          setImgSize({ w: img.naturalWidth, h: img.naturalHeight });
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

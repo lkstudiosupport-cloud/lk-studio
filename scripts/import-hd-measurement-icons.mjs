@@ -28,19 +28,16 @@ const CONFIG = {
   dress: {
     fields: [
       "length",
-      "shoulder",
-      "overBust",
       "bust",
+      "underBust",
       "waist",
-      "hip",
-      "armHole",
       "armLength",
-      "bicep",
       "wrist",
+      "bicep",
+      "frontNeck",
+      "backNeck",
     ],
     customFrom: "length",
-    /** Fields with no HD source yet — keep existing output file. */
-    optional: ["waist"],
   },
 };
 

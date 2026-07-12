@@ -84,6 +84,9 @@ if (-not (Test-Path $gradlew)) {
 Write-Host "Building release AAB (first time may take 10-20 min)..."
 Set-Location (Join-Path $root "android")
 & .\gradlew.bat bundleRelease
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Gradle bundleRelease failed (exit $LASTEXITCODE)."
+}
 
 $aab = Join-Path $root "android\app\build\outputs\bundle\release\app-release.aab"
 if (Test-Path $aab) {

@@ -1,7 +1,7 @@
 import type { MeasurementFieldKey, MeasurementTypeId } from "@/lib/measurements";
 
 /** Bump when icons are regenerated so browsers fetch fresh PNGs. */
-export const MEASUREMENT_ICON_VERSION = "9";
+export const MEASUREMENT_ICON_VERSION = "11";
 
 /** Public URL for a reference-style measurement field icon PNG. */
 export function measurementIconPath(
