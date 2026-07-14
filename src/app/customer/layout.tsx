@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { NavShell } from "@/components/NavShell";
 import { SwipeNavContent } from "@/components/SwipeNavContent";
 import { SessionRefresh } from "@/components/SessionRefresh";
+import { ServerKeepAlive } from "@/components/ServerKeepAlive";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
 import { isDemoAccountUser } from "@/lib/demo-accounts";
@@ -45,6 +46,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   return (
     <>
       <SessionRefresh />
+      <ServerKeepAlive />
       <AutopayGuard
         autopayEnabled={user?.autopayEnabled ?? false}
         trialBypass={demoBypass || inActiveTrial}

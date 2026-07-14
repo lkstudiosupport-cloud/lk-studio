@@ -15,6 +15,8 @@ import { CATEGORIES } from "@/lib/categories";
 import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
 import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-size-tier";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
+import { withDbRetry } from "@/lib/safe-db";
+import { ServerRetryPanel } from "@/components/ServerRetryPanel";
 
 const CATEGORY_KEYS = new Set(CATEGORIES.map((c) => c.key));
 
@@ -49,45 +51,53 @@ export default async function ShopDesignsPage({
     ? shopStitchedDesignsWhere(shopId)
     : shopDesignsWhere(shopId, browseQuery);
 
-  const [designBootstrap, catalogCounts, stitchedCount, allTierCounts, allPartCounts] = await Promise.all([
-    isShopOwnedUploadCategory(category)
-      ? fetchCatalogDesignPage({ where: listWhere, page: 1 }).then((active) => ({
-          active,
-          cache: { [`category=${category}`]: active },
-        }))
-      : fetchCatalogBrowseBootstrap(browseQuery),
-    cachedCatalogCategoryCounts(),
-    cachedShopStitchedCount(shopId),
-    cachedAllCatalogSizeTierCounts(),
-    cachedAllCatalogPartCounts(),
-  ]);
+  try {
+    const [designBootstrap, catalogCounts, stitchedCount, allTierCounts, allPartCounts] =
+      await withDbRetry(() =>
+        Promise.all([
+          isShopOwnedUploadCategory(category)
+            ? fetchCatalogDesignPage({ where: listWhere, page: 1 }).then((active) => ({
+                active,
+                cache: { [`category=${category}`]: active },
+              }))
+            : fetchCatalogBrowseBootstrap(browseQuery),
+          cachedCatalogCategoryCounts(),
+          cachedShopStitchedCount(shopId),
+          cachedAllCatalogSizeTierCounts(),
+          cachedAllCatalogPartCounts(),
+        ])
+      );
 
-  const designPage = designBootstrap.active;
+    const designPage = designBootstrap.active;
 
-  const categoryCounts = {
-    ...catalogCounts,
-    STITCHED_DESIGNS: stitchedCount,
-  } as Record<ServiceCategory, number>;
+    const categoryCounts = {
+      ...catalogCounts,
+      STITCHED_DESIGNS: stitchedCount,
+    } as Record<ServiceCategory, number>;
 
-  const apiQuery = isShopOwnedUploadCategory(category)
-    ? `category=${category}`
-    : catalogBrowseApiQuery(browseQuery);
+    const apiQuery = isShopOwnedUploadCategory(category)
+      ? `category=${category}`
+      : catalogBrowseApiQuery(browseQuery);
 
-  return (
-    <ShopDesignsPanel
-      locale={locale}
-      designs={designPage.items}
-      total={designPage.total ?? designPage.items.length}
-      hasMore={designPage.hasMore}
-      apiQuery={apiQuery}
-      initialBrowseCache={isShopOwnedUploadCategory(category) ? undefined : designBootstrap.cache}
-      shopId={shopId}
-      initialCategory={category}
-      sizeTier={sizeTier}
-      catalogPart={catalogPart}
-      categoryCounts={categoryCounts}
-      allTierCounts={allTierCounts}
-      allPartCounts={allPartCounts}
-    />
-  );
+    return (
+      <ShopDesignsPanel
+        locale={locale}
+        designs={designPage.items}
+        total={designPage.total ?? designPage.items.length}
+        hasMore={designPage.hasMore}
+        apiQuery={apiQuery}
+        initialBrowseCache={isShopOwnedUploadCategory(category) ? undefined : designBootstrap.cache}
+        shopId={shopId}
+        initialCategory={category}
+        sizeTier={sizeTier}
+        catalogPart={catalogPart}
+        categoryCounts={categoryCounts}
+        allTierCounts={allTierCounts}
+        allPartCounts={allPartCounts}
+      />
+    );
+  } catch (err) {
+    console.error("[lk-studio] shop designs error:", err);
+    return <ServerRetryPanel locale={locale} />;
+  }
 }
