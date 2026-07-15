@@ -890,3 +890,127 @@ a,
     letter-spacing: 0.05em;
   }
 }
+
+/* Shop new-order step guide — 3D card + spotlight */
+@keyframes shop-order-guide-float {
+  0%,
+  100% {
+    transform: rotateY(-8deg) rotateX(4deg) translateY(0);
+  }
+  50% {
+    transform: rotateY(8deg) rotateX(-2deg) translateY(-4px);
+  }
+}
+
+@keyframes shop-order-guide-pulse-ring {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(245, 213, 71, 0.95),
+      0 0 0 9999px rgba(15, 23, 42, 0.62);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(245, 213, 71, 0.55),
+      0 0 0 9999px rgba(15, 23, 42, 0.62);
+  }
+}
+
+@keyframes shop-order-guide-pulse-bar {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.shop-order-guide-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.shop-order-guide-backdrop {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+}
+
+.shop-order-guide-spotlight {
+  position: fixed;
+  z-index: 101;
+  border-radius: 14px;
+  animation: shop-order-guide-pulse-ring 1.6s ease-in-out infinite;
+}
+
+.shop-order-guide-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 102;
+  padding: 0 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+
+.shop-order-guide-card {
+  pointer-events: auto;
+  position: relative;
+  margin: 0 auto;
+  max-width: 28rem;
+  border-radius: 1.25rem;
+  border: 2px solid rgba(27, 48, 34, 0.12);
+  background: linear-gradient(165deg, #fffef9 0%, #faf8f5 45%, #f5f0eb 100%);
+  padding: 1.25rem 1rem 1rem;
+  box-shadow:
+    0 -8px 32px rgba(27, 48, 34, 0.18),
+    0 24px 48px rgba(27, 48, 34, 0.12);
+  transform: perspective(900px) rotateX(2deg);
+}
+
+.shop-order-guide-stage {
+  perspective: 900px;
+  perspective-origin: 50% 50%;
+}
+
+.shop-order-guide-cube {
+  position: relative;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: shop-order-guide-float 5s ease-in-out infinite;
+}
+
+.shop-order-guide-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.shop-order-guide-face-front {
+  transform: translateZ(24px);
+}
+
+.shop-order-guide-face-right {
+  transform: rotateY(72deg) translateZ(24px);
+  opacity: 0.35;
+}
+
+.shop-order-guide-pulse-bar,
+.shop-order-guide-pulse-dot {
+  animation: shop-order-guide-pulse-bar 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-order-guide-cube,
+  .shop-order-guide-spotlight,
+  .shop-order-guide-pulse-bar,
+  .shop-order-guide-pulse-dot {
+    animation: none !important;
+  }
+
+  .shop-order-guide-card {
+    transform: none;
+  }
+}

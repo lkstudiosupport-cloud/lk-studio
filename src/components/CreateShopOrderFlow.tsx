@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -26,6 +26,12 @@ import {
   type LastMeasurementSnapshot,
 } from "@/lib/shop-measurements";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
+import { ShopOrderGuide, ShopOrderGuideHelpButton } from "@/components/ShopOrderGuide";
+import {
+  buildLookupGuideSteps,
+  buildOrderGuideSteps,
+  hasSeenShopOrderGuide,
+} from "@/lib/shop-order-guide";
 
 type SavedCustomer = { id: string; name: string; phone: string | null; whatsapp: string | null };
 
@@ -61,8 +67,26 @@ export function CreateShopOrderFlow({
     useState<MeasurementReuseChoice>("different");
   const pendingSnapshotRef = useRef<LastMeasurementSnapshot | null>(null);
   const [state, formAction, pending] = useActionState(createShopOrder, initialActionState);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useSwipeNavBlock(true);
+
+  useEffect(() => {
+    if (!hasSeenShopOrderGuide()) setGuideOpen(true);
+  }, []);
+
+  const guideSteps = useMemo(() => {
+    if (showPostSave) return [];
+    if (!customer) return buildLookupGuideSteps();
+    return buildOrderGuideSteps({
+      hasPersons: customer.persons.length > 0,
+      hasFavorites: customer.favorites.length > 0,
+    });
+  }, [customer, showPostSave]);
+
+  useEffect(() => {
+    if (guideSteps.length === 0) setGuideOpen(false);
+  }, [guideSteps.length]);
 
   useEffect(() => {
     if (state.ok) {
@@ -160,19 +184,24 @@ export function CreateShopOrderFlow({
 
   if (!customer) {
     return (
-      <div className="card-premium min-w-0 space-y-5 p-4 sm:p-5">
-        <Link
-          href="/shop/orders"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-brand-green"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {t(locale, "orders")}
-        </Link>
+      <>
+        <ShopOrderGuide locale={locale} steps={guideSteps} open={guideOpen} onClose={() => setGuideOpen(false)} />
+        <div className="card-premium min-w-0 space-y-5 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Link
+              href="/shop/orders"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-brand-green"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t(locale, "orders")}
+            </Link>
+            <ShopOrderGuideHelpButton locale={locale} onClick={() => setGuideOpen(true)} />
+          </div>
 
-        <h1 className="text-xl font-bold text-brand-green">{t(locale, "newShopOrder")}</h1>
-        <p className="text-sm text-zinc-600">{t(locale, "newShopOrderHint")}</p>
+          <h1 className="text-xl font-bold text-brand-green">{t(locale, "newShopOrder")}</h1>
+          <p className="text-sm text-zinc-600">{t(locale, "newShopOrderHint")}</p>
 
-        <label className="block">
+          <label className="block" data-guide-target="guide-customer-name">
           <span className="mb-1 block text-sm font-semibold text-brand-green">
             {t(locale, "customerName")}
           </span>
@@ -184,12 +213,14 @@ export function CreateShopOrderFlow({
           />
         </label>
 
-        <CustomerPhoneField
-          locale={locale}
-          value={phone}
-          onChange={setPhone}
-          onNamePicked={setCustomerName}
-        />
+        <div data-guide-target="guide-customer-phone">
+          <CustomerPhoneField
+            locale={locale}
+            value={phone}
+            onChange={setPhone}
+            onNamePicked={setCustomerName}
+          />
+        </div>
 
         {customers.length > 0 && (
           <label className="block">
@@ -223,10 +254,12 @@ export function CreateShopOrderFlow({
           disabled={lookupPending || !phone.trim() || !customerName.trim()}
           onClick={() => void findCustomer()}
           className="btn-primary w-full py-3 disabled:opacity-60"
+          data-guide-target="guide-find-customer"
         >
           {lookupPending ? "..." : t(locale, "findCustomer")}
         </button>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -274,10 +307,12 @@ export function CreateShopOrderFlow({
   }
 
   return (
-    <div className="space-y-5">
-      <div className="card-premium min-w-0 space-y-4 p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <button
+    <>
+      <ShopOrderGuide locale={locale} steps={guideSteps} open={guideOpen} onClose={() => setGuideOpen(false)} />
+      <div className="space-y-5">
+        <div className="card-premium min-w-0 space-y-4 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button
             type="button"
             onClick={() => {
               setCustomer(null);
@@ -293,9 +328,12 @@ export function CreateShopOrderFlow({
             <ArrowLeft className="h-4 w-4" />
             {t(locale, "changeCustomer")}
           </button>
-          <Link href="/shop/orders" className="text-sm text-brand-green-soft underline-offset-2 hover:underline">
-            {t(locale, "orders")}
-          </Link>
+          <div className="flex items-center gap-2">
+            <ShopOrderGuideHelpButton locale={locale} onClick={() => setGuideOpen(true)} />
+            <Link href="/shop/orders" className="text-sm text-brand-green-soft underline-offset-2 hover:underline">
+              {t(locale, "orders")}
+            </Link>
+          </div>
         </div>
 
         <div className="rounded-xl border border-brand-green/15 bg-brand-cream/60 p-4">
@@ -341,7 +379,7 @@ export function CreateShopOrderFlow({
         <form key={formKey} action={submitOrder} encType="multipart/form-data" className="space-y-5">
           <input type="hidden" name="customerId" value={customer.id} />
 
-          <section className="space-y-3">
+          <section className="space-y-3" data-guide-target="guide-measurements">
             <h2 className="text-sm font-bold text-brand-green">{t(locale, "measurements")}</h2>
 
             {lastMeasurementSnapshot && (
@@ -429,7 +467,10 @@ export function CreateShopOrderFlow({
                 )}
 
                 {measurementMode === "view" && customer.persons.length > 0 ? (
-                  <div className="space-y-3 rounded-xl border border-brand-green/10 bg-white p-3">
+                  <div
+                    className="space-y-3 rounded-xl border border-brand-green/10 bg-white p-3"
+                    data-guide-target="guide-person-measurements"
+                  >
                     <label className="block">
                       <span className="mb-1 block text-sm font-semibold text-brand-green">
                         {t(locale, "selectPersonForOrder")}
@@ -480,7 +521,10 @@ export function CreateShopOrderFlow({
                     )}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-brand-green/10 bg-white p-3">
+                  <div
+                    className="rounded-xl border border-brand-green/10 bg-white p-3"
+                    data-guide-target="guide-manual-measurements"
+                  >
                     <p className="mb-3 text-xs text-zinc-500">{t(locale, "shopManualMeasurementsHint")}</p>
                     <ShopManualMeasurementsForm
                       locale={locale}
@@ -499,7 +543,7 @@ export function CreateShopOrderFlow({
             </span>
 
             {customer.favorites.length > 0 && (
-              <div className="mb-4">
+              <div className="mb-4" data-guide-target="guide-favorites">
                 <p className="mb-2 text-xs text-zinc-500">{t(locale, "pickCustomerFavorites")}</p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {customer.favorites.map((fav) => {
@@ -539,12 +583,14 @@ export function CreateShopOrderFlow({
               </div>
             )}
 
-            <MultiImageUpload
-              namePrefix="orderImg"
-              label={t(locale, "photosFromGallery")}
-              locale={locale}
-              max={MAX_GALLERY}
-            />
+            <div data-guide-target="guide-upload-photos">
+              <MultiImageUpload
+                namePrefix="orderImg"
+                label={t(locale, "photosFromGallery")}
+                locale={locale}
+                max={MAX_GALLERY}
+              />
+            </div>
           </section>
 
           <textarea
@@ -552,6 +598,7 @@ export function CreateShopOrderFlow({
             rows={2}
             placeholder={t(locale, "clothHandoverNotes")}
             className="input-premium w-full text-sm"
+            data-guide-target="guide-notes"
           />
 
           {state.error && <p className="text-sm text-red-600">{state.error}</p>}
@@ -563,6 +610,7 @@ export function CreateShopOrderFlow({
               (!reuseSameMeasurements && measurementMode === "view" && !personId)
             }
             className="btn-primary w-full py-3 disabled:opacity-60"
+            data-guide-target="guide-submit-order"
           >
             {pending ? "..." : t(locale, "saveOrderPending")}
           </button>
@@ -570,5 +618,6 @@ export function CreateShopOrderFlow({
         )}
       </div>
     </div>
+    </>
   );
 }
