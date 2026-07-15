@@ -4,6 +4,7 @@ import { SwipeNavContent } from "@/components/SwipeNavContent";
 import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { SessionRefresh } from "@/components/SessionRefresh";
 import { ServerKeepAlive } from "@/components/ServerKeepAlive";
+import { ShopTabCacheWarmer } from "@/components/ShopTabCacheWarmer";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
 import { isDemoAccountUser } from "@/lib/demo-accounts";
@@ -62,6 +63,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     <SubscriptionGate>
       <SessionRefresh />
       <ServerKeepAlive />
+      <ShopTabCacheWarmer />
       <AutopayGuard
         autopayEnabled={profile?.autopayEnabled ?? false}
         trialBypass={demoBypass || inActiveTrial}

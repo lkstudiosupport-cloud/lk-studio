@@ -34,6 +34,9 @@ export default async function HomePage() {
           <Link href="/login/customer" className="btn-secondary block py-3">
             {t(locale, "customerLogin")}
           </Link>
+          <Link href="/work-partner/requests" className="btn-secondary block py-3">
+            {t(locale, "workPartnerAppEntry")}
+          </Link>
         </div>
 
         {showDemoLogin() && (

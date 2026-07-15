@@ -2,6 +2,7 @@
 
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
+import { revalidateShopTabCache } from "@/lib/cached-shop-data";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { appendOrderImagesFromForm } from "@/lib/save-order-images";
@@ -11,7 +12,9 @@ import { MAX_DESIGN_IMAGES, parseDesignImages } from "@/lib/design-images";
 import { billItemsTotal, parseBillItems } from "@/lib/bill-items";
 import { billFullyPaid, billPending } from "@/lib/bill-payment";
 import { isShopActive, canShopUseApp, extendSubscriptionEnd, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
-import { findUserByPhone } from "@/lib/auth-user";
+import { findUserByPhone, findUserByPhoneAnyRole, phoneFieldsForRegister } from "@/lib/auth-user";
+import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import type { ActionState } from "@/lib/action-state";
 import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
 import { CATALOG_CATEGORIES, shopManageableDesignWhere, isShopUploadCategory } from "@/lib/design-access";
@@ -24,6 +27,75 @@ import {
 } from "@/lib/work-partner-duration";
 
 const MAX_ORDER_DESIGN_PICKS = 3;
+const WALKIN_EMAIL_SUFFIX = "@lkstudio.walkin";
+
+function isWalkInCustomerEmail(email: string) {
+  return email.endsWith(WALKIN_EMAIL_SUFFIX);
+}
+
+async function createWalkInCustomer(name: string, rawPhone: string): Promise<string> {
+  const phoneFields = phoneFieldsForRegister(rawPhone);
+  const digits = (phoneFields.phoneNormalized ?? rawPhone).replace(/\D/g, "") || randomUUID().slice(0, 12);
+  let email = `walkin+${digits}${WALKIN_EMAIL_SUFFIX}`;
+  let attempt = 0;
+  while (await prisma.user.findUnique({ where: { email }, select: { id: true } })) {
+    attempt += 1;
+    email = `walkin+${digits}.${attempt}${WALKIN_EMAIL_SUFFIX}`;
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      email,
+      passwordHash: await bcrypt.hash(randomUUID(), 10),
+      name: name.trim(),
+      role: "CUSTOMER",
+      phone: phoneFields.phone,
+      phoneNormalized: phoneFields.phoneNormalized || null,
+      whatsapp: phoneFields.whatsapp,
+    },
+    select: { id: true },
+  });
+  return user.id;
+}
+
+async function fetchShopOrderCustomer(shopId: string, userId: string) {
+  return prisma.user.findFirst({
+    where: { id: userId, role: "CUSTOMER" },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      whatsapp: true,
+      email: true,
+      favorites: {
+        where: { shopId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          designId: true,
+          category: true,
+          design: {
+            select: {
+              id: true,
+              title: true,
+              imagePath: true,
+              imagesJson: true,
+              category: true,
+            },
+          },
+        },
+      },
+      persons: {
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          relation: true,
+          measurements: true,
+        },
+      },
+    },
+  });
+}
 
 export type ShopOrderCustomerFavorite = {
   designId: string;
@@ -83,60 +155,44 @@ export type ShopOrderCustomerLookup = {
 export async function lookupShopOrderCustomer(input: {
   phone?: string;
   customerId?: string;
-}): Promise<{ ok: true; customer: ShopOrderCustomerLookup } | { ok: false; error: string }> {
+  name?: string;
+}): Promise<
+  | { ok: true; customer: ShopOrderCustomerLookup; isRegistered: boolean }
+  | { ok: false; error: string }
+> {
   const sid = await shopIdOnly();
 
   const phone = input.phone?.trim();
   const customerId = input.customerId?.trim();
+  const name = input.name?.trim();
 
   let userId = customerId;
+  let createdWalkIn = false;
+
   if (!userId && phone) {
     const found = await findUserByPhone("CUSTOMER", phone);
-    if (!found) return { ok: false, error: "customerNotRegistered" };
-    userId = found.id;
+    if (found) {
+      userId = found.id;
+    } else {
+      const otherRole = await findUserByPhoneAnyRole(phone);
+      if (otherRole && otherRole.role !== "CUSTOMER") {
+        return { ok: false, error: "phoneAlreadyShop" };
+      }
+      if (!name) return { ok: false, error: "enterCustomerName" };
+      userId = await createWalkInCustomer(name, phone);
+      createdWalkIn = true;
+    }
   }
 
-  if (!userId) return { ok: false, error: "customerNotRegistered" };
+  if (!userId) return { ok: false, error: "enterCustomerPhone" };
 
-  const customer = await prisma.user.findFirst({
-    where: { id: userId, role: "CUSTOMER" },
-    select: {
-      id: true,
-      name: true,
-      phone: true,
-      whatsapp: true,
-      favorites: {
-        where: { shopId: sid },
-        orderBy: { createdAt: "desc" },
-        select: {
-          designId: true,
-          category: true,
-          design: {
-            select: {
-              id: true,
-              title: true,
-              imagePath: true,
-              imagesJson: true,
-              category: true,
-            },
-          },
-        },
-      },
-      persons: {
-        orderBy: { name: "asc" },
-        select: {
-          id: true,
-          name: true,
-          relation: true,
-          measurements: true,
-        },
-      },
-    },
-  });
+  const row = await fetchShopOrderCustomer(sid, userId);
+  if (!row) return { ok: false, error: "customerNotRegistered" };
 
-  if (!customer) return { ok: false, error: "customerNotRegistered" };
+  const { email, ...customer } = row;
+  const isRegistered = !createdWalkIn && !isWalkInCustomerEmail(email);
 
-  return { ok: true, customer };
+  return { ok: true, customer, isRegistered };
 }
 
 export async function createShopOrder(
@@ -262,7 +318,9 @@ export async function createShopOrder(
     }
 
     revalidatePath("/shop/orders");
+    revalidatePath("/shop");
     revalidatePath("/customer/orders");
+    bumpShopTabs(sid);
     return { ok: true, message: "orderPlaced" };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Failed" };
@@ -273,6 +331,10 @@ async function shopIdOnly() {
   const session = await requireSession(["SHOP"]);
   if (!session?.shopId) throw new Error("Unauthorized");
   return session.shopId;
+}
+
+function bumpShopTabs(shopId: string) {
+  revalidateShopTabCache(shopId);
 }
 
 async function shopId() {
@@ -466,6 +528,7 @@ export async function deleteOrderImage(formData: FormData) {
 
   revalidatePath("/shop/orders");
   revalidatePath("/customer/orders");
+  bumpShopTabs(shop);
 }
 
 export async function updateOrderStatus(formData: FormData) {
@@ -485,6 +548,7 @@ export async function updateOrderStatus(formData: FormData) {
   revalidatePath("/shop");
   revalidatePath("/shop/orders");
   revalidatePath("/customer/orders");
+  bumpShopTabs(id);
 }
 
 export async function updateOrderWork(formData: FormData) {
@@ -514,6 +578,7 @@ export async function updateOrderWork(formData: FormData) {
 
   revalidatePath("/shop/orders");
   revalidatePath("/customer/orders");
+  bumpShopTabs(shop);
 }
 
 export async function createBill(formData: FormData) {
@@ -555,7 +620,9 @@ export async function createBill(formData: FormData) {
   });
   after(() => {
     revalidatePath("/shop/bills");
+    revalidatePath("/shop");
     revalidatePath("/customer/bills");
+    bumpShopTabs(shop);
   });
   return { id: bill.id };
 }
@@ -592,17 +659,18 @@ export async function updateBill(formData: FormData) {
     },
   });
 
-  revalidateBillPaths(billId);
+  revalidateBillPaths(billId, shop);
   return { id: billId };
 }
 
-function revalidateBillPaths(billId: string) {
+function revalidateBillPaths(billId: string, shopId: string) {
   revalidatePath("/shop");
   revalidatePath("/shop/bills");
   revalidatePath(`/shop/bills/${billId}`);
   revalidatePath("/shop/reports");
   revalidatePath("/customer/bills");
   revalidatePath(`/customer/bills/${billId}`);
+  bumpShopTabs(shopId);
 }
 
 /** Shop marks customer payment — full balance or partial amount received now. */
@@ -619,7 +687,7 @@ export async function recordBillPayment(formData: FormData) {
         where: { id: billId },
         data: { paid: true, paidAt: bill.paidAt ?? new Date() },
       });
-      revalidateBillPaths(billId);
+      revalidateBillPaths(billId, shop);
     }
     return;
   }
@@ -646,7 +714,7 @@ export async function recordBillPayment(formData: FormData) {
     },
   });
 
-  revalidateBillPaths(billId);
+  revalidateBillPaths(billId, shop);
   return { paid };
 }
 
@@ -677,6 +745,7 @@ export async function replyPriceRequest(formData: FormData) {
   revalidatePath("/shop/orders");
   revalidatePath("/shop/price-requests");
   revalidatePath("/customer/price-requests");
+  bumpShopTabs(shop);
 }
 
 export async function createWorkerPartnerRequest(formData: FormData) {
@@ -713,6 +782,10 @@ export async function createWorkerPartnerRequest(formData: FormData) {
     select: { city: true },
   });
   if (!shop) throw new Error("Shop not found");
+  const city = normalizeCity(shop.city);
+  if (!city) {
+    throw new Error("Set your shop city in Profile before sending a worker request");
+  }
 
   await prisma.workerPartnerRequest.create({
     data: {
@@ -723,12 +796,14 @@ export async function createWorkerPartnerRequest(formData: FormData) {
       durationType,
       customDays,
       notes,
-      city: shop.city,
+      city,
       status: "OPEN",
     },
   });
 
   revalidatePath("/shop/workers");
+  revalidatePath("/work-partner/requests");
+  bumpShopTabs(id);
 }
 
 export async function cancelWorkerPartnerRequest(requestId: string) {
@@ -744,4 +819,6 @@ export async function cancelWorkerPartnerRequest(requestId: string) {
   });
 
   revalidatePath("/shop/workers");
+  revalidatePath("/work-partner/requests");
+  bumpShopTabs(id);
 }

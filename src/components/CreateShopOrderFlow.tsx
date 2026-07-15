@@ -54,6 +54,7 @@ export function CreateShopOrderFlow({
   const [lookupError, setLookupError] = useState("");
   const [lookupPending, setLookupPending] = useState(false);
   const [customer, setCustomer] = useState<ShopOrderCustomerLookup | null>(null);
+  const [customerIsRegistered, setCustomerIsRegistered] = useState(true);
   const [measurementMode, setMeasurementMode] = useState<MeasurementMode>("view");
   const [personId, setPersonId] = useState("");
   const [viewMeasureType, setViewMeasureType] = useState<MeasurementTypeId>("blouse");
@@ -150,13 +151,14 @@ export function CreateShopOrderFlow({
     router.refresh();
   }
 
-  async function findCustomer(byId?: string) {
+  async function continueToOrder(byId?: string) {
     setLookupError("");
     setLookupPending(true);
     try {
       const result = await lookupShopOrderCustomer({
         customerId: byId,
         phone: byId ? undefined : phone,
+        name: customerName,
       });
       if (!result.ok) {
         setLookupError(t(locale, result.error));
@@ -164,6 +166,7 @@ export function CreateShopOrderFlow({
         return;
       }
       setCustomer(result.customer);
+      setCustomerIsRegistered(result.isRegistered);
       setCustomerName(result.customer.name);
       const firstPerson = result.customer.persons[0];
       setPersonId(firstPerson?.id ?? "");
@@ -231,7 +234,7 @@ export function CreateShopOrderFlow({
               defaultValue=""
               onChange={(e) => {
                 const id = e.target.value;
-                if (id) void findCustomer(id);
+                if (id) void continueToOrder(id);
                 e.target.value = "";
               }}
               className="input-premium w-full text-sm"
@@ -252,11 +255,11 @@ export function CreateShopOrderFlow({
         <button
           type="button"
           disabled={lookupPending || !phone.trim() || !customerName.trim()}
-          onClick={() => void findCustomer()}
+          onClick={() => void continueToOrder()}
           className="btn-primary w-full py-3 disabled:opacity-60"
           data-guide-target="guide-find-customer"
         >
-          {lookupPending ? "..." : t(locale, "findCustomer")}
+          {lookupPending ? "..." : t(locale, "continueNewOrder")}
         </button>
         </div>
       </>
@@ -316,6 +319,7 @@ export function CreateShopOrderFlow({
             type="button"
             onClick={() => {
               setCustomer(null);
+              setCustomerIsRegistered(true);
               setLookupError("");
               setOrdersSavedCount(0);
               setShowPostSave(false);
@@ -343,6 +347,12 @@ export function CreateShopOrderFlow({
           </p>
           {(customer.phone || customer.whatsapp) && (
             <p className="mt-1 text-sm text-zinc-600">{customer.phone || customer.whatsapp}</p>
+          )}
+          {!customerIsRegistered && (
+            <p className="mt-2 text-xs font-medium text-amber-800">{t(locale, "newCustomerWalkInHint")}</p>
+          )}
+          {customerIsRegistered && customer.persons.length > 0 && (
+            <p className="mt-2 text-xs font-medium text-emerald-800">{t(locale, "registeredCustomerFoundHint")}</p>
           )}
           {ordersSavedCount > 0 && (
             <p className="mt-2 text-xs font-medium text-brand-gold-dark">

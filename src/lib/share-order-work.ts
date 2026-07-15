@@ -41,9 +41,6 @@ export function buildOrderWorkShareText(
   lines.push(`*${order.orderNumber}*`);
   lines.push(`${t(locale, "orderForPerson")}: ${options.subjectName}`);
   lines.push(`${t(locale, "customer")}: ${order.customer.name}`);
-  if (order.customer.phone) {
-    lines.push(`${t(locale, "whatsapp")}: ${order.customer.phone}`);
-  }
 
   if (options.measurement) {
     lines.push("");

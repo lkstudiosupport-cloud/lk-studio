@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -7,6 +8,7 @@ import type { WorkerPartnerRequest, WorkerPartnerRole } from "@prisma/client";
 import { WORKER_PARTNER_ROLES, workerPartnerRoleLabelKey } from "@/lib/work-partner-roles";
 import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
 import { CitySelect } from "@/components/CitySelect";
+import { whatsAppUrl } from "@/lib/whatsapp";
 
 type ShopInfo = {
   shopName: string;
@@ -31,6 +33,16 @@ export function WorkPartnerRequestsFeed({
   initialCity: string;
 }) {
   const router = useRouter();
+
+  useEffect(() => {
+    const id = window.setInterval(() => router.refresh(), 20_000);
+    const onFocus = () => router.refresh();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [router]);
 
   function applyFilters(role: string, city: string) {
     const params = new URLSearchParams();
@@ -89,27 +101,48 @@ export function WorkPartnerRequestsFeed({
         </div>
       ) : (
         <div className="space-y-3">
-          {requests.map((req) => (
-            <article key={req.id} className="card-premium space-y-2 p-4">
-              <p className="font-bold text-brand-green">{roleLabel(req.role, req.customRole)}</p>
-              <p className="text-sm font-semibold text-zinc-800">{req.shop.shopName}</p>
-              <p className="text-xs text-zinc-500">
-                {req.shop.shopCode}
-                {req.city || req.shop.city ? ` · ${req.city ?? req.shop.city}` : ""}
-              </p>
-              {req.shop.address && <p className="text-sm text-zinc-600">{req.shop.address}</p>}
-              <p className="text-sm font-medium text-zinc-700">
-                {t(locale, "workerPartnerSchedule")}:{" "}
-                {formatWorkerPartnerSchedule(req.neededFrom, req.durationType, req.customDays, locale)}
-              </p>
-              {req.notes && <p className="text-sm text-zinc-600">{req.notes}</p>}
-              {(req.shop.phone || req.shop.whatsapp) && (
-                <p className="text-sm text-brand-green">
-                  {req.shop.phone ?? req.shop.whatsapp}
+          {requests.map((req) => {
+            const contact = req.shop.whatsapp || req.shop.phone;
+            const cityLabel = req.city ?? req.shop.city;
+            const wa = contact
+              ? whatsAppUrl(
+                  contact,
+                  `${t(locale, "workPartnerWhatsAppIntro")} ${req.shop.shopName} — ${roleLabel(req.role, req.customRole)}`
+                )
+              : null;
+            const tel = contact ? `tel:${contact.replace(/\D/g, "")}` : null;
+
+            return (
+              <article key={req.id} className="card-premium space-y-2 p-4">
+                <p className="font-bold text-brand-green">{roleLabel(req.role, req.customRole)}</p>
+                <p className="text-sm font-semibold text-zinc-800">{req.shop.shopName}</p>
+                <p className="text-xs text-zinc-500">
+                  {req.shop.shopCode}
+                  {cityLabel ? ` · ${cityLabel}` : ""}
                 </p>
-              )}
-            </article>
-          ))}
+                {req.shop.address && <p className="text-sm text-zinc-600">{req.shop.address}</p>}
+                <p className="text-sm font-medium text-zinc-700">
+                  {t(locale, "workerPartnerSchedule")}:{" "}
+                  {formatWorkerPartnerSchedule(req.neededFrom, req.durationType, req.customDays, locale)}
+                </p>
+                {req.notes && <p className="text-sm text-zinc-600">{req.notes}</p>}
+                {(wa || tel) && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {wa && (
+                      <a href={wa} target="_blank" rel="noopener noreferrer" className="btn-primary px-3 py-2 text-sm">
+                        {t(locale, "workPartnerContactWhatsApp")}
+                      </a>
+                    )}
+                    {tel && (
+                      <a href={tel} className="btn-secondary px-3 py-2 text-sm">
+                        {t(locale, "workPartnerCallShop")}
+                      </a>
+                    )}
+                  </div>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

@@ -1,9 +1,6 @@
-import { prisma } from "@/lib/prisma";
 import { ShopDashboard } from "@/components/ShopDashboard";
-import { startOfMonth, startOfWeek } from "@/lib/income";
-import { shopDashboardStatusCounts } from "@/lib/order-stats";
-import { DASHBOARD_ORDER_LIMIT } from "@/lib/limits";
 import { cachedLocale, cachedShopSession } from "@/lib/cached-server";
+import { getCachedShopDashboard } from "@/lib/cached-shop-data";
 import { withDbRetry } from "@/lib/safe-db";
 import { ServerRetryPanel } from "@/components/ServerRetryPanel";
 
@@ -11,39 +8,11 @@ export default async function ShopDashboardPage() {
   const session = await cachedShopSession();
   const locale = await cachedLocale();
   const shopId = session!.shopId!;
-  const weekStart = startOfWeek();
-  const monthStart = startOfMonth();
 
   try {
-    const [orders, weeklyAgg, monthlyAgg, statusCounts] = await withDbRetry(() =>
-      Promise.all([
-        prisma.order.findMany({
-          where: { shopId, status: { not: "CANCELLED" } },
-          select: {
-            id: true,
-            orderNumber: true,
-            status: true,
-            customer: { select: { name: true } },
-            person: { select: { name: true } },
-            design: { select: { title: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          take: DASHBOARD_ORDER_LIMIT,
-        }),
-        prisma.bill.aggregate({
-          where: { shopId, createdAt: { gte: weekStart } },
-          _sum: { amount: true },
-        }),
-        prisma.bill.aggregate({
-          where: { shopId, createdAt: { gte: monthStart } },
-          _sum: { amount: true },
-        }),
-        shopDashboardStatusCounts(shopId),
-      ])
+    const { orders, weeklyIncome, monthlyIncome, statusCounts } = await withDbRetry(() =>
+      getCachedShopDashboard(shopId)
     );
-
-    const weeklyIncome = weeklyAgg._sum.amount ?? 0;
-    const monthlyIncome = monthlyAgg._sum.amount ?? 0;
 
     return (
       <ShopDashboard

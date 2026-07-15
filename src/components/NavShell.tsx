@@ -24,6 +24,7 @@ function NavPill({
   shortLabel,
   active,
   onNavigate,
+  onPrefetch,
   compact,
 }: {
   href: string;
@@ -31,6 +32,7 @@ function NavPill({
   shortLabel?: string;
   active: boolean;
   onNavigate: (href: string) => void;
+  onPrefetch: (href: string) => void;
   compact?: boolean;
 }) {
   const displayLabel = compact ? (shortLabel ?? label) : label;
@@ -38,6 +40,9 @@ function NavPill({
   return (
     <button
       type="button"
+      onPointerDown={() => {
+        if (!active) onPrefetch(href);
+      }}
       onClick={() => {
         if (!active) onNavigate(href);
       }}
@@ -99,6 +104,15 @@ export function NavShell({
     startTransition(() => router.push(href));
   }
 
+  function prefetchTab(href: string) {
+    router.prefetch(href);
+    if (href.startsWith("/shop")) {
+      void fetch("/api/shop/warm-cache", { credentials: "include", cache: "no-store" }).catch(
+        () => {}
+      );
+    }
+  }
+
   const navItems = links.map((l) => {
     const active = isNavActive(l.href, pathname) || pendingHref === l.href;
     return (
@@ -109,6 +123,7 @@ export function NavShell({
         shortLabel={l.shortLabel}
         active={active}
         onNavigate={navigate}
+        onPrefetch={prefetchTab}
         compact={navPosition === "bottom"}
       />
     );
