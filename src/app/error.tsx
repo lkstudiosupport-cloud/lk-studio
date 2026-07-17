@@ -20,7 +20,7 @@ export default function AppError({
 
   useEffect(() => {
     if (!autoRetrying) return;
-    const delay = Math.min(2000 * Math.pow(2, attempt), 12000);
+    const delay = Math.min(800 * Math.pow(2, attempt), 6000);
     const timer = setTimeout(() => {
       setAttempt((n) => n + 1);
       reset();

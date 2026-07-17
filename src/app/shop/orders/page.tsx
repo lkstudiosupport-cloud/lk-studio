@@ -1,6 +1,6 @@
 import { t } from "@/lib/i18n";
 import { ShopOrdersPanel } from "@/components/ShopOrdersPanel";
-import { LIST_PAGE_SIZE } from "@/lib/limits";
+import { SHOP_ORDERS_PAGE_SIZE } from "@/lib/limits";
 import { cachedLocale, cachedShopSession } from "@/lib/cached-server";
 import { getCachedShopOrdersPage } from "@/lib/cached-shop-data";
 import { withDbRetry } from "@/lib/safe-db";
@@ -16,7 +16,7 @@ export default async function ShopOrdersPage() {
     const { orders, priceRequests, tabCounts } = await withDbRetry(() =>
       getCachedShopOrdersPage(shopId)
     );
-    const truncated = orders.length >= LIST_PAGE_SIZE;
+    const truncated = orders.length >= SHOP_ORDERS_PAGE_SIZE;
 
     return (
       <>
@@ -34,7 +34,9 @@ export default async function ShopOrdersPage() {
           priceRequests={priceRequests}
           tabCounts={tabCounts}
           listHint={
-            truncated ? t(locale, "showingLatestOrders").replace("{n}", String(LIST_PAGE_SIZE)) : undefined
+            truncated
+              ? t(locale, "showingLatestOrders").replace("{n}", String(SHOP_ORDERS_PAGE_SIZE))
+              : undefined
           }
         />
       </>

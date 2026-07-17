@@ -22,7 +22,7 @@ export function isTransientDbError(err: unknown): boolean {
   );
 }
 
-export async function withDbRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+export async function withDbRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -30,7 +30,8 @@ export async function withDbRetry<T>(fn: () => Promise<T>, retries = 3): Promise
     } catch (err) {
       lastErr = err;
       if (attempt < retries && isTransientDbError(err)) {
-        await new Promise((r) => setTimeout(r, 600 * Math.pow(2, attempt)));
+        // Short backoff — long waits stack with page timeouts on Render.
+        await new Promise((r) => setTimeout(r, 250 * Math.pow(2, attempt)));
         continue;
       }
       throw err;

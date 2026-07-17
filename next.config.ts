@@ -59,6 +59,14 @@ const nextConfig: NextConfig = {
     },
     /** Allow multipart uploads through middleware (admin catalog photos). */
     middlewareClientMaxBodySize: "10mb",
+    /**
+     * Keep recently visited shop/customer tabs in the client router cache so
+     * switching back shows data instantly instead of re-fetching the server.
+     */
+    staleTimes: {
+      dynamic: 60,
+      static: 300,
+    },
   },
 };
 

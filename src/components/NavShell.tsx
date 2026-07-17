@@ -106,11 +106,17 @@ export function NavShell({
 
   function prefetchTab(href: string) {
     router.prefetch(href);
-    if (href.startsWith("/shop")) {
-      void fetch("/api/shop/warm-cache", { credentials: "include", cache: "no-store" }).catch(
-        () => {}
-      );
-    }
+    if (!href.startsWith("/shop")) return;
+    let tab = "all";
+    if (href === "/shop" || href.startsWith("/shop?")) tab = "dashboard";
+    else if (href.startsWith("/shop/orders")) tab = "orders";
+    else if (href.startsWith("/shop/bills")) tab = "bills";
+    else if (href.startsWith("/shop/workers")) tab = "workers";
+    else if (href.startsWith("/shop/designs")) return;
+    void fetch(`/api/shop/warm-cache?tab=${tab}`, {
+      credentials: "include",
+      cache: "no-store",
+    }).catch(() => {});
   }
 
   const navItems = links.map((l) => {

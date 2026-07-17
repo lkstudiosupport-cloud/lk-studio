@@ -23,6 +23,17 @@ export function SwipeNavContent({
 
   const onTabChange = useCallback(
     (href: string) => {
+      if (href.startsWith("/shop")) {
+        let tab = "all";
+        if (href === "/shop") tab = "dashboard";
+        else if (href.startsWith("/shop/orders")) tab = "orders";
+        else if (href.startsWith("/shop/bills")) tab = "bills";
+        else if (href.startsWith("/shop/workers")) tab = "workers";
+        void fetch(`/api/shop/warm-cache?tab=${tab}`, {
+          credentials: "include",
+          cache: "no-store",
+        }).catch(() => {});
+      }
       startTransition(() => router.push(href));
     },
     [router, startTransition]

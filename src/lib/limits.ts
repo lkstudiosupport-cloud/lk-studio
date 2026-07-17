@@ -7,8 +7,14 @@ export const CATALOG_MAX_DESIGNS = 5000;
 /** Max rows loaded per list page — keeps memory and response time stable at scale. */
 export const LIST_PAGE_SIZE = 60;
 
+/**
+ * Orders tab first paint — smaller than LIST_PAGE_SIZE so tab switches stay under
+ * Render request timeouts (measurements + photos are heavy).
+ */
+export const SHOP_ORDERS_PAGE_SIZE = 24;
+
 /** Max orders shown on shop dashboard preview. */
-export const DASHBOARD_ORDER_LIMIT = 40;
+export const DASHBOARD_ORDER_LIMIT = 20;
 
 /** @deprecated Use CATALOG_PAGE_SIZE — first page only. */
 export const DESIGN_LIST_LIMIT = CATALOG_PAGE_SIZE;
