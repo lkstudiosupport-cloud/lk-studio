@@ -26,6 +26,7 @@ import {
   type LastMeasurementSnapshot,
 } from "@/lib/shop-measurements";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
+import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
 import { ShopOrderGuide, ShopOrderGuideHelpButton } from "@/components/ShopOrderGuide";
 import {
   buildLookupGuideSteps,
@@ -147,6 +148,8 @@ export function CreateShopOrderFlow({
   }
 
   function handleViewOrders() {
+    clearShopTabCache("orders");
+    clearShopTabCache("dashboard");
     router.push("/shop/orders?tab=pending");
     router.refresh();
   }

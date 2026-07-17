@@ -7,15 +7,22 @@ import { replyPriceRequest } from "@/app/shop/actions";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { categoryLabelKey } from "@/lib/categories";
-import type { ShopPriceRequestRow } from "@/lib/shop-price-request-types";
+import type { ShopPriceRequestListItem } from "@/lib/shop-tab-types";
 import { designImageSrc } from "@/lib/design-images";
 import type { PriceRequestStatus, ServiceCategory } from "@prisma/client";
+import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
 
 function statusLabel(locale: Locale, status: PriceRequestStatus) {
   return status === "QUOTED" ? t(locale, "priceQuoted") : t(locale, "pricePending");
 }
 
-export function ShopPriceRequestsPanel({ locale, requests }: { locale: Locale; requests: ShopPriceRequestRow[] }) {
+export function ShopPriceRequestsPanel({
+  locale,
+  requests,
+}: {
+  locale: Locale;
+  requests: ShopPriceRequestListItem[];
+}) {
   if (requests.length === 0) {
     return (
       <p className="card-premium p-8 text-center text-zinc-500">{t(locale, "noPriceRequestsYet")}</p>
@@ -31,7 +38,13 @@ export function ShopPriceRequestsPanel({ locale, requests }: { locale: Locale; r
   );
 }
 
-function ShopPriceRequestCard({ locale, request }: { locale: Locale; request: ShopPriceRequestRow }) {
+function ShopPriceRequestCard({
+  locale,
+  request,
+}: {
+  locale: Locale;
+  request: ShopPriceRequestListItem;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -124,6 +137,7 @@ function ShopPriceRequestCard({ locale, request }: { locale: Locale; request: Sh
               startTransition(async () => {
                 try {
                   await replyPriceRequest(fd);
+                  clearShopTabCache("orders");
                   router.refresh();
                 } catch (err) {
                   setError(err instanceof Error ? err.message : t(locale, "sendQuoteFailed"));

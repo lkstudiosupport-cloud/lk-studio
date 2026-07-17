@@ -7,6 +7,7 @@ import type { WorkerPartnerRequest, WorkerPartnerRequestStatus, WorkerPartnerRol
 import { workerPartnerRoleLabelKey } from "@/lib/work-partner-roles";
 import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
 import { cancelWorkerPartnerRequest } from "@/app/shop/actions";
+import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
 
 type Row = Pick<
   WorkerPartnerRequest,
@@ -54,6 +55,7 @@ export function ShopWorkPartnerRequestsList({
   async function onCancel(id: string) {
     try {
       await cancelWorkerPartnerRequest(id);
+      clearShopTabCache("workers");
       router.refresh();
     } catch {
       /* ignore */
@@ -88,9 +90,7 @@ export function ShopWorkPartnerRequestsList({
             {formatWorkerPartnerSchedule(req.neededFrom, req.durationType, req.customDays, locale)}
           </p>
           {req.notes && <p className="text-sm text-zinc-600">{req.notes}</p>}
-          <p className="text-xs text-zinc-400">
-            {new Date(req.createdAt).toLocaleString()}
-          </p>
+          <p className="text-xs text-zinc-400">{new Date(req.createdAt).toLocaleString()}</p>
           {req.status === "OPEN" && (
             <button
               type="button"

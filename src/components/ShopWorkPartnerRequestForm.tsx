@@ -13,7 +13,13 @@ import {
 } from "@/lib/work-partner-duration";
 import { createWorkerPartnerRequest } from "@/app/shop/actions";
 
-export function ShopWorkPartnerRequestForm({ locale }: { locale: Locale }) {
+export function ShopWorkPartnerRequestForm({
+  locale,
+  onCreated,
+}: {
+  locale: Locale;
+  onCreated?: () => void;
+}) {
   const router = useRouter();
   const [role, setRole] = useState<WorkerPartnerRole>("STITCHING_WORKER");
   const [durationType, setDurationType] = useState<WorkerPartnerDurationType>("ONE_DAY");
@@ -32,6 +38,7 @@ export function ShopWorkPartnerRequestForm({ locale }: { locale: Locale }) {
       e.currentTarget.reset();
       setRole("STITCHING_WORKER");
       setDurationType("ONE_DAY");
+      onCreated?.();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed");

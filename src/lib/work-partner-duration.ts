@@ -64,16 +64,17 @@ export function parseNeededFromDate(raw: string): Date {
 }
 
 export function formatWorkerPartnerSchedule(
-  neededFrom: Date,
+  neededFrom: Date | string,
   durationType: WorkerPartnerDurationType,
   customDays: number | null,
   locale: string
 ): string {
+  const fromDate = neededFrom instanceof Date ? neededFrom : new Date(neededFrom);
   const days = workerPartnerDayCount(durationType, customDays);
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
-  const from = neededFrom.toLocaleDateString(locale, { ...opts, timeZone: "UTC" });
+  const from = fromDate.toLocaleDateString(locale, { ...opts, timeZone: "UTC" });
   if (days === 1) return from;
-  const end = workerPartnerEndDate(neededFrom, durationType, customDays);
+  const end = workerPartnerEndDate(fromDate, durationType, customDays);
   const to = end.toLocaleDateString(locale, { ...opts, timeZone: "UTC" });
   return `${from} — ${to} (${days} days)`;
 }

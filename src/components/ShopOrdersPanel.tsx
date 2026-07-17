@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { OrderStatus } from "@prisma/client";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { ShopOrderCard } from "@/components/ShopOrderCard";
+import { ShopOrderLightCard } from "@/components/ShopOrderLightCard";
 import { ShopPriceRequestsPanel } from "@/components/ShopPriceRequestsPanel";
-import type { ShopOrderData } from "@/lib/shop-order-types";
 import type { ShopOrderTabCounts } from "@/lib/order-stats";
-import type { ShopPriceRequestRow } from "@/lib/shop-price-request-types";
+import type { ShopOrderListItem, ShopPriceRequestListItem } from "@/lib/shop-tab-types";
 import { useSwipeTabs } from "@/hooks/useSwipeTabs";
+import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
 
 const ORDER_STATUS_TABS = [
   {
@@ -42,7 +42,7 @@ const PRICE_QUOTES_TAB = {
 const TAB_IDS = [...ORDER_STATUS_TABS.map((s) => s.id), PRICE_QUOTES_TAB.id];
 
 function tabFromParam(value: string | null): string {
-  if (value && TAB_IDS.includes(value)) return value;
+  if (value && (TAB_IDS as readonly string[]).includes(value)) return value;
   return "pending";
 }
 
@@ -52,12 +52,14 @@ export function ShopOrdersPanel({
   priceRequests,
   tabCounts,
   listHint,
+  onRefresh,
 }: {
   locale: Locale;
-  orders: ShopOrderData[];
-  priceRequests: ShopPriceRequestRow[];
+  orders: ShopOrderListItem[];
+  priceRequests: ShopPriceRequestListItem[];
   tabCounts: ShopOrderTabCounts;
   listHint?: string;
+  onRefresh?: () => void;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,9 +89,12 @@ export function ShopOrdersPanel({
 
   const handleStatusUpdated = useCallback(
     (tabId: string) => {
+      clearShopTabCache("orders");
+      clearShopTabCache("dashboard");
+      onRefresh?.();
       selectTab(tabId);
     },
-    [selectTab]
+    [onRefresh, selectTab]
   );
 
   return (
@@ -142,7 +147,7 @@ export function ShopOrdersPanel({
         ) : (
           <>
             {filteredOrders.map((o) => (
-              <ShopOrderCard
+              <ShopOrderLightCard
                 key={o.id}
                 order={o}
                 locale={locale}

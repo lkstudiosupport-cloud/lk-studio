@@ -8,6 +8,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { BrandLogoMark } from "./BrandLogo";
 import { BrandNameTagline } from "./BrandNameTagline";
+import { prefetchShopTabFromHref } from "@/lib/shop-tab-client-cache";
 
 type LinkItem = { href: string; label: string; shortLabel?: string };
 
@@ -101,22 +102,13 @@ export function NavShell({
 
   function navigate(href: string) {
     setPendingHref(href);
+    prefetchShopTabFromHref(href);
     startTransition(() => router.push(href));
   }
 
   function prefetchTab(href: string) {
     router.prefetch(href);
-    if (!href.startsWith("/shop")) return;
-    let tab = "all";
-    if (href === "/shop" || href.startsWith("/shop?")) tab = "dashboard";
-    else if (href.startsWith("/shop/orders")) tab = "orders";
-    else if (href.startsWith("/shop/bills")) tab = "bills";
-    else if (href.startsWith("/shop/workers")) tab = "workers";
-    else if (href.startsWith("/shop/designs")) return;
-    void fetch(`/api/shop/warm-cache?tab=${tab}`, {
-      credentials: "include",
-      cache: "no-store",
-    }).catch(() => {});
+    prefetchShopTabFromHref(href);
   }
 
   const navItems = links.map((l) => {

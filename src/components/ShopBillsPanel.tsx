@@ -23,7 +23,7 @@ type BillRow = {
   paid: boolean;
   itemsJson: string;
   notes: string | null;
-  createdAt: Date;
+  createdAt: Date | string;
   displayName: string;
 };
 

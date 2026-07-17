@@ -15,7 +15,7 @@ type BillView = {
   paid: boolean;
   itemsJson: string;
   notes: string | null;
-  createdAt: Date;
+  createdAt: Date | string;
   shop?: { shopName: string };
   customer?: { name: string } | null;
   displayName?: string;
@@ -47,7 +47,7 @@ export function BillCard({
     ? bill.shop?.shopName
     : (bill.displayName ?? bill.customer?.name ?? "—");
 
-  const dateStr = bill.createdAt.toLocaleDateString("en-IN", {
+  const dateStr = new Date(bill.createdAt).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",

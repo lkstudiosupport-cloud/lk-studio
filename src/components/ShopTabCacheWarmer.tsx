@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { fetchShopTabData } from "@/lib/shop-tab-client-cache";
 
 /**
- * Prefetch shop tab data into server cache as soon as the shop shell mounts,
- * then refresh light tabs in the background so switches stay fast.
+ * Prefetch light shop tab JSON into the client memory cache so tab switches
+ * show data instantly (Option B).
  */
 export function ShopTabCacheWarmer() {
   const warmed = useRef(false);
@@ -13,35 +14,25 @@ export function ShopTabCacheWarmer() {
     if (warmed.current) return;
     warmed.current = true;
 
-    const ctrl = new AbortController();
-
-    async function warm(tab: string) {
+    void (async () => {
       try {
-        await fetch(`/api/shop/warm-cache?tab=${tab}`, {
-          credentials: "include",
-          cache: "no-store",
-          signal: ctrl.signal,
-        });
+        await fetchShopTabData("dashboard");
       } catch {
         /* ignore */
       }
-    }
-
-    // Light tabs first for quick first switches, then full set.
-    void (async () => {
-      await warm("dashboard");
-      await Promise.all([warm("bills"), warm("workers")]);
-      await warm("orders");
+      await Promise.all([
+        fetchShopTabData("bills").catch(() => null),
+        fetchShopTabData("workers").catch(() => null),
+      ]);
+      await fetchShopTabData("orders").catch(() => null);
     })();
 
     const refresh = window.setInterval(() => {
-      if (document.visibilityState === "visible") void warm("dashboard");
+      if (document.visibilityState !== "visible") return;
+      void fetchShopTabData("dashboard", "", { force: true }).catch(() => {});
     }, 2 * 60 * 1000);
 
-    return () => {
-      ctrl.abort();
-      window.clearInterval(refresh);
-    };
+    return () => window.clearInterval(refresh);
   }, []);
 
   return null;
