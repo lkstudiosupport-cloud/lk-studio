@@ -13,6 +13,9 @@ export type BillPresetItemId =
   | "lining_blouse"
   | "normal_blouse"
   | "model_blouse"
+  | "shape_blouse"
+  | "lining"
+  /** @deprecated Prefer shape_blouse + lining */
   | "shape_blouse_lining"
   | "dress"
   | "top"
@@ -48,7 +51,8 @@ export const BILL_PRESET_ITEMS: BillPresetItem[] = [
   { id: "lining_blouse", groupId: "blouse", labelKey: "billPreset.liningBlouse" },
   { id: "normal_blouse", groupId: "blouse", labelKey: "billPreset.normalBlouse" },
   { id: "model_blouse", groupId: "blouse", labelKey: "billPreset.modelBlouse" },
-  { id: "shape_blouse_lining", groupId: "blouse", labelKey: "billPreset.shapeBlouseLining" },
+  { id: "shape_blouse", groupId: "blouse", labelKey: "billPreset.shapeBlouse" },
+  { id: "lining", groupId: "blouse", labelKey: "billPreset.lining" },
   { id: "dress", groupId: "garments", labelKey: "billPreset.dress" },
   { id: "top", groupId: "garments", labelKey: "billPreset.top" },
   { id: "restitching", groupId: "garments", labelKey: "billPreset.restitching" },
@@ -62,6 +66,7 @@ export function billPresetItemsForGroup(groupId: BillPresetGroupId): BillPresetI
   return BILL_PRESET_ITEMS.filter((item) => item.groupId === groupId);
 }
 
-export function billPresetLabelKey(id: BillPresetItemId): string {
+export function billPresetLabelKey(id: BillPresetItemId | string): string {
+  if (id === "shape_blouse_lining") return "billPreset.shapeBlouse";
   return BILL_PRESET_ITEMS.find((item) => item.id === id)?.labelKey ?? id;
 }

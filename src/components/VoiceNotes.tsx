@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, Square } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
-import { transliterateClientText, useIndicTextSync } from "@/hooks/useIndicTextSync";
+import { transliterateClientText, useAdaptTextOnLocaleChange, useIndicTextSync } from "@/hooks/useIndicTextSync";
 
 type Props = {
   locale: Locale;
@@ -43,6 +43,11 @@ export function VoiceNotes({
     },
     { enabled: transliterate }
   );
+
+  useAdaptTextOnLocaleChange(locale, text, (next) => {
+    setText(next);
+    textRef.current = next;
+  }, { enabled: transliterate });
 
   useEffect(() => {
     setText(defaultText);

@@ -33,6 +33,68 @@ export async function transliterateClientText(
   return text;
 }
 
+/** Convert existing field text when the user switches app language. */
+export async function adaptTextToLocale(text: string, toLocale: Locale): Promise<string> {
+  const trimmed = text.trim();
+  if (!trimmed) return text;
+
+  try {
+    const res = await fetch("/api/locale-text", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, toLocale }),
+    });
+    if (!res.ok) return text;
+    const json = (await res.json()) as { ok?: boolean; text?: string };
+    if (json.ok && typeof json.text === "string") return json.text;
+  } catch {
+    /* keep original */
+  }
+  return text;
+}
+
+/** Re-convert controlled text when `locale` changes (language switcher). */
+export function useAdaptTextOnLocaleChange(
+  locale: Locale,
+  value: string,
+  onChange: (next: string) => void,
+  opts?: { enabled?: boolean }
+) {
+  const enabled = opts?.enabled !== false;
+  const prevLocaleRef = useRef(locale);
+  const onChangeRef = useRef(onChange);
+  const valueRef = useRef(value);
+  const seqRef = useRef(0);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  useEffect(() => {
+    const prev = prevLocaleRef.current;
+    if (!enabled || prev === locale) {
+      prevLocaleRef.current = locale;
+      return;
+    }
+    prevLocaleRef.current = locale;
+
+    const raw = valueRef.current;
+    if (!raw.trim()) return;
+
+    const seq = ++seqRef.current;
+    void adaptTextToLocale(raw, locale).then((next) => {
+      if (seq !== seqRef.current) return;
+      if (next !== valueRef.current) onChangeRef.current(next);
+    });
+  }, [enabled, locale]);
+}
+
 /** Debounced transliteration for controlled text fields (names, notes, pieces). */
 export function useIndicTextSync(
   locale: Locale,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import { newId } from "@/lib/new-id";
 import { CustomerPhoneField } from "@/components/CustomerPhoneField";
 import { BillPieceNameField } from "@/components/BillPieceNameField";
 import type { BillPresetItemId } from "@/lib/bill-preset-items";
+import { billPresetLabelKey } from "@/lib/bill-preset-items";
 
 type Customer = { id: string; name: string; phone: string | null; whatsapp: string | null };
 
@@ -65,6 +66,20 @@ export function MultiPieceBillForm({
   );
 
   useSwipeNavBlock(true);
+
+  const prevLocaleRef = useRef(locale);
+  useEffect(() => {
+    const prev = prevLocaleRef.current;
+    if (prev === locale) return;
+    prevLocaleRef.current = locale;
+    setLines((current) =>
+      current.map((line) => {
+        if (!line.presetId) return line;
+        const name = t(locale, billPresetLabelKey(line.presetId as BillPresetItemId));
+        return name === line.name ? line : { ...line, name };
+      })
+    );
+  }, [locale]);
 
   const updateLine = (id: string, patch: Partial<BillLineItem>) => {
     setLines((prev) =>
@@ -271,6 +286,7 @@ export function MultiPieceBillForm({
                     <BillPieceNameField
                       locale={locale}
                       value={line.name}
+                      presetId={line.presetId}
                       onChange={(name) =>
                         updateLine(line.id, { name, presetId: undefined })
                       }

@@ -19,6 +19,7 @@ export function BillPieceNameField({
   value,
   onChange,
   onPresetSelect,
+  presetId,
   placeholder,
   ariaLabel,
 }: {
@@ -26,6 +27,7 @@ export function BillPieceNameField({
   value: string;
   onChange: (name: string) => void;
   onPresetSelect: (presetId: BillPresetItemId, label: string) => void;
+  presetId?: string;
   placeholder?: string;
   ariaLabel?: string;
 }) {
@@ -135,6 +137,7 @@ export function BillPieceNameField({
             locale={locale}
             value={value}
             onChange={onChange}
+            adaptOnLocaleChange={!presetId}
             onFocus={openList}
             onClick={openList}
             placeholder={placeholder}

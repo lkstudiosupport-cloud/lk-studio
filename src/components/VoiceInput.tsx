@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { Mic, Square } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
-import { transliterateClientText, useIndicTextSync } from "@/hooks/useIndicTextSync";
+import { transliterateClientText, useAdaptTextOnLocaleChange, useIndicTextSync } from "@/hooks/useIndicTextSync";
 
 type Props = {
   locale: Locale;
@@ -23,6 +23,8 @@ type Props = {
   stopLabel: string;
   /** Convert Latin typing/speech into selected language script (default true). */
   transliterate?: boolean;
+  /** Re-convert existing text when app language changes (default true). */
+  adaptOnLocaleChange?: boolean;
   onFocus?: () => void;
   onClick?: () => void;
 };
@@ -42,6 +44,7 @@ export function VoiceInput({
   startLabel,
   stopLabel,
   transliterate = true,
+  adaptOnLocaleChange = true,
   onFocus,
   onClick,
 }: Props) {
@@ -49,6 +52,10 @@ export function VoiceInput({
   const interimRef = useRef("");
   const { scheduleConvert, convertNow } = useIndicTextSync(locale, value, onChange, {
     enabled: transliterate,
+  });
+
+  useAdaptTextOnLocaleChange(locale, value, onChange, {
+    enabled: transliterate && adaptOnLocaleChange,
   });
 
   useEffect(() => {
