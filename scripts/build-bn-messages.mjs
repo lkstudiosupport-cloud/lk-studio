@@ -102,6 +102,7 @@ const bn = {
     modelBlouse: "মডেল ব্লাউজ",
     shapeBlouse: "শেপ ব্লাউজ",
     lining: "লাইনিং",
+    blousePiece: "ব্লাউজ পিস",
     dress: "ড্রেস",
     top: "টপ",
     restitching: "রিস্টিচিং",

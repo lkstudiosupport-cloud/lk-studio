@@ -15,6 +15,7 @@ export type BillPresetItemId =
   | "model_blouse"
   | "shape_blouse"
   | "lining"
+  | "blouse_piece"
   /** @deprecated Prefer shape_blouse + lining */
   | "shape_blouse_lining"
   | "dress"
@@ -53,6 +54,7 @@ export const BILL_PRESET_ITEMS: BillPresetItem[] = [
   { id: "model_blouse", groupId: "blouse", labelKey: "billPreset.modelBlouse" },
   { id: "shape_blouse", groupId: "blouse", labelKey: "billPreset.shapeBlouse" },
   { id: "lining", groupId: "blouse", labelKey: "billPreset.lining" },
+  { id: "blouse_piece", groupId: "blouse", labelKey: "billPreset.blousePiece" },
   { id: "dress", groupId: "garments", labelKey: "billPreset.dress" },
   { id: "top", groupId: "garments", labelKey: "billPreset.top" },
   { id: "restitching", groupId: "garments", labelKey: "billPreset.restitching" },
