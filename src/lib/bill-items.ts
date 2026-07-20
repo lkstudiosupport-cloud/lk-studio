@@ -6,6 +6,8 @@ export type BillLineItem = {
   amount: number;
   orderId?: string;
   personName?: string;
+  /** Set when line was added from the preset catalog. */
+  presetId?: string;
 };
 
 export function lineItemTotal(quantity: number, price: number) {
@@ -45,6 +47,7 @@ function normalizeBillItem(raw: unknown, index: number): BillLineItem | null {
     amount: Number.isFinite(amount) ? amount : 0,
     orderId: typeof o.orderId === "string" ? o.orderId : undefined,
     personName: typeof o.personName === "string" ? o.personName : undefined,
+    presetId: typeof o.presetId === "string" ? o.presetId : undefined,
   };
 }
 
