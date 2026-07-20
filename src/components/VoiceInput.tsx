@@ -23,6 +23,8 @@ type Props = {
   stopLabel: string;
   /** Convert Latin typing/speech into selected language script (default true). */
   transliterate?: boolean;
+  onFocus?: () => void;
+  onClick?: () => void;
 };
 
 export function VoiceInput({
@@ -40,6 +42,8 @@ export function VoiceInput({
   startLabel,
   stopLabel,
   transliterate = true,
+  onFocus,
+  onClick,
 }: Props) {
   const textRef = useRef(value);
   const interimRef = useRef("");
@@ -108,6 +112,8 @@ export function VoiceInput({
           value={value}
           onChange={(e) => handleTyped(e.target.value)}
           onBlur={() => void handleBlur()}
+          onFocus={onFocus}
+          onClick={onClick}
           placeholder={placeholder}
           aria-label={ariaLabel}
           list={list}
@@ -131,6 +137,8 @@ export function VoiceInput({
         value={value}
         onChange={(e) => handleTyped(e.target.value)}
         onBlur={() => void handleBlur()}
+        onFocus={onFocus}
+        onClick={onClick}
         placeholder={placeholder}
         aria-label={ariaLabel}
         list={list}

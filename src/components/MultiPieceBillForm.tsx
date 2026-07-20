@@ -14,7 +14,7 @@ import { createBill, updateBill } from "@/app/shop/actions";
 import { billPending } from "@/lib/bill-payment";
 import { newId } from "@/lib/new-id";
 import { CustomerPhoneField } from "@/components/CustomerPhoneField";
-import { BillPresetPicker } from "@/components/BillPresetPicker";
+import { BillPieceNameField } from "@/components/BillPieceNameField";
 import type { BillPresetItemId } from "@/lib/bill-preset-items";
 
 type Customer = { id: string; name: string; phone: string | null; whatsapp: string | null };
@@ -80,38 +80,6 @@ export function MultiPieceBillForm({
   const removeLine = (id: string) => {
     setLines((prev) => (prev.length <= 1 ? [newLine()] : prev.filter((l) => l.id !== id)));
   };
-
-  const addPresetLine = (presetId: BillPresetItemId, label: string) => {
-    setLines((prev) => {
-      const emptyIdx = prev.findIndex((l) => !l.name.trim() && l.quantity <= 0 && l.price <= 0);
-      if (emptyIdx >= 0) {
-        return prev.map((l, i) =>
-          i === emptyIdx
-            ? { ...l, name: label, quantity: l.quantity > 0 ? l.quantity : 1, amount: 0, presetId }
-            : l
-        );
-      }
-      return [
-        ...prev,
-        {
-          id: newId(),
-          name: label,
-          quantity: 1,
-          price: 0,
-          amount: 0,
-          presetId,
-        },
-      ];
-    });
-  };
-
-  const selectedPresetIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const line of lines) {
-      if (line.presetId) ids.add(line.presetId);
-    }
-    return ids;
-  }, [lines]);
 
   const pickCustomer = (id: string) => {
     const c = customers.find((x) => x.id === id);
@@ -274,12 +242,6 @@ export function MultiPieceBillForm({
       )}
 
       <div className="space-y-3">
-        <BillPresetPicker
-          locale={locale}
-          selectedIds={selectedPresetIds}
-          onSelect={(id, label) => addPresetLine(id, label)}
-        />
-
         <div>
           <p className="text-sm font-bold text-brand-green">{t(locale, "billLineItems")}</p>
           <p className="mt-0.5 text-xs text-zinc-500">{t(locale, "billPresetQtyPriceHint")}</p>
@@ -306,17 +268,21 @@ export function MultiPieceBillForm({
                     <span className="mb-0.5 block text-xs font-semibold text-zinc-500">
                       {t(locale, "piece")} {idx + 1}
                     </span>
-                    <VoiceInput
+                    <BillPieceNameField
                       locale={locale}
                       value={line.name}
-                      onChange={(name) => updateLine(line.id, { name })}
+                      onChange={(name) =>
+                        updateLine(line.id, { name, presetId: undefined })
+                      }
+                      onPresetSelect={(presetId: BillPresetItemId, label) =>
+                        updateLine(line.id, {
+                          name: label,
+                          presetId,
+                          quantity: line.quantity > 0 ? line.quantity : 1,
+                        })
+                      }
                       placeholder={t(locale, "pieceNamePlaceholder")}
-                      aria-label={`${t(locale, "piece")} ${idx + 1}`}
-                      className="w-full"
-                      micVariant="micInside"
-                      micErrorLabel={t(locale, "micPermissionError")}
-                      startLabel={t(locale, "startListening")}
-                      stopLabel={t(locale, "stopListening")}
+                      ariaLabel={`${t(locale, "piece")} ${idx + 1}`}
                     />
                   </div>
 
