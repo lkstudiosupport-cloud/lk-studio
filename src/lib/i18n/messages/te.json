@@ -252,6 +252,8 @@
   "loadMoreDesigns": "మరిన్ని డిజైన్లు లోడ్ చేయండి",
   "showingDesignsCount": "{total} లో {shown} డిజైన్లు",
   "loadingDesigns": "లోడ్ అవుతోంది…",
+  "shopBootLoadingTabs": "హోమ్, ఆర్డర్లు, బిల్లులు, పార్టనర్ లోడ్ అవుతున్నాయి…",
+  "shopBootLoadingDesigns": "డిజైన్లు సిద్ధమవుతున్నాయి…",
   "selectPieces": "ఆర్డర్లు / పీసులు ఎంచుకోండి",
   "addSelectedToBill": "బిల్‌కు జోడించు",
   "billLineItems": "బిల్ అంశాలు",

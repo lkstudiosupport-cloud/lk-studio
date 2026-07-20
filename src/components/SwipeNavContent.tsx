@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useTransition } from "react";
 import { useIsSwipeNavBlocked, useSwipeTabs } from "@/hooks/useSwipeTabs";
 import { isSwipeNavBlocked, resolveNavHref } from "@/lib/nav-routes";
 import { prefetchShopTabFromHref } from "@/lib/shop-tab-client-cache";
+import { whenShopPriorityTabsReady } from "@/lib/shop-boot";
 
 /** Swipe left/right on page content to move between main nav sections (Dashboard, Designs, Orders, …). */
 export function SwipeNavContent({
@@ -32,9 +33,15 @@ export function SwipeNavContent({
 
   useEffect(() => {
     for (const href of navHrefs) {
+      if (href.includes("/designs")) continue;
       router.prefetch(href);
       prefetchShopTabFromHref(href);
     }
+    void whenShopPriorityTabsReady().then(() => {
+      for (const href of navHrefs) {
+        if (href.includes("/designs")) router.prefetch(href);
+      }
+    });
   }, [navHrefs, router]);
 
   const swipe = useSwipeTabs(navHrefs, activeHref ?? navHrefs[0], onTabChange, swipeEnabled);

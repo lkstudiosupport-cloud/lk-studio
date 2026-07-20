@@ -63,7 +63,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     <SubscriptionGate>
       <SessionRefresh />
       <ServerKeepAlive />
-      <ShopTabCacheWarmer />
+      <ShopTabCacheWarmer locale={locale} />
       <AutopayGuard
         autopayEnabled={profile?.autopayEnabled ?? false}
         trialBypass={demoBypass || inActiveTrial}

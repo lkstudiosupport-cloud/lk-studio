@@ -253,6 +253,8 @@
   "loadMoreDesigns": "और डिज़ाइन लोड करें",
   "showingDesignsCount": "{total} में से {shown} डिज़ाइन",
   "loadingDesigns": "लोड हो रहा है…",
+  "shopBootLoadingTabs": "होम, ऑर्डर, बिल, पार्टनर लोड हो रहे हैं…",
+  "shopBootLoadingDesigns": "डिज़ाइन तैयार हो रहे हैं…",
   "selectPieces": "ऑर्डर / पीस चुनें",
   "addSelectedToBill": "बिल में जोड़ें",
   "billLineItems": "बिल आइटम",

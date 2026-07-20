@@ -9,6 +9,7 @@ import { t } from "@/lib/i18n";
 import { BrandLogoMark } from "./BrandLogo";
 import { BrandNameTagline } from "./BrandNameTagline";
 import { prefetchShopTabFromHref } from "@/lib/shop-tab-client-cache";
+import { whenShopPriorityTabsReady } from "@/lib/shop-boot";
 
 type LinkItem = { href: string; label: string; shortLabel?: string };
 
@@ -96,8 +97,18 @@ export function NavShell({
   }, [pathname]);
 
   useEffect(() => {
-    for (const link of links) router.prefetch(link.href);
+    for (const link of links) {
+      // Designs wait until Home/Orders/Bills/Partner finish first boot.
+      if (link.href.includes("/designs")) continue;
+      router.prefetch(link.href);
+      prefetchShopTabFromHref(link.href);
+    }
     router.prefetch(profileHref);
+    void whenShopPriorityTabsReady().then(() => {
+      for (const link of links) {
+        if (link.href.includes("/designs")) router.prefetch(link.href);
+      }
+    });
   }, [links, profileHref, router]);
 
   function navigate(href: string) {
