@@ -14,6 +14,8 @@ import {
   type ShopOrderCustomerLookup,
 } from "@/app/shop/actions";
 import { initialActionState } from "@/lib/action-state";
+import { VoiceInput } from "@/components/VoiceInput";
+import { VoiceNotes } from "@/components/VoiceNotes";
 import { CustomerPhoneField } from "@/components/CustomerPhoneField";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { MeasurementListView } from "@/components/MeasurementListView";
@@ -211,12 +213,19 @@ export function CreateShopOrderFlow({
           <span className="mb-1 block text-sm font-semibold text-brand-green">
             {t(locale, "customerName")}
           </span>
-          <input
+          <VoiceInput
+            locale={locale}
             value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
+            onChange={setCustomerName}
             placeholder={t(locale, "customerNamePlaceholder")}
-            className="input-premium w-full"
+            className="w-full"
+            micVariant="micInside"
+            aria-label={t(locale, "customerName")}
+            micErrorLabel={t(locale, "micPermissionError")}
+            startLabel={t(locale, "startListening")}
+            stopLabel={t(locale, "stopListening")}
           />
+          <p className="mt-1 text-xs text-zinc-500">{t(locale, "voiceNameHint")}</p>
         </label>
 
         <div data-guide-target="guide-customer-phone">
@@ -606,13 +615,17 @@ export function CreateShopOrderFlow({
             </div>
           </section>
 
-          <textarea
-            name="notes"
-            rows={2}
-            placeholder={t(locale, "clothHandoverNotes")}
-            className="input-premium w-full text-sm"
-            data-guide-target="guide-notes"
-          />
+          <div data-guide-target="guide-notes">
+            <VoiceNotes
+              locale={locale}
+              fieldName="notes"
+              textLabel={t(locale, "clothHandoverNotes")}
+              hintLabel={t(locale, "voiceDictationHint")}
+              startLabel={t(locale, "startListening")}
+              stopLabel={t(locale, "stopListening")}
+              micErrorLabel={t(locale, "micPermissionError")}
+            />
+          </div>
 
           {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 

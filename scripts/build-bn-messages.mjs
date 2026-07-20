@@ -1,0 +1,154 @@
+/**
+ * Builds bn.json = English base deep-merged with Bengali overrides.
+ * Run: node scripts/build-bn-messages.mjs
+ */
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.join(__dirname, "..", "src", "lib", "i18n", "messages");
+const en = JSON.parse(fs.readFileSync(path.join(root, "en.json"), "utf8"));
+
+/** Bengali overrides (nested objects supported). Unlisted keys keep English. */
+const bn = {
+  appName: "এল কে স্টুডিও",
+  tagline: "দোকান ও গ্রাহকের জন্য টেইলরিং",
+  login: "লগইন",
+  backHome: "হোমে ফিরুন",
+  tryAgain: "আবার চেষ্টা করুন",
+  serverTemporaryErrorTitle: "কিছু ভুল হয়েছে",
+  serverTemporaryErrorHint:
+    "সার্ভার জেগে উঠছে বা ব্যস্ত হতে পারে। একটু অপেক্ষা করে আবার চেষ্টা করুন।",
+  register: "নিবন্ধন",
+  logout: "লগআউট",
+  logoutFailed: "লগআউট হয়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।",
+  shopLogin: "দোকান মালিক লগইন",
+  customerLogin: "গ্রাহক লগইন",
+  email: "ইমেইল",
+  emailPlaceholder: "আপনার ইমেইল",
+  mobileNumberHint: "মোবাইল নম্বর",
+  mobileNumberPlaceholder: "১০ সংখ্যার মোবাইল",
+  password: "পাসওয়ার্ড",
+  name: "নাম",
+  phone: "ফোন",
+  mobileNumber: "মোবাইল নম্বর",
+  whatsapp: "হোয়াটসঅ্যাপ",
+  submit: "জমা দিন",
+  save: "সেভ",
+  cancel: "বাতিল",
+  language: "ভাষা",
+  dashboard: "ড্যাশবোর্ড",
+  designs: "ডিজাইন",
+  orders: "অর্ডার",
+  navShortHome: "হোম",
+  navShortDesigns: "ডিজাইন",
+  navShortOrders: "অর্ডার",
+  navShortBill: "বিল",
+  navShortWorkers: "পার্টনার",
+  bills: "বিল",
+  profile: "প্রোফাইল",
+  shopProfileTitle: "দোকানের প্রোফাইল",
+  customerProfileTitle: "গ্রাহক প্রোফাইল",
+  city: "শহর",
+  selectCity: "শহর বেছে নিন",
+  shopName: "দোকানের নাম",
+  customerName: "গ্রাহকের নাম",
+  customerNamePlaceholder: "গ্রাহকের নাম লিখুন বা মাইকে বলুন",
+  newShopOrder: "নতুন অর্ডার",
+  newShopOrderHint: "গ্রাহক খুঁজুন বা নতুন নাম ও নম্বর দিয়ে চালিয়ে যান",
+  continueNewOrder: "এগিয়ে যান",
+  findCustomer: "গ্রাহক খুঁজুন",
+  dashboardCompleted: "সম্পন্ন",
+  viewEarningsReport: "আয়ের রিপোর্ট দেখুন",
+  customers: "গ্রাহক",
+  orderForPerson: "অর্ডার যার জন্য",
+  referencePhotos: "রেফারেন্স ছবি",
+  noDesignYet: "এখনও ডিজাইন নেই",
+  noMeasurements: "মাপ নেই",
+  customer: "গ্রাহক",
+  person: "ব্যক্তি",
+  measurements: "মাপ",
+  notes: "নোট",
+  saveOrderPending: "অর্ডার সেভ করুন",
+  orderPlaced: "অর্ডার তৈরি হয়েছে",
+  clothHandoverNotes: "কাপড় / হস্তান্তর নোট",
+  startListening: "মাইক চাপুন — বলুন",
+  stopListening: "শোনা বন্ধ করুন",
+  voiceNoteLabel: "নোট (ঐচ্ছিক)",
+  voiceDictationHint:
+    "টাইপ করতে পারছেন না? মাইক চাপুন — আপনার কথা এখানে লেখায় আসবে। অডিও সেভ হয় না; সেভের আগে সম্পাদনা করুন।",
+  voiceNameHint:
+    "নাম বলতে মাইক চাপুন — লেখা অ্যাপের ভাষায় আসবে (ইংরেজি, তেলুগু, হিন্দি বা বাংলা)।",
+  voicePieceHint: "প্রতিটি পিসের নামের পাশে মাইক চেপে বলুন।",
+  micPermissionError: "স্পিচ-টু-টেক্সটের জন্য মাইকের অনুমতি দিন",
+  workers: "পার্টনার",
+  workPartnerAppEntry: "ওয়ার্ক পার্টনার — দোকানের কাজ দেখুন",
+  workPartnerAppTitle: "ওয়ার্ক পার্টনার জবস",
+  workPartnerAppHint: "দোকানের খোলা অনুরোধ — দক্ষতা ও শহর দিয়ে ফিল্টার করুন।",
+  shopBootLoadingTabs: "হোম, অর্ডার, বিল, পার্টনার লোড হচ্ছে…",
+  shopBootLoadingDesigns: "ডিজাইন প্রস্তুত হচ্ছে…",
+  loadingDesigns: "লোড হচ্ছে…",
+  weeklyIncome: "সাপ্তাহিক আয়",
+  monthlyIncome: "মাসিক আয়",
+  createBill: "বিল তৈরি",
+  pending: "মুলতুবি",
+  paid: "পরিশোধিত",
+  status: {
+    pending: "চলমান",
+    readyToPick: "নেওয়ার জন্য প্রস্তুত",
+    measuring: "মাপ",
+    stitching: "সেলাই",
+    ready: "প্রস্তুত",
+    delivered: "ডেলিভারি হয়েছে",
+    cancelled: "বাতিল",
+  },
+  categories: {
+    maggam: "মগ্গম",
+    embroidery: "কম্পিউটার এমব্রয়ডারি",
+    blouse: "ব্লাউজ ডিজাইন",
+    dress: "ড্রেস মডেল",
+    children: "শিশু পোশাক",
+    stitched: "সেলাই করা ডিজাইন",
+  },
+  workerPartnerRequestTitle: "কর্মী দরকার?",
+  workerPartnerSubmitRequest: "পার্টনারদের কাছে অনুরোধ পাঠান",
+  workerPartnerPageHint:
+    "মগ্গম, সেলাই বা অন্য কর্মী লাগলে অনুরোধ তুলুন। খোলা অনুরোধ আপনার শহরের ওয়ার্ক পার্টনার অ্যাপে দেখা যায়।",
+  orderShowDetails: "বিস্তারিত দেখুন",
+  shareOrderWork: "ওয়ার্ক পার্টনারের সাথে শেয়ার",
+  photosFromGallery: "গ্যালারি থেকে ছবি",
+  noData: "এখনও কিছু নেই",
+  pickSavedCustomer: "সংরক্ষিত গ্রাহক বেছে নিন",
+  selectCustomerOptional: "ঐচ্ছিক — তালিকা থেকে বেছে নিন",
+  measurementPersonLabel: "কার মাপ?",
+  measurementType: "মাপের ধরন",
+  registeredCustomerFoundHint: "নিবন্ধিত গ্রাহক পাওয়া গেছে",
+  newCustomerWalkInHint: "নতুন গ্রাহক — অর্ডার চালিয়ে যেতে পারেন",
+};
+
+function deepMerge(base, over) {
+  if (Array.isArray(base) || Array.isArray(over)) return over ?? base;
+  if (over === null || over === undefined) return base;
+  if (typeof over !== "object" || typeof base !== "object" || base === null) return over;
+  const out = { ...base };
+  for (const [k, v] of Object.entries(over)) {
+    if (
+      k in out &&
+      typeof out[k] === "object" &&
+      out[k] &&
+      typeof v === "object" &&
+      v &&
+      !Array.isArray(v)
+    ) {
+      out[k] = deepMerge(out[k], v);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+const merged = deepMerge(en, bn);
+fs.writeFileSync(path.join(root, "bn.json"), JSON.stringify(merged, null, 2) + "\n", "utf8");
+console.log("Wrote bn.json with", Object.keys(merged).length, "top-level keys");

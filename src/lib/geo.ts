@@ -33,14 +33,16 @@ export function parseCoordsFromMapsLink(link: string | null | undefined): {
 export function formatDistanceKm(km: number, locale: string): string {
   if (km < 1) {
     const m = Math.round(km * 1000);
-    return locale === "hi" ? `${m} m दूर` : locale === "te" ? `${m} m దూరం` : `${m} m away`;
+    if (locale === "hi") return `${m} m दूर`;
+    if (locale === "te") return `${m} m దూరం`;
+    if (locale === "bn") return `${m} m দূরে`;
+    return `${m} m away`;
   }
   const rounded = km < 10 ? km.toFixed(1) : String(Math.round(km));
-  return locale === "hi"
-    ? `${rounded} km दूर`
-    : locale === "te"
-      ? `${rounded} km దూరం`
-      : `${rounded} km away`;
+  if (locale === "hi") return `${rounded} km दूर`;
+  if (locale === "te") return `${rounded} km దూరం`;
+  if (locale === "bn") return `${rounded} km দূরে`;
+  return `${rounded} km away`;
 }
 
 export type Locatable = {

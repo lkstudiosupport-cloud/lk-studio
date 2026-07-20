@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MEASUREMENT_TYPES, type MeasurementTypeId } from "@/lib/measurements";
 import { MEASUREMENT_TYPE_THEMES } from "@/lib/measurement-field-guide";
 import { MeasurementFieldsList } from "@/components/MeasurementFieldsList";
+import { VoiceInput } from "@/components/VoiceInput";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { MeasurementFieldKey } from "@/lib/measurements";
@@ -24,7 +25,9 @@ export function ShopManualMeasurementsForm({
   );
   const [activeField, setActiveField] = useState<MeasurementFieldKey | null>(null);
   const initialRecord = initialData ? shopMeasurementsToRecord(initialData) : null;
-  const personNameDefault = initialData?.personName ?? defaultPersonName ?? "";
+  const [personName, setPersonName] = useState(
+    () => initialData?.personName ?? defaultPersonName ?? ""
+  );
 
   return (
     <div className="space-y-4">
@@ -32,12 +35,20 @@ export function ShopManualMeasurementsForm({
         <span className="mb-1 block text-sm font-semibold text-brand-green">
           {t(locale, "measurementPersonLabel")}
         </span>
-        <input
-          name="shopMeasurementPersonName"
-          defaultValue={personNameDefault}
+        <input type="hidden" name="shopMeasurementPersonName" value={personName} readOnly />
+        <VoiceInput
+          locale={locale}
+          value={personName}
+          onChange={setPersonName}
           placeholder={t(locale, "person")}
-          className="input-premium w-full"
+          className="w-full"
+          micVariant="micInside"
+          aria-label={t(locale, "measurementPersonLabel")}
+          micErrorLabel={t(locale, "micPermissionError")}
+          startLabel={t(locale, "startListening")}
+          stopLabel={t(locale, "stopListening")}
         />
+        <p className="mt-1 text-xs text-zinc-500">{t(locale, "voiceNameHint")}</p>
       </label>
 
       <input type="hidden" name="shopMeasurementType" value={measureType} readOnly />

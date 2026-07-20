@@ -4,6 +4,7 @@ const SPEECH_LOCALES: Record<Locale, string> = {
   en: "en-IN",
   te: "te-IN",
   hi: "hi-IN",
+  bn: "bn-IN",
 };
 
 export function speechLocaleFor(locale: Locale) {

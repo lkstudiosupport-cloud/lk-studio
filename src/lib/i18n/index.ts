@@ -2,8 +2,9 @@ import type { Locale } from "./locales";
 import en from "./messages/en.json";
 import te from "./messages/te.json";
 import hi from "./messages/hi.json";
+import bn from "./messages/bn.json";
 
-const bundles: Record<Locale, Record<string, unknown>> = { en, te, hi };
+const bundles: Record<Locale, Record<string, unknown>> = { en, te, hi, bn };
 
 export function t(locale: Locale, key: string, vars?: Record<string, string | number>): string {
   const parts = key.split(".");
