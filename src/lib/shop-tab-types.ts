@@ -74,6 +74,18 @@ export type ShopBillsTabData = {
   bills: ShopBillListItem[];
 };
 
+export type ShopAcceptedPartner = {
+  id: string;
+  name: string;
+  phone: string;
+  city: string | null;
+  address: string | null;
+  locationLink: string | null;
+  yearsExperience: number;
+  ratingAvg: number | null;
+  ratingCount: number;
+};
+
 export type ShopWorkerRequestListItem = {
   id: string;
   role: WorkerPartnerRole;
@@ -85,6 +97,9 @@ export type ShopWorkerRequestListItem = {
   city: string | null;
   status: WorkerPartnerRequestStatus;
   createdAt: string;
+  acceptedAt: string | null;
+  acceptedPartner: ShopAcceptedPartner | null;
+  shopRating: number | null;
 };
 
 export type ShopWorkersTabData = {

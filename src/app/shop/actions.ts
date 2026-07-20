@@ -822,3 +822,65 @@ export async function cancelWorkerPartnerRequest(requestId: string) {
   revalidatePath("/work-partner/requests");
   bumpShopTabs(id);
 }
+
+/** Shop rates the work partner who accepted this request (1–5). */
+export async function rateAcceptedWorkPartner(formData: FormData) {
+  const shopId = await shopIdOnly();
+  const requestId = String(formData.get("requestId") ?? "").trim();
+  const rating = Number(formData.get("rating"));
+  if (!requestId) throw new Error("Missing request");
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new Error("Pick a rating from 1 to 5");
+  }
+
+  const req = await prisma.workerPartnerRequest.findFirst({
+    where: {
+      id: requestId,
+      shopId,
+      status: "FILLED",
+      acceptedPartnerId: { not: null },
+    },
+    select: {
+      id: true,
+      acceptedPartnerId: true,
+      ratings: { where: { shopId }, select: { id: true, rating: true }, take: 1 },
+    },
+  });
+  if (!req?.acceptedPartnerId) throw new Error("No accepted partner on this request");
+
+  const existing = req.ratings[0];
+  await prisma.$transaction(async (tx) => {
+    if (existing) {
+      const delta = rating - existing.rating;
+      await tx.workPartnerRating.update({
+        where: { id: existing.id },
+        data: { rating },
+      });
+      if (delta !== 0) {
+        await tx.workPartnerProfile.update({
+          where: { id: req.acceptedPartnerId! },
+          data: { ratingSum: { increment: delta } },
+        });
+      }
+    } else {
+      await tx.workPartnerRating.create({
+        data: {
+          partnerId: req.acceptedPartnerId!,
+          shopId,
+          requestId,
+          rating,
+        },
+      });
+      await tx.workPartnerProfile.update({
+        where: { id: req.acceptedPartnerId! },
+        data: {
+          ratingSum: { increment: rating },
+          ratingCount: { increment: 1 },
+        },
+      });
+    }
+  });
+
+  revalidatePath("/shop/workers");
+  bumpShopTabs(shopId);
+}

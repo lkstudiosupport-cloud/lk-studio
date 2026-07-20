@@ -82,7 +82,78 @@ async function main() {
     `CREATE INDEX IF NOT EXISTS "WorkerPartnerRequest_status_role_city_idx" ON "WorkerPartnerRequest" ("status", "role", "city");`
   );
 
-  console.log("[lk-studio] production schema OK (User + ShopProfile + WorkerPartnerRequest)");
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "WorkPartnerProfile" (
+      "id" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "phone" TEXT NOT NULL,
+      "phoneNormalized" TEXT NOT NULL,
+      "city" TEXT,
+      "address" TEXT,
+      "locationLink" TEXT,
+      "yearsExperience" INTEGER NOT NULL DEFAULT 0,
+      "ratingSum" INTEGER NOT NULL DEFAULT 0,
+      "ratingCount" INTEGER NOT NULL DEFAULT 0,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "WorkPartnerProfile_pkey" PRIMARY KEY ("id")
+    );
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "WorkPartnerProfile_phoneNormalized_key" ON "WorkPartnerProfile"("phoneNormalized");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "WorkPartnerProfile_city_idx" ON "WorkPartnerProfile"("city");`
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "WorkerPartnerRequest" ADD COLUMN IF NOT EXISTS "acceptedPartnerId" TEXT;`
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "WorkerPartnerRequest" ADD COLUMN IF NOT EXISTS "acceptedAt" TIMESTAMP(3);`
+  );
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      ALTER TABLE "WorkerPartnerRequest"
+        ADD CONSTRAINT "WorkerPartnerRequest_acceptedPartnerId_fkey"
+        FOREIGN KEY ("acceptedPartnerId") REFERENCES "WorkPartnerProfile"("id")
+        ON DELETE SET NULL ON UPDATE CASCADE;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "WorkerPartnerRequest_acceptedPartnerId_idx" ON "WorkerPartnerRequest"("acceptedPartnerId");`
+  );
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "WorkPartnerRating" (
+      "id" TEXT NOT NULL,
+      "partnerId" TEXT NOT NULL,
+      "shopId" TEXT NOT NULL,
+      "requestId" TEXT NOT NULL,
+      "rating" INTEGER NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "WorkPartnerRating_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "WorkPartnerRating_partnerId_fkey"
+        FOREIGN KEY ("partnerId") REFERENCES "WorkPartnerProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "WorkPartnerRating_shopId_fkey"
+        FOREIGN KEY ("shopId") REFERENCES "ShopProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "WorkPartnerRating_requestId_fkey"
+        FOREIGN KEY ("requestId") REFERENCES "WorkerPartnerRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "WorkPartnerRating_requestId_key" ON "WorkPartnerRating"("requestId");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "WorkPartnerRating_shopId_requestId_key" ON "WorkPartnerRating"("shopId", "requestId");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "WorkPartnerRating_partnerId_idx" ON "WorkPartnerRating"("partnerId");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "WorkPartnerRating_shopId_idx" ON "WorkPartnerRating"("shopId");`
+  );
+
+  console.log("[lk-studio] production schema OK (User + ShopProfile + WorkerPartnerRequest + WorkPartnerProfile)");
 }
 
 main()

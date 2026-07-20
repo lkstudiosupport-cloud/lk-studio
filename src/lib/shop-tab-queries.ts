@@ -220,14 +220,61 @@ export async function loadShopWorkersTab(shopId: string): Promise<ShopWorkersTab
       city: true,
       status: true,
       createdAt: true,
+      acceptedAt: true,
+      acceptedPartner: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          city: true,
+          address: true,
+          locationLink: true,
+          yearsExperience: true,
+          ratingSum: true,
+          ratingCount: true,
+        },
+      },
+      ratings: {
+        where: { shopId },
+        select: { rating: true },
+        take: 1,
+      },
     },
   });
 
   return {
-    requests: requests.map((r) => ({
-      ...r,
-      neededFrom: r.neededFrom.toISOString().slice(0, 10),
-      createdAt: r.createdAt.toISOString(),
-    })),
+    requests: requests.map((r) => {
+      const partner = r.acceptedPartner;
+      return {
+        id: r.id,
+        role: r.role,
+        customRole: r.customRole,
+        neededFrom: r.neededFrom.toISOString().slice(0, 10),
+        durationType: r.durationType,
+        customDays: r.customDays,
+        notes: r.notes,
+        city: r.city,
+        status: r.status,
+        createdAt: r.createdAt.toISOString(),
+        acceptedAt: r.acceptedAt?.toISOString() ?? null,
+        acceptedPartner: partner
+          ? {
+              id: partner.id,
+              name: partner.name,
+              phone: partner.phone,
+              city: partner.city,
+              address: partner.address,
+              locationLink: partner.locationLink,
+              yearsExperience: partner.yearsExperience,
+              ratingAvg:
+                partner.ratingCount > 0
+                  ? Math.round((partner.ratingSum / partner.ratingCount) * 10) / 10
+                  : null,
+              ratingCount: partner.ratingCount,
+            }
+          : null,
+        shopRating: r.ratings[0]?.rating ?? null,
+      };
+    }),
   };
 }

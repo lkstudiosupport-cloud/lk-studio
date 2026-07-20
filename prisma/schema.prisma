@@ -188,6 +188,7 @@ model ShopProfile {
   priceRequests PriceRequest[]
 
   workerPartnerRequests WorkerPartnerRequest[]
+  workPartnerRatings WorkPartnerRating[]
 
   @@index([subscriptionStatus])
   @@index([city])
@@ -269,11 +270,55 @@ model WorkerPartnerRequest {
   notes        String?
   city         String?
   status       WorkerPartnerRequestStatus @default(OPEN)
+  acceptedPartnerId String?
+  acceptedPartner   WorkPartnerProfile?   @relation(fields: [acceptedPartnerId], references: [id], onDelete: SetNull)
+  acceptedAt   DateTime?
   createdAt    DateTime                   @default(now())
   updatedAt    DateTime                   @updatedAt
 
+  ratings WorkPartnerRating[]
+
   @@index([shopId, createdAt])
   @@index([status, role, city])
+  @@index([acceptedPartnerId])
+}
+
+/** Work partner identity used when accepting shop requests (no app login required). */
+model WorkPartnerProfile {
+  id               String   @id @default(cuid())
+  name             String
+  phone            String
+  phoneNormalized  String   @unique
+  city             String?
+  address          String?
+  locationLink     String?
+  yearsExperience  Int      @default(0)
+  ratingSum        Int      @default(0)
+  ratingCount      Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  acceptedRequests WorkerPartnerRequest[]
+  ratings          WorkPartnerRating[]
+
+  @@index([city])
+}
+
+/** Shop rates a work partner after they accepted a request. */
+model WorkPartnerRating {
+  id        String              @id @default(cuid())
+  partnerId String
+  partner   WorkPartnerProfile  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  shopId    String
+  shop      ShopProfile         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  requestId String              @unique
+  request   WorkerPartnerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  rating    Int
+  createdAt DateTime            @default(now())
+
+  @@unique([shopId, requestId])
+  @@index([partnerId])
+  @@index([shopId])
 }
 
 model OrderFavorite {

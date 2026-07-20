@@ -40,11 +40,7 @@ export function ShopWorkersClient({ locale }: { locale: Locale }) {
     );
   }
 
-  const requests = (data?.requests ?? []).map((r) => ({
-    ...r,
-    neededFrom: new Date(r.neededFrom),
-    createdAt: new Date(r.createdAt),
-  }));
+  const requests = data?.requests ?? [];
 
   return (
     <div className="space-y-6">

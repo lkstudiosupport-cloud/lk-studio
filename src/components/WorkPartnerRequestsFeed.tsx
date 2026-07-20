@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -9,6 +9,7 @@ import { WORKER_PARTNER_ROLES, workerPartnerRoleLabelKey } from "@/lib/work-part
 import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
 import { CitySelect } from "@/components/CitySelect";
 import { whatsAppUrl } from "@/lib/whatsapp";
+import { WorkPartnerAcceptForm } from "@/components/WorkPartnerAcceptForm";
 
 type ShopInfo = {
   shopName: string;
@@ -33,6 +34,7 @@ export function WorkPartnerRequestsFeed({
   initialCity: string;
 }) {
   const router = useRouter();
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   useEffect(() => {
     const id = window.setInterval(() => router.refresh(), 20_000);
@@ -71,11 +73,7 @@ export function WorkPartnerRequestsFeed({
           <span className="mb-1 block text-sm font-semibold text-brand-green">
             {t(locale, "workerPartnerRoleLabel")}
           </span>
-          <select
-            name="role"
-            defaultValue={initialRole}
-            className="input-premium w-full"
-          >
+          <select name="role" defaultValue={initialRole} className="input-premium w-full">
             <option value="">{t(locale, "workerPartnerAnyRole")}</option>
             {WORKER_PARTNER_ROLES.map((r) => (
               <option key={r} value={r}>
@@ -85,9 +83,7 @@ export function WorkPartnerRequestsFeed({
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-brand-green">
-            {t(locale, "city")}
-          </span>
+          <span className="mb-1 block text-sm font-semibold text-brand-green">{t(locale, "city")}</span>
           <CitySelect locale={locale} name="city" defaultValue={initialCity} />
         </label>
         <button type="submit" className="btn-primary sm:col-span-2">
@@ -111,6 +107,7 @@ export function WorkPartnerRequestsFeed({
                 )
               : null;
             const tel = contact ? `tel:${contact.replace(/\D/g, "")}` : null;
+            const isAccepting = acceptingId === req.id;
 
             return (
               <article key={req.id} className="card-premium space-y-2 p-4">
@@ -126,10 +123,30 @@ export function WorkPartnerRequestsFeed({
                   {formatWorkerPartnerSchedule(req.neededFrom, req.durationType, req.customDays, locale)}
                 </p>
                 {req.notes && <p className="text-sm text-zinc-600">{req.notes}</p>}
-                {(wa || tel) && (
+
+                {isAccepting ? (
+                  <WorkPartnerAcceptForm
+                    locale={locale}
+                    requestId={req.id}
+                    defaultCity={cityLabel ?? ""}
+                    onCancel={() => setAcceptingId(null)}
+                  />
+                ) : (
                   <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setAcceptingId(req.id)}
+                      className="btn-primary px-3 py-2 text-sm"
+                    >
+                      {t(locale, "workPartnerAccept")}
+                    </button>
                     {wa && (
-                      <a href={wa} target="_blank" rel="noopener noreferrer" className="btn-primary px-3 py-2 text-sm">
+                      <a
+                        href={wa}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-secondary px-3 py-2 text-sm"
+                      >
                         {t(locale, "workPartnerContactWhatsApp")}
                       </a>
                     )}
