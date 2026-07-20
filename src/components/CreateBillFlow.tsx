@@ -87,6 +87,7 @@ export function CreateBillFlow({ locale, customers }: { locale: Locale; customer
             startLabel={t(locale, "startListening")}
             stopLabel={t(locale, "stopListening")}
           />
+          <p className="mt-1 text-xs text-zinc-500">{t(locale, "voiceNameHint")}</p>
           <datalist id="create-bill-customer-names">
             {customers.map((c) => (
               <option key={c.id} value={c.name} />

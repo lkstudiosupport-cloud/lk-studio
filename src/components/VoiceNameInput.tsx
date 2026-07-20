@@ -4,6 +4,7 @@ import { Mic, Square } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { Locale } from "@/lib/i18n/locales";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
+import { transliterateClientText, useIndicTextSync } from "@/hooks/useIndicTextSync";
 
 export function VoiceNameInput({
   value,
@@ -28,6 +29,7 @@ export function VoiceNameInput({
 }) {
   const valueRef = useRef(value);
   const interimRef = useRef("");
+  const { scheduleConvert, convertNow } = useIndicTextSync(locale, value, onChange);
 
   useEffect(() => {
     valueRef.current = value;
@@ -38,9 +40,13 @@ export function VoiceNameInput({
     onTranscript: (text, isFinal) => {
       if (isFinal) {
         const base = valueRef.current.replace(interimRef.current, "").trim();
-        const next = `${base} ${text}`.trim();
         interimRef.current = "";
-        onChange(next);
+        void (async () => {
+          const spoken = await transliterateClientText(text, locale);
+          const next = `${base} ${spoken}`.trim();
+          onChange(next);
+          valueRef.current = next;
+        })();
       } else {
         const base = valueRef.current.replace(interimRef.current, "").trim();
         interimRef.current = text;
@@ -60,10 +66,15 @@ export function VoiceNameInput({
         required={required}
         onChange={(e) => {
           interimRef.current = "";
-          onChange(e.target.value);
+          const next = e.target.value;
+          onChange(next);
+          scheduleConvert(next);
         }}
+        onBlur={() => void convertNow(valueRef.current)}
         placeholder={placeholder}
         className="input-premium min-w-0 flex-1"
+        lang={locale === "en" ? "en" : locale}
+        spellCheck={locale === "en"}
       />
       {!active ? (
         <button

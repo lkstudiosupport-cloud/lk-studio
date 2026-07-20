@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, Square } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
+import { transliterateClientText, useIndicTextSync } from "@/hooks/useIndicTextSync";
 
 type Props = {
   locale: Locale;
@@ -15,6 +16,7 @@ type Props = {
   defaultText?: string;
   fieldName?: string;
   onTextChange?: (text: string) => void;
+  transliterate?: boolean;
 };
 
 export function VoiceNotes({
@@ -27,10 +29,20 @@ export function VoiceNotes({
   defaultText = "",
   fieldName = "notes",
   onTextChange,
+  transliterate = true,
 }: Props) {
   const [text, setText] = useState(defaultText);
   const textRef = useRef(text);
   const interimRef = useRef("");
+  const { scheduleConvert, convertNow } = useIndicTextSync(
+    locale,
+    text,
+    (next) => {
+      setText(next);
+      textRef.current = next;
+    },
+    { enabled: transliterate }
+  );
 
   useEffect(() => {
     setText(defaultText);
@@ -46,9 +58,15 @@ export function VoiceNotes({
     onTranscript: (chunk, isFinal) => {
       if (isFinal) {
         const base = textRef.current.replace(interimRef.current, "").trim();
-        const next = `${base} ${chunk}`.trim();
         interimRef.current = "";
-        setText(next);
+        void (async () => {
+          const spoken = transliterate
+            ? await transliterateClientText(chunk, locale)
+            : chunk;
+          const next = `${base} ${spoken}`.trim();
+          setText(next);
+          textRef.current = next;
+        })();
       } else {
         const base = textRef.current.replace(interimRef.current, "").trim();
         interimRef.current = chunk;
@@ -67,10 +85,17 @@ export function VoiceNotes({
         value={text}
         onChange={(e) => {
           interimRef.current = "";
-          setText(e.target.value);
+          const next = e.target.value;
+          setText(next);
+          scheduleConvert(next);
+        }}
+        onBlur={() => {
+          void convertNow(textRef.current);
         }}
         rows={3}
         className="input-premium w-full"
+        lang={locale === "en" ? "en" : locale}
+        spellCheck={locale === "en"}
       />
       <div className="flex flex-wrap gap-2">
         {!active ? (

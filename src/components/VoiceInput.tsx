@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Mic, Square } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
+import { transliterateClientText, useIndicTextSync } from "@/hooks/useIndicTextSync";
 
 type Props = {
   locale: Locale;
@@ -20,6 +21,8 @@ type Props = {
   micErrorLabel: string;
   startLabel: string;
   stopLabel: string;
+  /** Convert Latin typing/speech into selected language script (default true). */
+  transliterate?: boolean;
 };
 
 export function VoiceInput({
@@ -36,9 +39,13 @@ export function VoiceInput({
   micErrorLabel,
   startLabel,
   stopLabel,
+  transliterate = true,
 }: Props) {
   const textRef = useRef(value);
   const interimRef = useRef("");
+  const { scheduleConvert, convertNow } = useIndicTextSync(locale, value, onChange, {
+    enabled: transliterate,
+  });
 
   useEffect(() => {
     textRef.current = value;
@@ -50,7 +57,14 @@ export function VoiceInput({
       if (isFinal) {
         const base = textRef.current.replace(interimRef.current, "").trim();
         interimRef.current = "";
-        onChange(`${base} ${chunk}`.trim());
+        void (async () => {
+          const spoken = transliterate
+            ? await transliterateClientText(chunk, locale)
+            : chunk;
+          const next = `${base} ${spoken}`.trim();
+          onChange(next);
+          textRef.current = next;
+        })();
       } else {
         const base = textRef.current.replace(interimRef.current, "").trim();
         interimRef.current = chunk;
@@ -59,6 +73,17 @@ export function VoiceInput({
     },
     onError: (message) => alert(micErrorLabel || message),
   });
+
+  function handleTyped(next: string) {
+    interimRef.current = "";
+    onChange(next);
+    scheduleConvert(next);
+  }
+
+  async function handleBlur() {
+    const converted = await convertNow(textRef.current);
+    textRef.current = converted;
+  }
 
   const micButton = (
     <button
@@ -81,16 +106,19 @@ export function VoiceInput({
       <div className={`relative min-w-0 ${className}`}>
         <input
           value={value}
-          onChange={(e) => {
-            interimRef.current = "";
-            onChange(e.target.value);
-          }}
+          onChange={(e) => handleTyped(e.target.value)}
+          onBlur={() => void handleBlur()}
           placeholder={placeholder}
           aria-label={ariaLabel}
           list={list}
           required={required}
           autoFocus={autoFocus}
           className="input-premium w-full py-1.5 pe-10 text-sm"
+          lang={locale === "en" ? "en" : locale}
+          inputMode="text"
+          autoCapitalize="words"
+          autoCorrect="off"
+          spellCheck={locale === "en"}
         />
         <div className="absolute inset-y-0 end-1 flex items-center">{micButton}</div>
       </div>
@@ -101,16 +129,19 @@ export function VoiceInput({
     <div className={`flex min-w-0 items-center gap-1 ${className}`}>
       <input
         value={value}
-        onChange={(e) => {
-          interimRef.current = "";
-          onChange(e.target.value);
-        }}
+        onChange={(e) => handleTyped(e.target.value)}
+        onBlur={() => void handleBlur()}
         placeholder={placeholder}
         aria-label={ariaLabel}
         list={list}
         required={required}
         autoFocus={autoFocus}
         className="input-premium min-w-0 flex-1 py-1.5 text-sm"
+        lang={locale === "en" ? "en" : locale}
+        inputMode="text"
+        autoCapitalize="words"
+        autoCorrect="off"
+        spellCheck={locale === "en"}
       />
       {micButton}
     </div>
