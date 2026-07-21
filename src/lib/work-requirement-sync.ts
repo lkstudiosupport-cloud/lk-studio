@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { Prisma, type WorkerPartnerDurationType, type WorkerPartnerRole } from "@prisma/client";
+import type { WorkerPartnerDurationType, WorkerPartnerRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
 
@@ -70,6 +70,67 @@ export async function cancelWorkRequirementForPartnerRequest(workerPartnerReques
   `;
 }
 
+const SKILL_TO_ROLE: Record<string, WorkerPartnerRole> = {
+  MAGGAM: "MAGGAM_WORKER",
+  MACHINE_EMBROIDERY: "MACHINE_EMBROIDERY",
+  STITCHING: "STITCHING_WORKER",
+  CUTTING_MASTER: "CUTTING_MASTER",
+};
+
+export type ShopWorkRequirementRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  specifications: string | null;
+  skill: string;
+  city: string;
+  status: string;
+  createdAt: Date;
+  workerPartnerRequestId: string | null;
+};
+
+export async function loadWorkRequirementsForShop(shopId: string): Promise<ShopWorkRequirementRow[]> {
+  return prisma.$queryRaw<ShopWorkRequirementRow[]>`
+    SELECT
+      "id",
+      "title",
+      "description",
+      "specifications",
+      "skill"::text AS "skill",
+      "city",
+      "status"::text AS "status",
+      "createdAt",
+      "workerPartnerRequestId"
+    FROM "WorkRequirement"
+    WHERE "shopId" = ${shopId}
+      AND "status" NOT IN ('CANCELLED'::"WorkRequirementStatus")
+    ORDER BY "createdAt" DESC
+    LIMIT 40
+  `;
+}
+
+export function skillToWorkerPartnerRole(skill: string): WorkerPartnerRole {
+  return SKILL_TO_ROLE[skill] ?? "STITCHING_WORKER";
+}
+
+export function mapRequirementStatusToShop(
+  status: string
+): "OPEN" | "FILLED" | "CANCELLED" {
+  if (status === "OPEN") return "OPEN";
+  if (status === "IN_PROGRESS" || status === "COMPLETED") return "FILLED";
+  return "CANCELLED";
+}
+
+export async function cancelWorkRequirementById(requirementId: string, shopId: string) {
+  await prisma.$executeRaw`
+    UPDATE "WorkRequirement"
+    SET "status" = 'CANCELLED'::"WorkRequirementStatus", "updatedAt" = NOW()
+    WHERE "id" = ${requirementId}
+      AND "shopId" = ${shopId}
+      AND "status" = 'OPEN'::"WorkRequirementStatus"
+  `;
+}
+
 export type WorkSubmissionRow = {
   id: string;
   status: string;
@@ -83,16 +144,12 @@ export type WorkSubmissionRow = {
   ratingQualityAvg: number | null;
   ratingPerformanceAvg: number | null;
   profilePhoto: string | null;
-  workerPartnerRequestId: string;
+  workerPartnerRequestId: string | null;
+  requirementId: string;
 };
 
-export async function loadWorkSubmissionsForShopRequests(
-  shopId: string,
-  requestIds: string[]
-): Promise<WorkSubmissionRow[]> {
-  if (requestIds.length === 0) return [];
-
-  const rows = await prisma.$queryRaw<WorkSubmissionRow[]>`
+export async function loadWorkSubmissionsForShop(shopId: string): Promise<WorkSubmissionRow[]> {
+  return prisma.$queryRaw<WorkSubmissionRow[]>`
     SELECT
       ws."id",
       ws."status",
@@ -106,15 +163,27 @@ export async function loadWorkSubmissionsForShopRequests(
       wp."ratingQualityAvg",
       wp."ratingPerformanceAvg",
       u."profilePhoto",
-      wr."workerPartnerRequestId"
+      wr."workerPartnerRequestId",
+      wr."id" AS "requirementId"
     FROM "WorkSubmission" ws
     JOIN "WorkRequirement" wr ON wr."id" = ws."requirementId"
     JOIN "WorkerProfile" wp ON wp."id" = ws."workerId"
     JOIN "User" u ON u."id" = wp."userId"
     WHERE wr."shopId" = ${shopId}
-      AND wr."workerPartnerRequestId" IN (${Prisma.join(requestIds)})
+      AND wr."status" NOT IN ('CANCELLED'::"WorkRequirementStatus")
     ORDER BY ws."createdAt" DESC
   `;
+}
 
-  return rows;
+/** @deprecated use loadWorkSubmissionsForShop */
+export async function loadWorkSubmissionsForShopRequests(
+  shopId: string,
+  requestIds: string[]
+): Promise<WorkSubmissionRow[]> {
+  if (requestIds.length === 0) return [];
+  const all = await loadWorkSubmissionsForShop(shopId);
+  const idSet = new Set(requestIds);
+  return all.filter(
+    (r) => r.workerPartnerRequestId && idSet.has(r.workerPartnerRequestId)
+  );
 }

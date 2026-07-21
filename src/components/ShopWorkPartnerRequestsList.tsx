@@ -8,7 +8,7 @@ import { t } from "@/lib/i18n";
 import type { WorkerPartnerRequestStatus, WorkerPartnerRole } from "@prisma/client";
 import { workerPartnerRoleLabelKey } from "@/lib/work-partner-roles";
 import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
-import { cancelWorkerPartnerRequest, rateAcceptedWorkPartner, acceptWorkerPartnerApplication, rejectWorkerPartnerApplication } from "@/app/shop/actions";
+import { cancelWorkerPartnerRequest, rateAcceptedWorkPartner, acceptWorkerPartnerApplication, rejectWorkerPartnerApplication, cancelShopWorkRequirement } from "@/app/shop/actions";
 import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
 import type { ShopWorkerRequestListItem } from "@/lib/shop-tab-types";
 import { whatsAppUrl } from "@/lib/whatsapp";
@@ -65,9 +65,13 @@ export function ShopWorkPartnerRequestsList({
     });
   }, [requests, filter]);
 
-  async function onCancel(id: string) {
+  async function onCancel(req: ShopWorkerRequestListItem) {
     try {
-      await cancelWorkerPartnerRequest(id);
+      if (req.workRequirementId && req.id === req.workRequirementId) {
+        await cancelShopWorkRequirement(req.workRequirementId);
+      } else {
+        await cancelWorkerPartnerRequest(req.id);
+      }
       clearShopTabCache("workers");
       onRefresh?.();
       router.refresh();
@@ -214,7 +218,7 @@ export function ShopWorkPartnerRequestsList({
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-bold text-brand-green">
-                    {roleLabel(req.role, req.customRole)}
+                    {req.title ?? roleLabel(req.role, req.customRole)}
                   </p>
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass(req.status)}`}
@@ -406,7 +410,7 @@ export function ShopWorkPartnerRequestsList({
                 {req.status === "OPEN" && (
                   <button
                     type="button"
-                    onClick={() => void onCancel(req.id)}
+                    onClick={() => void onCancel(req)}
                     className="text-sm font-semibold text-red-700 underline"
                   >
                     {t(locale, "workerPartnerCancelRequest")}

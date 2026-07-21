@@ -103,6 +103,10 @@ export type ShopWorkerApplication = {
 
 export type ShopWorkerRequestListItem = {
   id: string;
+  /** Partner-app WorkRequirement id when present (used for cancel on demo/monitor posts). */
+  workRequirementId: string | null;
+  /** Display title from WorkRequirement when no WorkerPartnerRequest role label fits. */
+  title: string | null;
   role: WorkerPartnerRole;
   customRole: string | null;
   neededFrom: string;

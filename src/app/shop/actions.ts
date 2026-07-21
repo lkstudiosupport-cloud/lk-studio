@@ -28,6 +28,7 @@ import {
 import { isSelectableWorkerPartnerRole } from "@/lib/work-partner-roles";
 import {
   cancelWorkRequirementForPartnerRequest,
+  cancelWorkRequirementById,
   createWorkRequirementForPartnerRequest,
 } from "@/lib/work-requirement-sync";
 import {
@@ -924,4 +925,11 @@ export async function rejectWorkerPartnerApplication(submissionId: string) {
   await shopRejectWorkerApplication(submissionId, shopId);
   revalidatePath("/shop/workers");
   bumpShopTabs(shopId);
+}
+
+export async function cancelShopWorkRequirement(requirementId: string) {
+  const id = await shopIdOnly();
+  await cancelWorkRequirementById(requirementId, id);
+  revalidatePath("/shop/workers");
+  bumpShopTabs(id);
 }

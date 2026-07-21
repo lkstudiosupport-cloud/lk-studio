@@ -12,7 +12,12 @@ import {
 } from "@/lib/bill-list-filter";
 import { parseShopMeasurementsJson } from "@/lib/shop-measurements";
 import { LIST_PAGE_SIZE } from "@/lib/limits";
-import { loadWorkSubmissionsForShopRequests } from "@/lib/work-requirement-sync";
+import {
+  loadWorkRequirementsForShop,
+  loadWorkSubmissionsForShop,
+  mapRequirementStatusToShop,
+  skillToWorkerPartnerRole,
+} from "@/lib/work-requirement-sync";
 import type {
   ShopBillsTabData,
   ShopDashboardTabData,
@@ -206,60 +211,128 @@ export async function loadShopBillsTab(
 }
 
 export async function loadShopWorkersTab(shopId: string): Promise<ShopWorkersTabData> {
-  const requests = await prisma.workerPartnerRequest.findMany({
-    where: {
-      shopId,
-      /** Shop list: open + accepted only — cancelled stay hidden. */
-      status: { in: ["OPEN", "FILLED"] },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 40,
-    select: {
-      id: true,
-      role: true,
-      customRole: true,
-      neededFrom: true,
-      durationType: true,
-      customDays: true,
-      notes: true,
-      city: true,
-      status: true,
-      createdAt: true,
-      acceptedAt: true,
-      acceptedPartner: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-          city: true,
-          address: true,
-          locationLink: true,
-          yearsExperience: true,
-          ratingSum: true,
-          ratingCount: true,
+  const [requirements, partnerRequests, submissionRows] = await Promise.all([
+    loadWorkRequirementsForShop(shopId),
+    prisma.workerPartnerRequest.findMany({
+      where: {
+        shopId,
+        status: { in: ["OPEN", "FILLED"] },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 40,
+      select: {
+        id: true,
+        role: true,
+        customRole: true,
+        neededFrom: true,
+        durationType: true,
+        customDays: true,
+        notes: true,
+        city: true,
+        status: true,
+        createdAt: true,
+        acceptedAt: true,
+        acceptedPartner: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            city: true,
+            address: true,
+            locationLink: true,
+            yearsExperience: true,
+            ratingSum: true,
+            ratingCount: true,
+          },
+        },
+        ratings: {
+          where: { shopId },
+          select: { rating: true },
+          take: 1,
         },
       },
-      ratings: {
-        where: { shopId },
-        select: { rating: true },
-        take: 1,
-      },
-    },
-  });
+    }),
+    loadWorkSubmissionsForShop(shopId),
+  ]);
 
-  const requestIds = requests.map((r) => r.id);
-  const submissionRows = await loadWorkSubmissionsForShopRequests(shopId, requestIds);
-  const appsByRequest = new Map<string, typeof submissionRows>();
+  const partnerById = new Map(partnerRequests.map((r) => [r.id, r]));
+  const linkedPartnerIds = new Set(
+    requirements.map((r) => r.workerPartnerRequestId).filter(Boolean) as string[]
+  );
+
+  const appsByListKey = new Map<string, typeof submissionRows>();
   for (const row of submissionRows) {
-    const list = appsByRequest.get(row.workerPartnerRequestId) ?? [];
+    const key = row.workerPartnerRequestId ?? row.requirementId;
+    const list = appsByListKey.get(key) ?? [];
     list.push(row);
-    appsByRequest.set(row.workerPartnerRequestId, list);
+    appsByListKey.set(key, list);
   }
 
-  return {
-    requests: requests.map((r) => {
+  const fromRequirements = requirements.map((req) => {
+    const partner = req.workerPartnerRequestId
+      ? partnerById.get(req.workerPartnerRequestId)
+      : undefined;
+    const listKey = req.workerPartnerRequestId ?? req.id;
+    const applications = (appsByListKey.get(listKey) ?? []).map((a) => ({
+      id: a.id,
+      status: a.status,
+      notes: a.notes,
+      createdAt: a.createdAt.toISOString(),
+      workerId: a.workerId,
+      workerName: a.workerName,
+      workerPhone: a.workerPhone,
+      workerCity: a.workerCity,
+      jobsCompleted: a.jobsCompleted,
+      ratingQualityAvg: a.ratingQualityAvg,
+      ratingPerformanceAvg: a.ratingPerformanceAvg,
+      profilePhoto: a.profilePhoto,
+    }));
+
+    const acceptedPartner = partner?.acceptedPartner;
+    const shopStatus = partner?.status ?? mapRequirementStatusToShop(req.status);
+
+    return {
+      id: partner?.id ?? req.id,
+      workRequirementId: req.id,
+      title: req.title,
+      role: partner?.role ?? skillToWorkerPartnerRole(req.skill),
+      customRole: partner?.customRole ?? null,
+      neededFrom: partner
+        ? partner.neededFrom.toISOString().slice(0, 10)
+        : req.createdAt.toISOString().slice(0, 10),
+      durationType: partner?.durationType ?? ("ONE_DAY" as const),
+      customDays: partner?.customDays ?? null,
+      notes: partner?.notes ?? req.description,
+      city: partner?.city ?? req.city,
+      status: shopStatus,
+      createdAt: (partner?.createdAt ?? req.createdAt).toISOString(),
+      acceptedAt: partner?.acceptedAt?.toISOString() ?? null,
+      acceptedPartner: acceptedPartner
+        ? {
+            id: acceptedPartner.id,
+            name: acceptedPartner.name,
+            phone: acceptedPartner.phone,
+            city: acceptedPartner.city,
+            address: acceptedPartner.address,
+            locationLink: acceptedPartner.locationLink,
+            yearsExperience: acceptedPartner.yearsExperience,
+            ratingAvg:
+              acceptedPartner.ratingCount > 0
+                ? Math.round((acceptedPartner.ratingSum / acceptedPartner.ratingCount) * 10) / 10
+                : null,
+            ratingCount: acceptedPartner.ratingCount,
+          }
+        : null,
+      shopRating: partner?.ratings[0]?.rating ?? null,
+      applications,
+    };
+  });
+
+  const orphanPartnerRequests = partnerRequests
+    .filter((r) => !linkedPartnerIds.has(r.id))
+    .map((r) => {
       const partner = r.acceptedPartner;
-      const applications = (appsByRequest.get(r.id) ?? []).map((a) => ({
+      const applications = (appsByListKey.get(r.id) ?? []).map((a) => ({
         id: a.id,
         status: a.status,
         notes: a.notes,
@@ -275,6 +348,8 @@ export async function loadShopWorkersTab(shopId: string): Promise<ShopWorkersTab
       }));
       return {
         id: r.id,
+        workRequirementId: null as string | null,
+        title: null as string | null,
         role: r.role,
         customRole: r.customRole,
         neededFrom: r.neededFrom.toISOString().slice(0, 10),
@@ -304,6 +379,11 @@ export async function loadShopWorkersTab(shopId: string): Promise<ShopWorkersTab
         shopRating: r.ratings[0]?.rating ?? null,
         applications,
       };
-    }),
-  };
+    });
+
+  const requests = [...fromRequirements, ...orphanPartnerRequests].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  return { requests };
 }
