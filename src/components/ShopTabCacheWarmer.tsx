@@ -52,6 +52,17 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
 
       markShopPriorityTabsReady();
 
+      // Warm create-bill so the button opens instantly.
+      try {
+        router.prefetch("/shop/bills/new");
+        void fetch("/api/shop/bill-customers", {
+          credentials: "include",
+          cache: "no-store",
+        });
+      } catch {
+        /* ignore */
+      }
+
       // —— Category 2: Designs (after priority tabs) ——
       if (!quiet) setPhase("designs");
 

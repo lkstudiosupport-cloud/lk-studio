@@ -1,19 +1,10 @@
-import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/auth";
-import { getLocale } from "@/lib/locale-server";
+import { cachedLocale } from "@/lib/cached-server";
 import { CreateBillFlow } from "@/components/CreateBillFlow";
 
+export const dynamic = "force-dynamic";
+
+/** Instant shell — customers load in the client so create-bill opens fast. */
 export default async function ShopCreateBillPage() {
-  const session = await requireSession(["SHOP"]);
-  const locale = await getLocale();
-  const shopId = session!.shopId!;
-
-  const customers = await prisma.user.findMany({
-    where: { role: "CUSTOMER", orders: { some: { shopId } } },
-    select: { id: true, name: true, phone: true, whatsapp: true },
-    orderBy: { name: "asc" },
-    take: 500,
-  });
-
-  return <CreateBillFlow locale={locale} customers={customers} />;
+  const locale = await cachedLocale();
+  return <CreateBillFlow locale={locale} customers={[]} />;
 }

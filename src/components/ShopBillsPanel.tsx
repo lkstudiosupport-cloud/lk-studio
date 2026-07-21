@@ -81,6 +81,7 @@ export function ShopBillsPanel({
         <h1 className="page-title">{t(locale, "bills")}</h1>
         <Link
           href="/shop/bills/new"
+          prefetch
           className="btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm"
         >
           <Plus className="h-4 w-4" />
@@ -169,6 +170,7 @@ export function ShopBillsPanel({
             {tab === "all" && (
               <Link
                 href="/shop/bills/new"
+                prefetch
                 className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm"
               >
                 <Plus className="h-4 w-4" />

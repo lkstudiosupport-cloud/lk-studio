@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Receipt, UserRound } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
@@ -12,12 +12,40 @@ import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 
 type Customer = { id: string; name: string; phone: string | null; whatsapp: string | null };
 
-export function CreateBillFlow({ locale, customers }: { locale: Locale; customers: Customer[] }) {
+export function CreateBillFlow({
+  locale,
+  customers: initialCustomers = [],
+}: {
+  locale: Locale;
+  customers?: Customer[];
+}) {
   const [step, setStep] = useState<1 | 2>(1);
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [error, setError] = useState("");
   useSwipeNavBlock(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/shop/bill-customers", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { ok?: boolean; customers?: Customer[] };
+        if (cancelled || !json.ok || !Array.isArray(json.customers)) return;
+        setCustomers(json.customers);
+      } catch {
+        /* keep empty / initial */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const pickCustomer = (id: string) => {
     const c = customers.find((x) => x.id === id);
