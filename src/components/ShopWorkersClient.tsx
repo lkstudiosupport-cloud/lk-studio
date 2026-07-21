@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { PageLoadingSkeleton } from "@/components/PageLoadingSkeleton";
@@ -10,6 +11,18 @@ import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
 
 export function ShopWorkersClient({ locale }: { locale: Locale }) {
   const { data, loading, error, refresh } = useShopTabData("workers");
+
+  // Keep checking for new acceptances while requests are open.
+  useEffect(() => {
+    const hasOpen = (data?.requests ?? []).some((r) => r.status === "OPEN");
+    if (!hasOpen) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      clearShopTabCache("workers");
+      void refresh();
+    }, 15_000);
+    return () => window.clearInterval(id);
+  }, [data?.requests, refresh]);
 
   if (loading && !data) {
     return (
@@ -55,7 +68,14 @@ export function ShopWorkersClient({ locale }: { locale: Locale }) {
           void refresh();
         }}
       />
-      <ShopWorkPartnerRequestsList locale={locale} requests={requests} />
+      <ShopWorkPartnerRequestsList
+        locale={locale}
+        requests={requests}
+        onRefresh={() => {
+          clearShopTabCache("workers");
+          void refresh();
+        }}
+      />
     </div>
   );
 }

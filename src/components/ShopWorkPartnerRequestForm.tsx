@@ -30,20 +30,22 @@ export function ShopWorkPartnerRequestForm({
     e.preventDefault();
     setError("");
     setPending(true);
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     fd.set("role", role);
     fd.set("durationType", durationType);
     try {
       await createWorkerPartnerRequest(fd);
-      e.currentTarget.reset();
+      form.reset();
       setRole("STITCHING_WORKER");
       setDurationType("ONE_DAY");
       onCreated?.();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setPending(false);
     }
-    setPending(false);
   }
 
   return (
