@@ -83,20 +83,6 @@ export function ShopWorkPartnerRequestForm({
         </div>
       </fieldset>
 
-      {role === "OTHER" && (
-        <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-brand-green">
-            {t(locale, "workerPartnerCustomRole")}
-          </span>
-          <input
-            name="customRole"
-            required
-            className="input-premium w-full"
-            placeholder={t(locale, "workerPartnerCustomRolePlaceholder")}
-          />
-        </label>
-      )}
-
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-brand-green">
           {t(locale, "workerPartnerNeededFrom")}

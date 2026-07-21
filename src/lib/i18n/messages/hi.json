@@ -506,9 +506,11 @@
   "workPartnerShopWhatsAppIntro": "नमस्ते, आपके स्वीकार किए गए वर्कर अनुरोध के बारे में",
   "workerPartnerRole": {
     "maggamWorker": "मग्गम वर्कर",
-    "stitchingWorker": "स्टिचिंग वर्कर",
+    "stitchingWorker": "सिलाई",
     "stitchingMaster": "स्टिचिंग मास्टर",
-    "other": "अन्य वर्कर"
+    "other": "अन्य वर्कर",
+    "machineEmbroidery": "मशीन एम्ब्रॉयडरी",
+    "cuttingMaster": "कटिंग मास्टर"
   },
   "workerPartnerDuration": {
     "oneDay": "1 दिन",
@@ -858,5 +860,7 @@
   "workPartnerNoAcceptedYet": "अभी किसी ने स्वीकार नहीं किया। रिफ्रेश दबाएँ।",
   "workPartnerLocationLabel": "लोकेशन",
   "workPartnerRatingLabel": "रेटिंग",
-  "workPartnerFilledNoProfile": "भरा हुआ है, पर पार्टनर प्रोफ़ाइल नहीं मिली।"
+  "workPartnerFilledNoProfile": "भरा हुआ है, पर पार्टनर प्रोफ़ाइल नहीं मिली।",
+  "workPartnerOpenOnlyHint": "यहाँ केवल खुले अनुरोध दिखते हैं। रद्द किए गए अनुरोध छिपे रहते हैं।",
+  "workPartnerUnknownShop": "दुकान"
 }

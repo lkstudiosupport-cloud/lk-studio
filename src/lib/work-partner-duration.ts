@@ -64,17 +64,20 @@ export function parseNeededFromDate(raw: string): Date {
 }
 
 export function formatWorkerPartnerSchedule(
-  neededFrom: Date | string,
-  durationType: WorkerPartnerDurationType,
+  neededFrom: Date | string | null | undefined,
+  durationType: WorkerPartnerDurationType | null | undefined,
   customDays: number | null,
   locale: string
 ): string {
+  if (!neededFrom) return "—";
   const fromDate = neededFrom instanceof Date ? neededFrom : new Date(neededFrom);
-  const days = workerPartnerDayCount(durationType, customDays);
+  if (Number.isNaN(fromDate.getTime())) return "—";
+  const safeDuration: WorkerPartnerDurationType = durationType ?? "ONE_DAY";
+  const days = workerPartnerDayCount(safeDuration, customDays);
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
   const from = fromDate.toLocaleDateString(locale, { ...opts, timeZone: "UTC" });
   if (days === 1) return from;
-  const end = workerPartnerEndDate(fromDate, durationType, customDays);
+  const end = workerPartnerEndDate(fromDate, safeDuration, customDays);
   const to = end.toLocaleDateString(locale, { ...opts, timeZone: "UTC" });
   return `${from} — ${to} (${days} days)`;
 }

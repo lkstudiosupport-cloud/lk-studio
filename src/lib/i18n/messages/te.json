@@ -505,9 +505,11 @@
   "workPartnerShopWhatsAppIntro": "హాయ్, మీరు అంగీకరించిన వర్కర్ రిక్వెస్ట్ గురించి",
   "workerPartnerRole": {
     "maggamWorker": "మగ్గం వర్కర్",
-    "stitchingWorker": "స్టిచింగ్ వర్కర్",
+    "stitchingWorker": "స్టిచింగ్",
     "stitchingMaster": "స్టిచింగ్ మాస్టర్",
-    "other": "ఇతర వర్కర్"
+    "other": "ఇతర వర్కర్",
+    "machineEmbroidery": "మెషీన్ ఎంబ్రాయడరీ",
+    "cuttingMaster": "కటింగ్ మాస్టర్"
   },
   "workerPartnerDuration": {
     "oneDay": "1 రోజు",
@@ -857,5 +859,7 @@
   "workPartnerNoAcceptedYet": "ఇంకా ఎవరూ అంగీకరించలేదు. రిఫ్రెష్ నొక్కండి.",
   "workPartnerLocationLabel": "లొకేషన్",
   "workPartnerRatingLabel": "రేటింగ్",
-  "workPartnerFilledNoProfile": "నిండింది, కానీ పార్టనర్ ప్రొఫైల్ లేదు."
+  "workPartnerFilledNoProfile": "నిండింది, కానీ పార్టనర్ ప్రొఫైల్ లేదు.",
+  "workPartnerOpenOnlyHint": "ఇక్కడ ఓపెన్ రిక్వెస్ట్‌లు మాత్రమే కనిపిస్తాయి. రద్దు చేసినవి కనిపించవు.",
+  "workPartnerUnknownShop": "షాప్"
 }

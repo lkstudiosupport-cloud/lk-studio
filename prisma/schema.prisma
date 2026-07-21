@@ -74,8 +74,12 @@ enum PriceRequestStatus {
 /** Role a shop needs from the work partner network. */
 enum WorkerPartnerRole {
   MAGGAM_WORKER
+  MACHINE_EMBROIDERY
   STITCHING_WORKER
+  CUTTING_MASTER
+  /** @deprecated kept for old rows */
   STITCHING_MASTER
+  /** @deprecated kept for old rows */
   OTHER
 }
 

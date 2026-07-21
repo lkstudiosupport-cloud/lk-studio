@@ -24,7 +24,7 @@ async function main() {
   await prisma.$executeRawUnsafe(`
     DO $$ BEGIN
       CREATE TYPE "WorkerPartnerRole" AS ENUM (
-        'MAGGAM_WORKER', 'STITCHING_WORKER', 'STITCHING_MASTER', 'OTHER'
+        'MAGGAM_WORKER', 'MACHINE_EMBROIDERY', 'STITCHING_WORKER', 'CUTTING_MASTER', 'STITCHING_MASTER', 'OTHER'
       );
     EXCEPTION WHEN duplicate_object THEN NULL;
     END $$;
@@ -38,6 +38,18 @@ async function main() {
   await prisma.$executeRawUnsafe(`
     DO $$ BEGIN
       CREATE TYPE "WorkerPartnerDurationType" AS ENUM ('ONE_DAY', 'TWO_DAYS', 'CUSTOM_DAYS');
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      ALTER TYPE "WorkerPartnerRole" ADD VALUE IF NOT EXISTS 'MACHINE_EMBROIDERY';
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      ALTER TYPE "WorkerPartnerRole" ADD VALUE IF NOT EXISTS 'CUTTING_MASTER';
     EXCEPTION WHEN duplicate_object THEN NULL;
     END $$;
   `);

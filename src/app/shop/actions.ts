@@ -25,6 +25,7 @@ import {
   parseWorkerPartnerDurationType,
   WORKER_PARTNER_DURATION_TYPES,
 } from "@/lib/work-partner-duration";
+import { isSelectableWorkerPartnerRole } from "@/lib/work-partner-roles";
 
 const MAX_ORDER_DESIGN_PICKS = 3;
 const WALKIN_EMAIL_SUFFIX = "@lkstudio.walkin";
@@ -751,15 +752,10 @@ export async function replyPriceRequest(formData: FormData) {
 export async function createWorkerPartnerRequest(formData: FormData) {
   const id = await shopIdOnly();
   const roleRaw = String(formData.get("role") ?? "").trim().toUpperCase();
-  const roles = ["MAGGAM_WORKER", "STITCHING_WORKER", "STITCHING_MASTER", "OTHER"] as const;
-  if (!roles.includes(roleRaw as (typeof roles)[number])) {
+  if (!isSelectableWorkerPartnerRole(roleRaw)) {
     throw new Error("Select a worker type");
   }
-  const role = roleRaw as (typeof roles)[number];
-  const customRole = String(formData.get("customRole") ?? "").trim() || null;
-  if (role === "OTHER" && !customRole) {
-    throw new Error("Describe the worker you need");
-  }
+  const role = roleRaw;
   const notes = String(formData.get("notes") ?? "").trim() || null;
   const neededFromRaw = String(formData.get("neededFrom") ?? "").trim();
   const durationRaw = String(formData.get("durationType") ?? "").trim().toUpperCase();
@@ -779,7 +775,7 @@ export async function createWorkerPartnerRequest(formData: FormData) {
 
   const shop = await prisma.shopProfile.findUnique({
     where: { id },
-    select: { city: true },
+    select: { city: true, shopName: true },
   });
   if (!shop) throw new Error("Shop not found");
   const city = normalizeCity(shop.city);
@@ -791,7 +787,7 @@ export async function createWorkerPartnerRequest(formData: FormData) {
     data: {
       shopId: id,
       role,
-      customRole: role === "OTHER" ? customRole : null,
+      customRole: null,
       neededFrom,
       durationType,
       customDays,
@@ -803,6 +799,7 @@ export async function createWorkerPartnerRequest(formData: FormData) {
 
   revalidatePath("/shop/workers");
   revalidatePath("/work-partner/requests");
+  revalidatePath("/api/work-partner/requests");
   bumpShopTabs(id);
 }
 

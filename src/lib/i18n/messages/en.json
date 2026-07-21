@@ -521,10 +521,14 @@
   "workPartnerShopWhatsAppIntro": "Hi, regarding the worker request you accepted",
   "workerPartnerRole": {
     "maggamWorker": "Maggam worker",
-    "stitchingWorker": "Stitching worker",
+    "machineEmbroidery": "Machine embroidery",
+    "stitchingWorker": "Stitching",
+    "cuttingMaster": "Cutting master",
     "stitchingMaster": "Stitching master",
     "other": "Other worker"
   },
+  "workPartnerOpenOnlyHint": "Only open shop requests appear here. Cancelled requests are hidden.",
+  "workPartnerUnknownShop": "Shop",
   "workerPartnerDuration": {
     "oneDay": "1 day",
     "twoDays": "2 days",

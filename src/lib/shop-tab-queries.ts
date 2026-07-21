@@ -206,7 +206,11 @@ export async function loadShopBillsTab(
 
 export async function loadShopWorkersTab(shopId: string): Promise<ShopWorkersTabData> {
   const requests = await prisma.workerPartnerRequest.findMany({
-    where: { shopId },
+    where: {
+      shopId,
+      /** Shop list: open + accepted only — cancelled stay hidden. */
+      status: { in: ["OPEN", "FILLED"] },
+    },
     orderBy: { createdAt: "desc" },
     take: 40,
     select: {

@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MapPin, Store } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import type { WorkerPartnerRequest, WorkerPartnerRole } from "@prisma/client";
+import type { WorkerPartnerDurationType, WorkerPartnerRole } from "@prisma/client";
 import { WORKER_PARTNER_ROLES, workerPartnerRoleLabelKey } from "@/lib/work-partner-roles";
 import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
 import { CitySelect } from "@/components/CitySelect";
@@ -18,9 +19,20 @@ type ShopInfo = {
   address: string | null;
   phone: string | null;
   whatsapp: string | null;
+  locationLink?: string | null;
 };
 
-type Row = WorkerPartnerRequest & { shop: ShopInfo };
+type Row = {
+  id: string;
+  role: WorkerPartnerRole;
+  customRole: string | null;
+  neededFrom: Date | string;
+  durationType: WorkerPartnerDurationType | null;
+  customDays: number | null;
+  notes: string | null;
+  city: string | null;
+  shop: ShopInfo;
+};
 
 export function WorkPartnerRequestsFeed({
   locale,
@@ -37,7 +49,7 @@ export function WorkPartnerRequestsFeed({
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = window.setInterval(() => router.refresh(), 20_000);
+    const id = window.setInterval(() => router.refresh(), 15_000);
     const onFocus = () => router.refresh();
     window.addEventListener("focus", onFocus);
     return () => {
@@ -91,6 +103,8 @@ export function WorkPartnerRequestsFeed({
         </button>
       </form>
 
+      <p className="text-xs text-zinc-500">{t(locale, "workPartnerOpenOnlyHint")}</p>
+
       {requests.length === 0 ? (
         <div className="card-premium p-6 text-center text-sm text-zinc-600">
           {t(locale, "workPartnerNoOpenRequests")}
@@ -99,7 +113,7 @@ export function WorkPartnerRequestsFeed({
         <div className="space-y-3">
           {requests.map((req) => {
             const contact = req.shop.whatsapp || req.shop.phone;
-            const cityLabel = req.city ?? req.shop.city;
+            const cityLabel = req.city || req.shop.city;
             const wa = contact
               ? whatsAppUrl(
                   contact,
@@ -110,17 +124,54 @@ export function WorkPartnerRequestsFeed({
             const isAccepting = acceptingId === req.id;
 
             return (
-              <article key={req.id} className="card-premium space-y-2 p-4">
-                <p className="font-bold text-brand-green">{roleLabel(req.role, req.customRole)}</p>
-                <p className="text-sm font-semibold text-zinc-800">{req.shop.shopName}</p>
-                <p className="text-xs text-zinc-500">
-                  {req.shop.shopCode}
-                  {cityLabel ? ` · ${cityLabel}` : ""}
-                </p>
-                {req.shop.address && <p className="text-sm text-zinc-600">{req.shop.address}</p>}
-                <p className="text-sm font-medium text-zinc-700">
-                  {t(locale, "workerPartnerSchedule")}:{" "}
-                  {formatWorkerPartnerSchedule(req.neededFrom, req.durationType, req.customDays, locale)}
+              <article key={req.id} className="card-premium space-y-3 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <p className="font-bold text-brand-green">
+                    {roleLabel(req.role, req.customRole)}
+                  </p>
+                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+                    {t(locale, "workerPartnerStatusOpen")}
+                  </span>
+                </div>
+
+                <div className="rounded-xl border border-brand-green/15 bg-brand-cream/60 p-3 space-y-1.5">
+                  <p className="flex items-center gap-2 text-base font-bold text-brand-green">
+                    <Store className="h-4 w-4 shrink-0" />
+                    {req.shop.shopName || t(locale, "workPartnerUnknownShop")}
+                  </p>
+                  {req.shop.shopCode && (
+                    <p className="text-xs text-zinc-500">
+                      {t(locale, "shopCode")}: {req.shop.shopCode}
+                    </p>
+                  )}
+                  {(cityLabel || req.shop.address) && (
+                    <p className="flex items-start gap-1.5 text-sm text-zinc-700">
+                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>{[cityLabel, req.shop.address].filter(Boolean).join(" · ")}</span>
+                    </p>
+                  )}
+                  {req.shop.locationLink && (
+                    <a
+                      href={req.shop.locationLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-sm font-semibold text-brand-green underline"
+                    >
+                      {t(locale, "workPartnerViewLocation")}
+                    </a>
+                  )}
+                </div>
+
+                <p className="text-sm font-medium text-zinc-800">
+                  <span className="font-semibold text-brand-green">
+                    {t(locale, "workerPartnerSchedule")}:{" "}
+                  </span>
+                  {formatWorkerPartnerSchedule(
+                    req.neededFrom,
+                    req.durationType,
+                    req.customDays,
+                    locale
+                  )}
                 </p>
                 {req.notes && <p className="text-sm text-zinc-600">{req.notes}</p>}
 

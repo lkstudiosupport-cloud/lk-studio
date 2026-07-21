@@ -520,11 +520,15 @@
   "workPartnerCallPartner": "পার্টনার কল",
   "workPartnerShopWhatsAppIntro": "হাই, আপনি যে ওয়ার্কার অনুরোধ গ্রহণ করেছেন সে বিষয়ে",
   "workerPartnerRole": {
-    "maggamWorker": "Maggam worker",
-    "stitchingWorker": "Stitching worker",
+    "maggamWorker": "মগ্গম ওয়ার্কার",
+    "machineEmbroidery": "মেশিন এমব্রয়ডারি",
+    "stitchingWorker": "স্টিচিং",
+    "cuttingMaster": "কাটিং মাস্টার",
     "stitchingMaster": "Stitching master",
     "other": "Other worker"
   },
+  "workPartnerOpenOnlyHint": "এখানে শুধু খোলা অনুরোধ দেখা যায়। বাতিল অনুরোধ লুকানো থাকে।",
+  "workPartnerUnknownShop": "দোকান",
   "workerPartnerDuration": {
     "oneDay": "1 day",
     "twoDays": "2 days",

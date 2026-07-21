@@ -10,13 +10,17 @@ const shopSelect = {
   address: true,
   phone: true,
   whatsapp: true,
+  locationLink: true,
 } as const;
 
 export type OpenWorkerPartnerRequestRow = Prisma.WorkerPartnerRequestGetPayload<{
   include: { shop: { select: typeof shopSelect } };
 }>;
 
-/** Open shop requests for the work partner app (optional role / city filters). */
+/**
+ * Partner app list: OPEN requests only (cancelled never appear).
+ * Optional role / city filters — city matches request.city or shop.city.
+ */
 export async function listOpenWorkerPartnerRequests(opts: {
   role?: string | null;
   city?: string | null;
@@ -31,7 +35,10 @@ export async function listOpenWorkerPartnerRequests(opts: {
     ...(role ? { role } : {}),
     ...(city
       ? {
-          OR: [{ city }, { shop: { city } }],
+          OR: [
+            { city: { equals: city, mode: "insensitive" } },
+            { shop: { city: { equals: city, mode: "insensitive" } } },
+          ],
         }
       : {}),
   };
