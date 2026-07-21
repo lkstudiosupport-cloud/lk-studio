@@ -14,7 +14,11 @@ export function ShopWorkersClient({ locale }: { locale: Locale }) {
 
   // Keep checking for new acceptances while requests are open.
   useEffect(() => {
-    const hasOpen = (data?.requests ?? []).some((r) => r.status === "OPEN");
+    const hasOpen = (data?.requests ?? []).some(
+      (r) =>
+        r.status === "OPEN" ||
+        r.applications?.some((a) => ["APPLIED", "SUBMITTED"].includes(a.status))
+    );
     if (!hasOpen) return;
     const id = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;

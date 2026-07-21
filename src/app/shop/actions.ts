@@ -26,6 +26,14 @@ import {
   WORKER_PARTNER_DURATION_TYPES,
 } from "@/lib/work-partner-duration";
 import { isSelectableWorkerPartnerRole } from "@/lib/work-partner-roles";
+import {
+  cancelWorkRequirementForPartnerRequest,
+  createWorkRequirementForPartnerRequest,
+} from "@/lib/work-requirement-sync";
+import {
+  shopAcceptWorkerApplication,
+  shopRejectWorkerApplication,
+} from "@/lib/shop-submission-actions";
 
 const MAX_ORDER_DESIGN_PICKS = 3;
 const WALKIN_EMAIL_SUFFIX = "@lkstudio.walkin";
@@ -783,7 +791,7 @@ export async function createWorkerPartnerRequest(formData: FormData) {
     throw new Error("Set your shop city in Profile before sending a worker request");
   }
 
-  await prisma.workerPartnerRequest.create({
+  const created = await prisma.workerPartnerRequest.create({
     data: {
       shopId: id,
       role,
@@ -796,6 +804,22 @@ export async function createWorkerPartnerRequest(formData: FormData) {
       status: "OPEN",
     },
   });
+
+  try {
+    await createWorkRequirementForPartnerRequest({
+      shopId: id,
+      shopName: shop.shopName,
+      workerPartnerRequestId: created.id,
+      role,
+      city,
+      notes,
+      neededFrom,
+      durationType,
+      customDays,
+    });
+  } catch (err) {
+    console.error("[lk-studio] WorkRequirement sync failed:", err);
+  }
 
   revalidatePath("/shop/workers");
   revalidatePath("/work-partner/requests");
@@ -814,6 +838,12 @@ export async function cancelWorkerPartnerRequest(requestId: string) {
     where: { id: requestId },
     data: { status: "CANCELLED" },
   });
+
+  try {
+    await cancelWorkRequirementForPartnerRequest(requestId);
+  } catch (err) {
+    console.error("[lk-studio] WorkRequirement cancel sync failed:", err);
+  }
 
   revalidatePath("/shop/workers");
   revalidatePath("/work-partner/requests");
@@ -878,6 +908,20 @@ export async function rateAcceptedWorkPartner(formData: FormData) {
     }
   });
 
+  revalidatePath("/shop/workers");
+  bumpShopTabs(shopId);
+}
+
+export async function acceptWorkerPartnerApplication(submissionId: string) {
+  const shopId = await shopIdOnly();
+  await shopAcceptWorkerApplication(submissionId, shopId);
+  revalidatePath("/shop/workers");
+  bumpShopTabs(shopId);
+}
+
+export async function rejectWorkerPartnerApplication(submissionId: string) {
+  const shopId = await shopIdOnly();
+  await shopRejectWorkerApplication(submissionId, shopId);
   revalidatePath("/shop/workers");
   bumpShopTabs(shopId);
 }

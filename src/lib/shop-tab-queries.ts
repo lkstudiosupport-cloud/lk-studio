@@ -12,6 +12,7 @@ import {
 } from "@/lib/bill-list-filter";
 import { parseShopMeasurementsJson } from "@/lib/shop-measurements";
 import { LIST_PAGE_SIZE } from "@/lib/limits";
+import { loadWorkSubmissionsForShopRequests } from "@/lib/work-requirement-sync";
 import type {
   ShopBillsTabData,
   ShopDashboardTabData,
@@ -246,9 +247,32 @@ export async function loadShopWorkersTab(shopId: string): Promise<ShopWorkersTab
     },
   });
 
+  const requestIds = requests.map((r) => r.id);
+  const submissionRows = await loadWorkSubmissionsForShopRequests(shopId, requestIds);
+  const appsByRequest = new Map<string, typeof submissionRows>();
+  for (const row of submissionRows) {
+    const list = appsByRequest.get(row.workerPartnerRequestId) ?? [];
+    list.push(row);
+    appsByRequest.set(row.workerPartnerRequestId, list);
+  }
+
   return {
     requests: requests.map((r) => {
       const partner = r.acceptedPartner;
+      const applications = (appsByRequest.get(r.id) ?? []).map((a) => ({
+        id: a.id,
+        status: a.status,
+        notes: a.notes,
+        createdAt: a.createdAt.toISOString(),
+        workerId: a.workerId,
+        workerName: a.workerName,
+        workerPhone: a.workerPhone,
+        workerCity: a.workerCity,
+        jobsCompleted: a.jobsCompleted,
+        ratingQualityAvg: a.ratingQualityAvg,
+        ratingPerformanceAvg: a.ratingPerformanceAvg,
+        profilePhoto: a.profilePhoto,
+      }));
       return {
         id: r.id,
         role: r.role,
@@ -278,6 +302,7 @@ export async function loadShopWorkersTab(shopId: string): Promise<ShopWorkersTab
             }
           : null,
         shopRating: r.ratings[0]?.rating ?? null,
+        applications,
       };
     }),
   };

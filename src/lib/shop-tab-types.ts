@@ -86,6 +86,21 @@ export type ShopAcceptedPartner = {
   ratingCount: number;
 };
 
+export type ShopWorkerApplication = {
+  id: string;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+  workerId: string;
+  workerName: string;
+  workerPhone: string | null;
+  workerCity: string;
+  jobsCompleted: number;
+  ratingQualityAvg: number | null;
+  ratingPerformanceAvg: number | null;
+  profilePhoto: string | null;
+};
+
 export type ShopWorkerRequestListItem = {
   id: string;
   role: WorkerPartnerRole;
@@ -100,6 +115,7 @@ export type ShopWorkerRequestListItem = {
   acceptedAt: string | null;
   acceptedPartner: ShopAcceptedPartner | null;
   shopRating: number | null;
+  applications: ShopWorkerApplication[];
 };
 
 export type ShopWorkersTabData = {

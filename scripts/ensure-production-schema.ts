@@ -165,6 +165,13 @@ async function main() {
     `CREATE INDEX IF NOT EXISTS "WorkPartnerRating_shopId_idx" ON "WorkPartnerRating"("shopId");`
   );
 
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "WorkRequirement" ADD COLUMN IF NOT EXISTS "workerPartnerRequestId" TEXT;`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "WorkRequirement_workerPartnerRequestId_key" ON "WorkRequirement"("workerPartnerRequestId") WHERE "workerPartnerRequestId" IS NOT NULL;`
+  );
+
   console.log("[lk-studio] production schema OK (User + ShopProfile + WorkerPartnerRequest + WorkPartnerProfile)");
 }
 

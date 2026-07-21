@@ -8,7 +8,7 @@ import { t } from "@/lib/i18n";
 import type { WorkerPartnerRequestStatus, WorkerPartnerRole } from "@prisma/client";
 import { workerPartnerRoleLabelKey } from "@/lib/work-partner-roles";
 import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
-import { cancelWorkerPartnerRequest, rateAcceptedWorkPartner } from "@/app/shop/actions";
+import { cancelWorkerPartnerRequest, rateAcceptedWorkPartner, acceptWorkerPartnerApplication, rejectWorkerPartnerApplication } from "@/app/shop/actions";
 import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
 import type { ShopWorkerRequestListItem } from "@/lib/shop-tab-types";
 import { whatsAppUrl } from "@/lib/whatsapp";
@@ -39,6 +39,7 @@ export function ShopWorkPartnerRequestsList({
   const router = useRouter();
   const [filter, setFilter] = useState<FilterTab>("all");
   const [ratingPending, setRatingPending] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     let open = 0;
@@ -72,6 +73,34 @@ export function ShopWorkPartnerRequestsList({
       router.refresh();
     } catch {
       /* ignore */
+    }
+  }
+
+  async function onAcceptApplication(submissionId: string) {
+    setActionPending(submissionId);
+    try {
+      await acceptWorkerPartnerApplication(submissionId);
+      clearShopTabCache("workers");
+      onRefresh?.();
+      router.refresh();
+    } catch {
+      /* ignore */
+    } finally {
+      setActionPending(null);
+    }
+  }
+
+  async function onRejectApplication(submissionId: string) {
+    setActionPending(submissionId);
+    try {
+      await rejectWorkerPartnerApplication(submissionId);
+      clearShopTabCache("workers");
+      onRefresh?.();
+      router.refresh();
+    } catch {
+      /* ignore */
+    } finally {
+      setActionPending(null);
     }
   }
 
@@ -213,6 +242,62 @@ export function ShopWorkPartnerRequestsList({
                 <p className="text-xs text-zinc-400">
                   {new Date(req.createdAt).toLocaleString()}
                 </p>
+
+                {req.status === "OPEN" && req.applications.length > 0 && (
+                  <div className="space-y-3 rounded-xl border border-brand-green/20 bg-brand-cream/50 p-4">
+                    <p className="text-sm font-bold text-brand-green">
+                      {t(locale, "workPartnerApplicationsTitle")} ({req.applications.length})
+                    </p>
+                    {req.applications
+                      .filter((a) => ["APPLIED", "SUBMITTED"].includes(a.status))
+                      .map((app) => (
+                        <div
+                          key={app.id}
+                          className="space-y-2 rounded-lg border border-brand-green/15 bg-white p-3"
+                        >
+                          <p className="font-semibold text-brand-green">{app.workerName}</p>
+                          <div className="grid gap-1 text-sm text-zinc-700">
+                            {app.workerPhone && (
+                              <p className="flex items-center gap-2">
+                                <Phone className="h-4 w-4 shrink-0 text-brand-green" />
+                                {app.workerPhone}
+                              </p>
+                            )}
+                            <p>
+                              {t(locale, "city")}: {app.workerCity} ·{" "}
+                              {app.jobsCompleted} {t(locale, "workPartnerJobsDoneLabel")}
+                            </p>
+                            {(app.ratingQualityAvg != null || app.ratingPerformanceAvg != null) && (
+                              <p className="flex items-center gap-1.5">
+                                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                {app.ratingQualityAvg != null && `Q ${app.ratingQualityAvg}`}
+                                {app.ratingPerformanceAvg != null && ` · P ${app.ratingPerformanceAvg}`}
+                              </p>
+                            )}
+                            {app.notes && <p className="text-zinc-600">{app.notes}</p>}
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <button
+                              type="button"
+                              disabled={actionPending === app.id}
+                              onClick={() => void onAcceptApplication(app.id)}
+                              className="btn-primary px-4 py-2 text-sm"
+                            >
+                              {t(locale, "workPartnerAcceptApplication")}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={actionPending === app.id}
+                              onClick={() => void onRejectApplication(app.id)}
+                              className="btn-secondary px-4 py-2 text-sm"
+                            >
+                              {t(locale, "workPartnerRejectApplication")}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
 
                 {isAccepted && partner && (
                   <div className="space-y-3 rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4">
