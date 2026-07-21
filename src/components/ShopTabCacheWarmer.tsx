@@ -17,8 +17,9 @@ import {
 type Phase = "tabs" | "designs" | "done";
 
 /**
- * First APK/shop open: load Home → Orders → Bills → Partner, then Designs.
- * Shows a loading circle at the bottom of the page while preparing.
+ * First APK/shop open — two load groups:
+ * 1) Home, Orders, Bills, Partner
+ * 2) Designs (only after group 1 finishes)
  */
 export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
   const router = useRouter();
@@ -34,7 +35,7 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
       if (!quiet) setPhase("tabs");
       else markShopPriorityTabsReady();
 
-      // Priority tabs — Home first, then Orders / Bills / Partner.
+      // —— Category 1: Home → Orders / Bills / Partner ——
       try {
         await fetchShopTabData("dashboard");
       } catch {
@@ -51,9 +52,9 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
 
       markShopPriorityTabsReady();
 
+      // —— Category 2: Designs (after priority tabs) ——
       if (!quiet) setPhase("designs");
 
-      // Designs last — route + first catalog page (does not block priority tabs).
       try {
         router.prefetch("/shop/designs");
         const size = defaultSizeTierForCategory("MAGGAM");

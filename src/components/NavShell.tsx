@@ -9,7 +9,7 @@ import { t } from "@/lib/i18n";
 import { BrandLogoMark } from "./BrandLogo";
 import { BrandNameTagline } from "./BrandNameTagline";
 import { prefetchShopTabFromHref } from "@/lib/shop-tab-client-cache";
-import { whenShopPriorityTabsReady } from "@/lib/shop-boot";
+import { isShopPriorityTabsReady, whenShopPriorityTabsReady } from "@/lib/shop-boot";
 
 type LinkItem = { href: string; label: string; shortLabel?: string };
 
@@ -113,11 +113,25 @@ export function NavShell({
 
   function navigate(href: string) {
     setPendingHref(href);
-    prefetchShopTabFromHref(href);
-    startTransition(() => router.push(href));
+    const go = () => {
+      prefetchShopTabFromHref(href);
+      startTransition(() => router.push(href));
+    };
+    // Designs load only after Home / Orders / Bills / Partner are ready.
+    if (href.includes("/designs") && !isShopPriorityTabsReady()) {
+      void whenShopPriorityTabsReady().then(go);
+      return;
+    }
+    go();
   }
 
   function prefetchTab(href: string) {
+    if (href.includes("/designs") && !isShopPriorityTabsReady()) {
+      void whenShopPriorityTabsReady().then(() => {
+        router.prefetch(href);
+      });
+      return;
+    }
     router.prefetch(href);
     prefetchShopTabFromHref(href);
   }
