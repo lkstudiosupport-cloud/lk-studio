@@ -9,6 +9,7 @@ import { ProfileSubscriptionSection } from "@/components/ProfileSubscriptionSect
 import { Store } from "lucide-react";
 import { SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
 import { isRazorpayConfigured } from "@/lib/razorpay-config";
+import { isDemoAccountUser } from "@/lib/demo-accounts";
 
 export default async function ShopProfilePage({
   searchParams,
@@ -18,9 +19,18 @@ export default async function ShopProfilePage({
   const session = await requireSession(["SHOP"]);
   const locale = await getLocale();
   const sp = searchParams ? await searchParams : undefined;
-  const profile = await prisma.shopProfile.findUniqueOrThrow({
-    where: { id: session!.shopId! },
-  });
+  const [profile, user] = await Promise.all([
+    prisma.shopProfile.findUniqueOrThrow({
+      where: { id: session!.shopId! },
+    }),
+    prisma.user.findUnique({
+      where: { id: session!.id },
+      select: { phone: true, phoneNormalized: true },
+    }),
+  ]);
+
+  const isDemo =
+    isDemoAccountUser(user) || isDemoAccountUser({ phone: profile.phone });
 
   return (
     <div className="space-y-6">
@@ -29,19 +39,21 @@ export default async function ShopProfilePage({
         {t(locale, "shopProfileTitle")}
       </h1>
       <ShopProfileForm locale={locale} profile={profile} />
-      <ProfileSubscriptionSection
-        locale={locale}
-        status={profile.subscriptionStatus}
-        endsAt={profile.subscriptionEndsAt}
-        amountInr={SHOP_MONTHLY_PRICE_INR}
-        roleLabel={`${profile.shopName} · ${t(locale, "shopSubscriptionPrice", { amount: SHOP_MONTHLY_PRICE_INR })}`}
-        role="SHOP"
-        autopayEnabled={profile.autopayEnabled}
-        razorpayConfigured={isRazorpayConfigured()}
-        payeeLabel={profile.shopName}
-        defaultOpen={sp?.subscription === "1"}
-        accountCreatedAt={profile.createdAt}
-      />
+      {!isDemo && (
+        <ProfileSubscriptionSection
+          locale={locale}
+          status={profile.subscriptionStatus}
+          endsAt={profile.subscriptionEndsAt}
+          amountInr={SHOP_MONTHLY_PRICE_INR}
+          roleLabel={`${profile.shopName} · ${t(locale, "shopSubscriptionPrice", { amount: SHOP_MONTHLY_PRICE_INR })}`}
+          role="SHOP"
+          autopayEnabled={profile.autopayEnabled}
+          razorpayConfigured={isRazorpayConfigured()}
+          payeeLabel={profile.shopName}
+          defaultOpen={sp?.subscription === "1"}
+          accountCreatedAt={profile.createdAt}
+        />
+      )}
       <div className="mt-4 border-t border-brand-green/10 pt-4 pb-4">
         <ProfileLogout locale={locale} />
       </div>
