@@ -13,6 +13,7 @@ import { MAX_DESIGN_IMAGES, parseDesignImages } from "@/lib/design-images";
 import { billItemsTotal, parseBillItems } from "@/lib/bill-items";
 import { billFullyPaid, billPending } from "@/lib/bill-payment";
 import { isShopActive, canShopUseApp, extendSubscriptionEnd, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
+import { isDemoAccountUser } from "@/lib/demo-accounts";
 import { findUserByPhone, findUserByPhoneAnyRole, phoneFieldsForRegister } from "@/lib/auth-user";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
@@ -351,10 +352,33 @@ function bumpShopTabs(shopId: string) {
 }
 
 async function shopId() {
-  const id = await shopIdOnly();
-  const shop = await prisma.shopProfile.findUnique({ where: { id } });
+  const session = await requireSession(["SHOP"]);
+  if (!session?.shopId) throw new Error("Unauthorized");
+  const id = session.shopId;
+
+  const [shop, user] = await Promise.all([
+    prisma.shopProfile.findUnique({
+      where: { id },
+      select: {
+        phone: true,
+        subscriptionStatus: true,
+        subscriptionEndsAt: true,
+        createdAt: true,
+        autopayEnabled: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.id },
+      select: { phone: true, phoneNormalized: true },
+    }),
+  ]);
+
+  if (!shop) throw new Error("Shop not found");
+
+  const demoBypass =
+    isDemoAccountUser(user) || isDemoAccountUser({ phone: shop.phone });
   if (
-    !shop ||
+    !demoBypass &&
     !canShopUseApp(
       shop.subscriptionStatus,
       shop.subscriptionEndsAt,

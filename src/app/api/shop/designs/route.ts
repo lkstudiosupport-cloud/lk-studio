@@ -6,6 +6,7 @@ import { MAX_DESIGN_IMAGES } from "@/lib/design-images";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { persistShopDesign } from "@/lib/shop-design-upload";
 import { canShopUseApp } from "@/lib/subscription";
+import { isDemoAccountUser } from "@/lib/demo-accounts";
 import { isShopUploadCategory, SHOP_OWNED_UPLOAD_CATEGORY } from "@/lib/design-access";
 import type { ServiceCategory } from "@prisma/client";
 
@@ -24,21 +25,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const shop = await prisma.shopProfile.findUnique({
-    where: { id: session.shopId },
-    select: {
-      shopName: true,
-      shopCode: true,
-      subscriptionStatus: true,
-      subscriptionEndsAt: true,
-      createdAt: true,
-      autopayEnabled: true,
-    },
-  });
+  const [shop, user] = await Promise.all([
+    prisma.shopProfile.findUnique({
+      where: { id: session.shopId },
+      select: {
+        shopName: true,
+        shopCode: true,
+        phone: true,
+        subscriptionStatus: true,
+        subscriptionEndsAt: true,
+        createdAt: true,
+        autopayEnabled: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.id },
+      select: { phone: true, phoneNormalized: true },
+    }),
+  ]);
   if (!shop) {
     return NextResponse.json({ error: "Shop not found" }, { status: 404 });
   }
+  const demoBypass =
+    isDemoAccountUser(user) || isDemoAccountUser({ phone: shop.phone });
   if (
+    !demoBypass &&
     !canShopUseApp(
       shop.subscriptionStatus,
       shop.subscriptionEndsAt,
@@ -47,7 +58,7 @@ export async function POST(req: Request) {
     )
   ) {
     return NextResponse.json(
-      { error: "Shop subscription inactive — set up autopay in Profile" },
+      { error: "Shop subscription inactive — set up payment in Profile" },
       { status: 403 }
     );
   }
