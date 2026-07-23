@@ -3,10 +3,7 @@ import { NavShell } from "@/components/NavShell";
 import { SwipeNavContent } from "@/components/SwipeNavContent";
 import { SessionRefresh } from "@/components/SessionRefresh";
 import { ServerKeepAlive } from "@/components/ServerKeepAlive";
-import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
-import { isDemoAccountUser } from "@/lib/demo-accounts";
-import { isInTrial } from "@/lib/subscription";
 import {
   cachedLocale,
   cachedCustomerSession,
@@ -21,11 +18,6 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     cachedLocale(),
     cachedCustomerNavProfile(session.id),
   ]);
-
-  const demoBypass = isDemoAccountUser(user);
-  const inActiveTrial =
-    user != null &&
-    isInTrial(user.subscriptionStatus, user.subscriptionEndsAt, user.createdAt);
 
   const navLinks = [
     { href: "/customer/designs", label: t(locale, "designs"), shortLabel: t(locale, "navShortDesigns") },
@@ -47,28 +39,22 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     <>
       <SessionRefresh />
       <ServerKeepAlive />
-      <AutopayGuard
-        autopayEnabled={user?.autopayEnabled ?? false}
-        trialBypass={demoBypass || inActiveTrial}
-        setupPath="/register/autopay"
-      >
-        <div className="brand-page-bg min-h-dvh w-full min-w-0">
-          <NavShell
-            locale={locale}
-            title={t(locale, "appName")}
-            profileHref="/customer/profile"
-            profileLabel={t(locale, "customerProfileTitle")}
-            profilePhoto={user?.profilePhoto}
-            links={navLinks}
-            navPosition="bottom"
-          />
-          <SwipeNavContent navHrefs={navLinks.map((l) => l.href)}>
-            <div className="app-main-content app-main-content-with-bottom-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
-              {children}
-            </div>
-          </SwipeNavContent>
-        </div>
-      </AutopayGuard>
+      <div className="brand-page-bg min-h-dvh w-full min-w-0">
+        <NavShell
+          locale={locale}
+          title={t(locale, "appName")}
+          profileHref="/customer/profile"
+          profileLabel={t(locale, "customerProfileTitle")}
+          profilePhoto={user?.profilePhoto}
+          links={navLinks}
+          navPosition="bottom"
+        />
+        <SwipeNavContent navHrefs={navLinks.map((l) => l.href)}>
+          <div className="app-main-content app-main-content-with-bottom-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
+            {children}
+          </div>
+        </SwipeNavContent>
+      </div>
     </>
   );
 }

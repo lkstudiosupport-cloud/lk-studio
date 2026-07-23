@@ -73,8 +73,11 @@ export async function POST(req: Request) {
     }
 
     const role = body.role;
-    if (role !== "SHOP" && role !== "CUSTOMER") {
-      return NextResponse.json({ ok: false, error: "Invalid role" }, { status: 400 });
+    if (role !== "SHOP") {
+      return NextResponse.json(
+        { ok: false, error: "Customer accounts are free — no subscription" },
+        { status: 400 }
+      );
     }
     if (session.role !== role) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });

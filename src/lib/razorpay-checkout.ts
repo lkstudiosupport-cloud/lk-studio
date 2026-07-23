@@ -43,3 +43,13 @@ export function razorpayUpiCheckoutOptions() {
       : {}),
   };
 }
+
+/** One-time monthly payment checkout (no recurring mandate). */
+export function razorpayOneTimeCheckoutOptions() {
+  const mobile = isCapacitorNative() || isMobileWeb();
+
+  return {
+    method: { upi: true, card: true, netbanking: true, wallet: true },
+    ...(mobile ? { webview_intent: true as const } : {}),
+  };
+}

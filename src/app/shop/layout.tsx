@@ -8,7 +8,7 @@ import { ShopTabCacheWarmer } from "@/components/ShopTabCacheWarmer";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
 import { isDemoAccountUser } from "@/lib/demo-accounts";
-import { isInTrial } from "@/lib/subscription";
+import { hasFullAppAccess } from "@/lib/subscription";
 import {
   cachedLocale,
   cachedShopSession,
@@ -47,9 +47,18 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   const demoBypass =
     isDemoAccountUser(user) || isDemoAccountUser({ phone: profile?.phone });
-  const inActiveTrial =
-    profile != null &&
-    isInTrial(profile.subscriptionStatus, profile.subscriptionEndsAt, profile.createdAt);
+  const hasAccess =
+    demoBypass ||
+    hasFullAppAccess(
+      profile.subscriptionStatus,
+      profile.subscriptionEndsAt,
+      profile.createdAt,
+      profile.autopayEnabled
+    );
+
+  if (!hasAccess) {
+    redirect("/register/autopay");
+  }
 
   const navLinks = [
     { href: "/shop", label: t(locale, "dashboard"), shortLabel: t(locale, "navShortHome") },
@@ -64,11 +73,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <SessionRefresh />
       <ServerKeepAlive />
       <ShopTabCacheWarmer locale={locale} />
-      <AutopayGuard
-        autopayEnabled={profile?.autopayEnabled ?? false}
-        trialBypass={demoBypass || inActiveTrial}
-        setupPath="/register/autopay"
-      >
+      <AutopayGuard hasAccess={hasAccess} setupPath="/register/autopay">
         <div className="brand-page-bg min-h-dvh w-full min-w-0">
           <NavShell
             locale={locale}

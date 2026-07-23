@@ -8,8 +8,10 @@ import type { BillReceiptData } from "@/lib/bill-receipt-text";
 import { BILL_RECEIPT_CAPTURE_ID } from "@/lib/bill-receipt-capture";
 import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
 
-function formatReceiptDate(d: Date) {
-  return d.toLocaleString("en-IN", {
+function formatReceiptDate(d: Date | string) {
+  const date = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(date.getTime())) return String(d);
+  return date.toLocaleString("en-IN", {
     weekday: "short",
     day: "2-digit",
     month: "short",

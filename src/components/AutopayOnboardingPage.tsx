@@ -44,21 +44,33 @@ export function AutopayOnboardingPage({
               <ShieldCheck className="h-6 w-6" />
             </span>
             <div>
-              <h1 className="text-xl font-bold text-brand-green">{t(locale, "autopayOnboardingTitle")}</h1>
+              <h1 className="text-xl font-bold text-brand-green">
+                {inTrial
+                  ? t(locale, "autopayOnboardingTitle")
+                  : t(locale, "paymentRequiredTitle")}
+              </h1>
               <p className="mt-1 text-sm text-zinc-600">
-                {inTrial ? t(locale, "autopayOnboardingHintTrial") : t(locale, "autopayOnboardingHint")}
+                {inTrial
+                  ? t(locale, "autopayOnboardingHintTrial")
+                  : t(locale, "paymentRequiredHint", { amount: amountInr })}
               </p>
             </div>
           </div>
 
           <ul className="space-y-2 rounded-xl bg-brand-cream/60 p-4 text-sm text-zinc-700">
-            {inTrial && (
+            {inTrial ? (
               <>
                 <li>• {t(locale, "autopayOnboardingTrial")}</li>
                 <li>• {t(locale, "autopayOnboardingAfterTrial", { amount: amountInr })}</li>
+                <li>• {t(locale, "autopayOnboardingNoCancel")}</li>
+              </>
+            ) : (
+              <>
+                <li>• {t(locale, "paymentRequiredAutopay", { amount: amountInr })}</li>
+                <li>• {t(locale, "paymentRequiredMonthly", { amount: amountInr })}</li>
+                <li>• {t(locale, "paymentRequiredLock")}</li>
               </>
             )}
-            <li>• {t(locale, "autopayOnboardingNoCancel")}</li>
           </ul>
 
           <AutoPayPanel
@@ -70,6 +82,7 @@ export function AutopayOnboardingPage({
             payeeLabel={payeeLabel}
             onboarding
             inTrial={inTrial}
+            allowMonthlyPay={!inTrial}
             onSuccess={() => {
               router.push(homePath);
               router.refresh();

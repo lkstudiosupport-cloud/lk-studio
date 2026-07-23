@@ -3,23 +3,20 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-/** Redirect to autopay setup when trial ended and mandate not completed. */
+/** Redirect to payment setup when trial/paid period ended and access is locked. */
 export function AutopayGuard({
-  autopayEnabled,
-  /** Demo accounts or active free trial — app works without mandate. */
-  trialBypass = false,
+  hasAccess,
   setupPath,
   children,
 }: {
-  autopayEnabled: boolean;
-  trialBypass?: boolean;
+  hasAccess: boolean;
   setupPath: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname() ?? "";
   const router = useRouter();
   const onSetupPage = pathname === setupPath || pathname.startsWith(`${setupPath}/`);
-  const mustSetup = !autopayEnabled && !trialBypass;
+  const mustSetup = !hasAccess;
 
   useEffect(() => {
     if (mustSetup && !onSetupPage) {

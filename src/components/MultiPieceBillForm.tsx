@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { VoiceInput } from "./VoiceInput";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -58,7 +57,6 @@ export function MultiPieceBillForm({
   const [error, setError] = useState("");
   const [advancePaid, setAdvancePaid] = useState(initialAdvancePaid);
   const [paidAmount, setPaidAmount] = useState(initialPaidAmount);
-  const router = useRouter();
 
   const total = useMemo(
     () => lines.reduce((s, l) => s + lineItemTotal(l.quantity, l.price), 0),
@@ -134,25 +132,37 @@ export function MultiPieceBillForm({
     try {
       if (isEdit && editBillId) {
         fd.set("billId", editBillId);
-        await updateBill(fd);
-        router.push(`/shop/bills/${editBillId}?share=1`);
-        router.refresh();
+        const result = await updateBill(fd);
+        if (result && "ok" in result && result.ok === false) {
+          setError(result.error);
+          return;
+        }
+        // Successful update redirects from the server action.
         return;
       }
 
       const result = await createBill(fd);
-      if (result?.id) {
-        router.push(`/shop/bills/${result.id}?share=1`);
+      if (result && "ok" in result && result.ok === false) {
+        setError(result.error);
         return;
       }
-      setLines([newLine()]);
-      setCustomerName("");
-      setCustomerPhone("");
-      setAdvancePaid(0);
-      setPaidAmount(0);
-      router.refresh();
+      // Successful create redirects from the server action.
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed");
+      // next/navigation redirect() throws — let the framework navigate
+      if (
+        err &&
+        typeof err === "object" &&
+        "digest" in err &&
+        String((err as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT")
+      ) {
+        throw err;
+      }
+      const raw = err instanceof Error ? err.message : "Failed";
+      setError(
+        raw.includes("Server Components") || raw.includes("digest")
+          ? t(locale, "saveBillFailedRetry")
+          : raw
+      );
     } finally {
       setPending(false);
     }

@@ -95,6 +95,23 @@ export async function cancelRazorpaySubscription(subscriptionId: string) {
   await rz.subscriptions.cancel(subscriptionId, false);
 }
 
+/** One-month prepaid order (no autopay mandate). */
+export async function createRazorpayOrder(input: {
+  role: UserRole;
+  notes: Record<string, string>;
+  receipt?: string;
+}): Promise<{ id: string; amount: number; currency: string }> {
+  const rz = client();
+  const amount = subscriptionAmountPaise(input.role);
+  const order = await rz.orders.create({
+    amount,
+    currency: "INR",
+    receipt: input.receipt?.slice(0, 40) || `lk-${input.role.toLowerCase()}-${Date.now()}`,
+    notes: input.notes,
+  });
+  return { id: order.id, amount: Number(order.amount), currency: order.currency };
+}
+
 export function verifySubscriptionPaymentSignature(input: {
   paymentId: string;
   subscriptionId: string;
@@ -103,6 +120,18 @@ export function verifySubscriptionPaymentSignature(input: {
   const secret = process.env.RAZORPAY_KEY_SECRET;
   if (!secret) return false;
   const body = `${input.paymentId}|${input.subscriptionId}`;
+  const expected = crypto.createHmac("sha256", secret).update(body).digest("hex");
+  return expected === input.signature;
+}
+
+export function verifyOrderPaymentSignature(input: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}) {
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!secret) return false;
+  const body = `${input.orderId}|${input.paymentId}`;
   const expected = crypto.createHmac("sha256", secret).update(body).digest("hex");
   return expected === input.signature;
 }

@@ -6,8 +6,9 @@ export const TRIAL_DAYS = 25;
 export const PAID_CALENDAR_MONTHS = 1;
 export const PAID_BILL_DAYS = 30;
 export const PLAN_BILL_DAYS = PAID_BILL_DAYS;
-export const SHOP_MONTHLY_PRICE_INR = 1000;
-export const CUSTOMER_MONTHLY_PRICE_INR = 100;
+export const SHOP_MONTHLY_PRICE_INR = 900;
+/** Customers are free forever — no subscription. Kept at 0 for legacy UI/API guards. */
+export const CUSTOMER_MONTHLY_PRICE_INR = 0;
 
 /** @deprecated No upfront ₹1 mandate — trial is fully free until day {TRIAL_DAYS}. */
 export const TRIAL_MANDATE_AUTH_INR = 0;
@@ -62,13 +63,14 @@ export function isCustomerActive(
   return isSubscriptionActive(status, endsAt, accountCreatedAt);
 }
 
+/** Customers always have full free access (no subscription). */
 export function canCustomerBrowseDesigns(
-  status: SubscriptionStatus,
-  endsAt: Date | null,
-  accountCreatedAt?: Date | null,
-  autopayEnabled = false
+  _status?: SubscriptionStatus,
+  _endsAt?: Date | null,
+  _accountCreatedAt?: Date | null,
+  _autopayEnabled = false
 ) {
-  return hasFullAppAccess(status, endsAt, accountCreatedAt, autopayEnabled);
+  return true;
 }
 
 export function trialEndDate(from = new Date()) {
@@ -77,7 +79,10 @@ export function trialEndDate(from = new Date()) {
   return result;
 }
 
-/** Full app during free trial, or after trial when monthly autopay mandate is active. */
+/**
+ * Full app during free trial, with Razorpay autopay enabled, or while a
+ * month-wise paid period (ACTIVE + endsAt in the future) is still valid.
+ */
 export function hasFullAppAccess(
   status: SubscriptionStatus,
   endsAt: Date | null,
@@ -85,7 +90,8 @@ export function hasFullAppAccess(
   autopayEnabled: boolean
 ): boolean {
   if (autopayEnabled) return true;
-  return isInTrial(status, endsAt, accountCreatedAt);
+  if (isInTrial(status, endsAt, accountCreatedAt)) return true;
+  return status === "ACTIVE" && isSubscriptionActive(status, endsAt, accountCreatedAt);
 }
 
 export function canShopUseApp(

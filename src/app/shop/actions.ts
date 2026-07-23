@@ -1,6 +1,7 @@
 "use server";
 
 import { after } from "next/server";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { revalidateShopTabCache } from "@/lib/cached-shop-data";
 import { requireSession } from "@/lib/auth";
@@ -35,6 +36,8 @@ import {
   shopAcceptWorkerApplication,
   shopRejectWorkerApplication,
 } from "@/lib/shop-submission-actions";
+
+export type BillActionResult = { ok: false; error: string };
 
 const MAX_ORDER_DESIGN_PICKS = 3;
 const WALKIN_EMAIL_SUFFIX = "@lkstudio.walkin";
@@ -359,9 +362,148 @@ async function shopId() {
       shop.autopayEnabled
     )
   ) {
-    throw new Error("Shop subscription inactive — set up autopay in Profile");
+    throw new Error("Shop subscription inactive — set up payment in Profile");
   }
   return id;
+}
+
+/** Resolve an order link only when it belongs to this shop (avoids Prisma connect crashes). */
+async function shopOwnedOrderId(shopId: string, orderId: string | null | undefined) {
+  if (!orderId?.trim()) return null;
+  const order = await prisma.order.findFirst({
+    where: { id: orderId.trim(), shopId },
+    select: { id: true },
+  });
+  return order?.id ?? null;
+}
+
+export async function createBill(formData: FormData): Promise<BillActionResult> {
+  try {
+    const shop = await shopId();
+    const customerName = String(formData.get("customerName") ?? "").trim();
+    const customerPhone = String(formData.get("customerPhone") ?? "").trim() || null;
+    if (!customerName) return { ok: false, error: "Enter customer name" };
+
+    const itemsJson = String(formData.get("itemsJson") ?? "[]");
+    const items = parseBillItems(itemsJson);
+    if (items.length === 0) {
+      return { ok: false, error: "Add at least one item with name, quantity and price" };
+    }
+
+    const amount = parseFloat(String(formData.get("amount"))) || billItemsTotal(items);
+    const advancePaid = parseFloat(String(formData.get("advancePaid") ?? "0")) || 0;
+    const paidAmount = parseFloat(String(formData.get("paidAmount") ?? "0")) || 0;
+    const notes = String(formData.get("notes") ?? "").trim() || null;
+    const voiceText = notes;
+    const linkedOrderId = await shopOwnedOrderId(
+      shop,
+      items.find((i) => i.orderId)?.orderId
+    );
+    const paid =
+      formData.get("paid") === "on" || billFullyPaid(amount, advancePaid, paidAmount);
+
+    const billNumber = `BILL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const bill = await prisma.bill.create({
+      data: {
+        billNumber,
+        shop: { connect: { id: shop } },
+        customerName,
+        customerPhone,
+        ...(linkedOrderId ? { order: { connect: { id: linkedOrderId } } } : {}),
+        amount,
+        advancePaid,
+        paidAmount,
+        paid,
+        paidAt: paid ? new Date() : null,
+        itemsJson,
+        notes,
+        voiceText,
+      },
+    });
+    after(() => {
+      revalidatePath("/shop/bills");
+      revalidatePath("/shop");
+      revalidatePath("/customer/bills");
+      bumpShopTabs(shop);
+    });
+    // Navigate from the action so the create-bill page is not re-rendered
+    // (avoids production "Server Components render" digest errors on the form).
+    redirect(`/shop/bills/${bill.id}?share=1`);
+  } catch (err) {
+    // redirect() throws a special error — let Next.js handle navigation
+    if (
+      err &&
+      typeof err === "object" &&
+      "digest" in err &&
+      String((err as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT")
+    ) {
+      throw err;
+    }
+    console.error("[lk-studio] createBill failed:", err);
+    const message =
+      err instanceof Error && err.message && !err.message.includes("Server Components")
+        ? err.message
+        : "Could not save bill — please try again";
+    return { ok: false, error: message };
+  }
+}
+
+export async function updateBill(formData: FormData): Promise<BillActionResult> {
+  try {
+    const shop = await shopId();
+    const billId = String(formData.get("billId") ?? "").trim();
+    if (!billId) return { ok: false, error: "Bill not found" };
+
+    const existing = await prisma.bill.findFirst({ where: { id: billId, shopId: shop } });
+    if (!existing) return { ok: false, error: "Bill not found" };
+
+    const itemsJson = String(formData.get("itemsJson") ?? "[]");
+    const items = parseBillItems(itemsJson);
+    if (items.length === 0) {
+      return { ok: false, error: "Add at least one item with name, quantity and price" };
+    }
+
+    const amount = parseFloat(String(formData.get("amount"))) || billItemsTotal(items);
+    const advancePaid = parseFloat(String(formData.get("advancePaid") ?? "0")) || 0;
+    const paidAmount = parseFloat(String(formData.get("paidAmount") ?? "0")) || 0;
+    const linkedOrderId = await shopOwnedOrderId(
+      shop,
+      items.find((i) => i.orderId)?.orderId
+    );
+    const paid =
+      formData.get("paid") === "on" || billFullyPaid(amount, advancePaid, paidAmount);
+
+    await prisma.bill.update({
+      where: { id: billId },
+      data: {
+        amount,
+        advancePaid,
+        paidAmount,
+        paid,
+        paidAt: paid ? (existing.paidAt ?? new Date()) : null,
+        itemsJson,
+        ...(linkedOrderId ? { order: { connect: { id: linkedOrderId } } } : {}),
+      },
+    });
+
+    revalidateBillPaths(billId, shop);
+    redirect(`/shop/bills/${billId}?share=1`);
+  } catch (err) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "digest" in err &&
+      String((err as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT")
+    ) {
+      throw err;
+    }
+    console.error("[lk-studio] updateBill failed:", err);
+    const message =
+      err instanceof Error && err.message && !err.message.includes("Server Components")
+        ? err.message
+        : "Could not update bill — please try again";
+    return { ok: false, error: message };
+  }
 }
 
 export async function updateShopProfile(formData: FormData) {
@@ -589,88 +731,6 @@ export async function updateOrderWork(formData: FormData) {
   revalidatePath("/shop/orders");
   revalidatePath("/customer/orders");
   bumpShopTabs(shop);
-}
-
-export async function createBill(formData: FormData) {
-  const shop = await shopId();
-  const customerName = String(formData.get("customerName") ?? "").trim();
-  const customerPhone = String(formData.get("customerPhone") ?? "").trim() || null;
-  if (!customerName) throw new Error("Enter customer name");
-
-  const itemsJson = String(formData.get("itemsJson") ?? "[]");
-  const items = parseBillItems(itemsJson);
-  if (items.length === 0) throw new Error("Add at least one item with name, quantity and price");
-
-  const amount = parseFloat(String(formData.get("amount"))) || billItemsTotal(items);
-  const advancePaid = parseFloat(String(formData.get("advancePaid") ?? "0")) || 0;
-  const paidAmount = parseFloat(String(formData.get("paidAmount") ?? "0")) || 0;
-  const notes = String(formData.get("notes") ?? "").trim() || null;
-  const voiceText = notes;
-  const firstOrderId = items.find((i) => i.orderId)?.orderId ?? null;
-  const paid =
-    formData.get("paid") === "on" || billFullyPaid(amount, advancePaid, paidAmount);
-
-  const billNumber = `BILL-${Date.now()}`;
-  const bill = await prisma.bill.create({
-    data: {
-      billNumber,
-      shop: { connect: { id: shop } },
-      customerName,
-      customerPhone,
-      ...(firstOrderId ? { order: { connect: { id: firstOrderId } } } : {}),
-      amount,
-      advancePaid,
-      paidAmount,
-      paid,
-      paidAt: paid ? new Date() : null,
-      itemsJson,
-      notes,
-      voiceText,
-    },
-  });
-  after(() => {
-    revalidatePath("/shop/bills");
-    revalidatePath("/shop");
-    revalidatePath("/customer/bills");
-    bumpShopTabs(shop);
-  });
-  return { id: bill.id };
-}
-
-export async function updateBill(formData: FormData) {
-  const shop = await shopId();
-  const billId = String(formData.get("billId") ?? "").trim();
-  if (!billId) throw new Error("Bill not found");
-
-  const existing = await prisma.bill.findFirst({ where: { id: billId, shopId: shop } });
-  if (!existing) throw new Error("Bill not found");
-
-  const itemsJson = String(formData.get("itemsJson") ?? "[]");
-  const items = parseBillItems(itemsJson);
-  if (items.length === 0) throw new Error("Add at least one item with name, quantity and price");
-
-  const amount = parseFloat(String(formData.get("amount"))) || billItemsTotal(items);
-  const advancePaid = parseFloat(String(formData.get("advancePaid") ?? "0")) || 0;
-  const paidAmount = parseFloat(String(formData.get("paidAmount") ?? "0")) || 0;
-  const firstOrderId = items.find((i) => i.orderId)?.orderId;
-  const paid =
-    formData.get("paid") === "on" || billFullyPaid(amount, advancePaid, paidAmount);
-
-  await prisma.bill.update({
-    where: { id: billId },
-    data: {
-      amount,
-      advancePaid,
-      paidAmount,
-      paid,
-      paidAt: paid ? (existing.paidAt ?? new Date()) : null,
-      itemsJson,
-      ...(firstOrderId ? { order: { connect: { id: firstOrderId } } } : {}),
-    },
-  });
-
-  revalidateBillPaths(billId, shop);
-  return { id: billId };
 }
 
 function revalidateBillPaths(billId: string, shopId: string) {

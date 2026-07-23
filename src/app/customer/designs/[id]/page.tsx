@@ -11,9 +11,6 @@ import { isShopActive } from "@/lib/subscription";
 import { parseDesignImages } from "@/lib/design-images";
 import { withQueryParam } from "@/lib/query-string";
 import type { ServiceCategory } from "@prisma/client";
-import { CustomerDesignPaywall } from "@/components/CustomerDesignPaywall";
-import { canCustomerBrowseDesigns } from "@/lib/subscription";
-import { isDemoAccountUser } from "@/lib/demo-accounts";
 
 export default async function CustomerDesignDetailPage({
   params,
@@ -26,29 +23,6 @@ export default async function CustomerDesignDetailPage({
   const locale = await getLocale();
   const { id } = await params;
   const { shopId: shopIdParam, category: categoryParam } = await searchParams;
-
-  const customer = await prisma.user.findUniqueOrThrow({
-    where: { id: session!.id },
-    select: {
-      subscriptionStatus: true,
-      subscriptionEndsAt: true,
-      createdAt: true,
-      autopayEnabled: true,
-      phone: true,
-      phoneNormalized: true,
-    },
-  });
-  const designAccess =
-    isDemoAccountUser(customer) ||
-    canCustomerBrowseDesigns(
-      customer.subscriptionStatus,
-      customer.subscriptionEndsAt,
-      customer.createdAt,
-      customer.autopayEnabled
-    );
-  if (!designAccess) {
-    return <CustomerDesignPaywall locale={locale} />;
-  }
 
   const design = await prisma.design.findFirst({
     where: { id, active: true },

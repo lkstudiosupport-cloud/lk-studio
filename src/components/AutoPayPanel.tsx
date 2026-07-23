@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ShieldCheck, Smartphone } from "lucide-react";
+import { ShieldCheck, Smartphone, CalendarDays } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { AutopayRole } from "@/lib/subscription-autopay";
-import { enableAutopayDemo } from "@/app/subscription-autopay-actions";
+import { enableAutopayDemo, enableMonthlyDemo } from "@/app/subscription-autopay-actions";
 import { readApiJson } from "@/lib/api-json";
-import { razorpayUpiCheckoutOptions } from "@/lib/razorpay-checkout";
+import { razorpayUpiCheckoutOptions, razorpayOneTimeCheckoutOptions } from "@/lib/razorpay-checkout";
 
 function loadRazorpayScript() {
   return new Promise<boolean>((resolve) => {
@@ -53,6 +53,8 @@ export function AutoPayPanel({
   embedded = false,
   onboarding = false,
   inTrial = false,
+  /** After trial: show month-wise one-time pay alongside autopay. */
+  allowMonthlyPay = true,
   onSuccess,
 }: {
   locale: Locale;
@@ -65,15 +67,16 @@ export function AutoPayPanel({
   onboarding?: boolean;
   /** Active free trial — billing starts after trial ends (no upfront charge). */
   inTrial?: boolean;
+  allowMonthlyPay?: boolean;
   onSuccess?: () => void;
 }) {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"autopay" | "monthly" | null>(null);
   const [error, setError] = useState("");
 
   async function startAutopay() {
     setError("");
-    setBusy(true);
+    setBusy("autopay");
     try {
       if (!razorpayConfigured) {
         await enableAutopayDemo(role);
@@ -162,13 +165,101 @@ export function AutoPayPanel({
       }
       setError(message);
     } finally {
-      setBusy(false);
+      setBusy(null);
+    }
+  }
+
+  async function startMonthlyPay() {
+    setError("");
+    setBusy("monthly");
+    try {
+      if (!razorpayConfigured) {
+        await enableMonthlyDemo(role);
+        if (onSuccess) onSuccess();
+        else router.refresh();
+        return;
+      }
+
+      const res = await fetch("/api/subscription/monthly", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const data = await readApiJson<{
+        ok?: boolean;
+        error?: string;
+        keyId?: string;
+        orderId?: string;
+        amount?: number;
+        currency?: string;
+        payerEmail?: string;
+        payerContact?: string;
+      }>(res);
+      if (!res.ok) throw new Error(data.error ?? "Could not start payment");
+      if (!data.keyId || !data.orderId || data.amount == null) {
+        throw new Error(data.error ?? "Could not start payment");
+      }
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded || !window.Razorpay) throw new Error(t(locale, "autopayScriptFailed"));
+
+      await new Promise<void>((resolve, reject) => {
+        const rzp = new window.Razorpay!({
+          key: data.keyId,
+          amount: data.amount,
+          currency: data.currency ?? "INR",
+          order_id: data.orderId,
+          name: t(locale, "appName"),
+          description: t(locale, "monthlyPayDescription", { amount: amountInr }),
+          prefill: {
+            name: payeeLabel,
+            email: data.payerEmail,
+            contact: data.payerContact,
+          },
+          theme: { color: "#1b3022" },
+          ...razorpayOneTimeCheckoutOptions(),
+          handler: async (response: unknown) => {
+            const r = response as {
+              razorpay_payment_id: string;
+              razorpay_order_id: string;
+              razorpay_signature: string;
+            };
+            const verify = await fetch("/api/subscription/monthly/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                role,
+                razorpay_payment_id: r.razorpay_payment_id,
+                razorpay_order_id: r.razorpay_order_id,
+                razorpay_signature: r.razorpay_signature,
+              }),
+            });
+            const verifyData = await readApiJson<{ ok?: boolean; error?: string }>(verify);
+            if (!verify.ok) throw new Error(verifyData.error ?? "Verification failed");
+            resolve();
+          },
+          modal: {
+            ondismiss: () => reject(new Error(t(locale, "autopayCancelled"))),
+          },
+        });
+        rzp.open();
+      });
+
+      if (onSuccess) onSuccess();
+      else router.refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t(locale, "monthlyPayFailed");
+      setError(message);
+    } finally {
+      setBusy(null);
     }
   }
 
   if (autopayEnabled) {
     return null;
   }
+
+  const showMonthly = allowMonthlyPay && !inTrial;
 
   return (
     <div className={embedded ? "space-y-3" : "mt-4 space-y-4 border-t border-zinc-200 pt-4"}>
@@ -206,20 +297,18 @@ export function AutoPayPanel({
         </>
       )}
 
-      <div className={embedded ? "" : "rounded-xl border border-dashed border-brand-green/30 bg-brand-cream/40 p-4"}>
+      <div className={embedded ? "space-y-3" : "space-y-3 rounded-xl border border-dashed border-brand-green/30 bg-brand-cream/40 p-4"}>
         {!razorpayConfigured && (
-          <p className={`text-xs text-amber-800 ${embedded ? "mb-2" : "mb-3"}`}>
-            {t(locale, "autopayDemoNote")}
-          </p>
+          <p className="mb-1 text-xs text-amber-800">{t(locale, "autopayDemoNote")}</p>
         )}
         <button
           type="button"
-          disabled={busy}
+          disabled={busy != null}
           onClick={() => void startAutopay()}
           className="btn-primary inline-flex w-full items-center justify-center gap-2 py-3 disabled:opacity-60"
         >
           <Smartphone className="h-4 w-4" aria-hidden />
-          {busy
+          {busy === "autopay"
             ? t(locale, "autopayStarting")
             : onboarding
               ? inTrial
@@ -229,6 +318,26 @@ export function AutoPayPanel({
                 ? t(locale, "autopayEnableTrialDeferred", { amount: amountInr })
                 : t(locale, "autopayEnable", { amount: amountInr })}
         </button>
+
+        {showMonthly && (
+          <>
+            <p className="text-center text-xs font-medium uppercase tracking-wide text-zinc-500">
+              {t(locale, "payOrDivider")}
+            </p>
+            <button
+              type="button"
+              disabled={busy != null}
+              onClick={() => void startMonthlyPay()}
+              className="btn-secondary inline-flex w-full items-center justify-center gap-2 py-3 disabled:opacity-60"
+            >
+              <CalendarDays className="h-4 w-4" aria-hidden />
+              {busy === "monthly"
+                ? t(locale, "autopayStarting")
+                : t(locale, "monthlyPayEnable", { amount: amountInr })}
+            </button>
+            <p className="text-center text-xs text-zinc-600">{t(locale, "monthlyPayHint")}</p>
+          </>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
