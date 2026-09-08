@@ -24,9 +24,12 @@ export default async function WorkPartnerHomePage() {
             locale={locale}
             className="!h-24 !w-24 !rounded-2xl sm:!h-28 sm:!w-28 md:!h-32 md:!w-32 lg:!h-36 lg:!w-36"
           />
-          <h1 className="mt-4 text-xl font-bold uppercase tracking-wide text-brand-green sm:mt-5 sm:text-2xl md:text-3xl lg:text-4xl">
-            LK Tailoring Partner
+          <h1 className="brand-title mt-4 text-brand-green text-2xl sm:mt-5 sm:text-3xl md:text-4xl">
+            {t(locale, "appName")}
           </h1>
+          <p className="mt-1 text-base font-semibold text-brand-green sm:mt-1.5 sm:text-lg md:text-xl">
+            Tailoring Partner
+          </p>
           <p className="mt-2 max-w-prose text-sm text-zinc-600 sm:mt-3 sm:text-base md:text-lg">
             {t(locale, "workPartnerAppHint")}
           </p>

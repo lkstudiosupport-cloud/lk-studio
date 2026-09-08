@@ -16,8 +16,13 @@ export default async function WorkPartnerLayout({ children }: { children: ReactN
         <div className="partner-app-frame flex items-center justify-between gap-3 py-2.5 sm:py-3 md:py-3.5">
           <Link href="/work-partner" className="flex min-w-0 items-center gap-2 sm:gap-3">
             <BrandLogoMark locale={locale} className="!h-9 !w-9 sm:!h-10 sm:!w-10 md:!h-11 md:!w-11" />
-            <span className="truncate text-sm font-bold text-brand-green sm:text-base md:text-lg">
-              LK Tailoring Partner
+            <span className="min-w-0 leading-tight">
+              <span className="block truncate text-sm font-bold uppercase tracking-wide text-brand-green sm:text-base">
+                LK Studio
+              </span>
+              <span className="block truncate text-xs font-medium text-brand-green-soft sm:text-sm">
+                Tailoring Partner
+              </span>
             </span>
           </Link>
         </div>
