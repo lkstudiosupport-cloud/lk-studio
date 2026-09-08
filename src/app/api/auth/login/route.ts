@@ -13,7 +13,7 @@ import { isDeviceTrusted } from "@/lib/trusted-device";
 const schema = z.object({
   phone: formString(1),
   password: formString(1),
-  role: z.enum(["SHOP", "CUSTOMER", "ADMIN"]),
+  role: z.enum(["SHOP", "CUSTOMER", "ADMIN", "PARTNER"]),
   deviceId: deviceIdSchema,
   latitude: formOptionalNumber(),
   longitude: formOptionalNumber(),

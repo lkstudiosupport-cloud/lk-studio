@@ -7,7 +7,7 @@ import { zodErrorMessage, formString } from "@/lib/zod-error-message";
 
 const schema = z.object({
   phone: formString(1),
-  role: z.enum(["SHOP", "CUSTOMER"]),
+  role: z.enum(["SHOP", "CUSTOMER", "PARTNER"]),
 });
 
 /** Check if a mobile number can register for the given role (before sending OTP). */

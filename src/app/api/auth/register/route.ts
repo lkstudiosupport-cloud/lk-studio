@@ -7,6 +7,7 @@ import { bumpSessionVersion, createSession } from "@/lib/auth";
 import { deviceIdSchema, requestUserAgent } from "@/lib/auth-device";
 import { trustDevice } from "@/lib/trusted-device";
 import { generateShopCode, trialEndDate, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
+import { buildShopNumberBase } from "@/lib/shop-code";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { checkPhoneRegistration, phoneFieldsForRegister } from "@/lib/auth-user";
 import { isValidPhone, resolvePhoneE164, INVALID_PHONE_MESSAGE } from "@/lib/phone";
@@ -26,7 +27,7 @@ import {
 const registerBase = {
   name: formString(1),
   phone: formString(1),
-  role: z.enum(["SHOP", "CUSTOMER"]),
+  role: z.enum(["SHOP", "CUSTOMER", "PARTNER"]),
   deviceId: deviceIdSchema,
   shopName: formOptionalString(),
   latitude: formOptionalNumber(),
@@ -89,7 +90,11 @@ export async function POST(req: Request) {
     }
     if (phoneConflict?.kind === "other_role") {
       const errorKey =
-        phoneConflict.existingRole === "SHOP" ? "phoneAlreadyShop" : "phoneAlreadyCustomer";
+        phoneConflict.existingRole === "SHOP"
+          ? "phoneAlreadyShop"
+          : phoneConflict.existingRole === "PARTNER"
+            ? "phoneAlreadyPartner"
+            : "phoneAlreadyCustomer";
       return NextResponse.json({ errorKey }, { status: 409 });
     }
 
@@ -116,6 +121,20 @@ export async function POST(req: Request) {
     const displayShopName = shopName?.trim() || name;
     const phoneFields = phoneFieldsForRegister(phone);
     const email = internalEmailForUser(phoneFields.phoneNormalized, role);
+    const shopNumber =
+      role === "SHOP"
+        ? await (async () => {
+            const base = buildShopNumberBase(address?.trim() || null);
+            if (base === "SHOP") return base;
+            let candidate = base;
+            let suffix = 1;
+            while (await prisma.shopProfile.findUnique({ where: { shopNumber: candidate }, select: { id: true } })) {
+              candidate = `${base}-${suffix}`;
+              suffix += 1;
+            }
+            return candidate;
+          })()
+        : null;
 
     const user = await prisma.user.create({
       data: {
@@ -126,9 +145,9 @@ export async function POST(req: Request) {
         phoneNormalized: phoneFields.phoneNormalized,
         whatsapp: phoneFields.whatsapp,
         role,
-        ...(role === "CUSTOMER"
+        ...(role === "CUSTOMER" || role === "PARTNER"
           ? {
-              // Customers are free — no trial/subscription gating
+              // Customers and partners are free — no trial/subscription gating
               subscriptionStatus: "ACTIVE" as const,
               subscriptionEndsAt: null,
               ...(latitude != null && longitude != null
@@ -147,6 +166,7 @@ export async function POST(req: Request) {
                 create: {
                   shopName: displayShopName,
                   shopCode: generateShopCode(displayShopName),
+                  shopNumber,
                   phone: phoneFields.phone,
                   whatsapp: phoneFields.whatsapp,
                   subscriptionStatus: "TRIAL",
@@ -168,6 +188,26 @@ export async function POST(req: Request) {
       include: { shopProfile: true },
     });
 
+    if (role === "PARTNER") {
+      await prisma.workPartnerProfile.upsert({
+        where: { phoneNormalized: phoneFields.phoneNormalized },
+        create: {
+          name,
+          phone: phoneFields.phone,
+          phoneNormalized: phoneFields.phoneNormalized,
+          city: null,
+          address: address?.trim() || null,
+          locationLink: locationLink?.trim() || null,
+        },
+        update: {
+          name,
+          phone: phoneFields.phone,
+          address: address?.trim() || null,
+          locationLink: locationLink?.trim() || null,
+        },
+      });
+    }
+
     await trustDevice(user.id, deviceId, requestUserAgent(req));
 
     const sessionVersion = await bumpSessionVersion(user.id);
@@ -182,7 +222,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      redirect: role === "SHOP" ? "/shop" : "/customer/designs",
+      redirect:
+        role === "SHOP"
+          ? "/shop"
+          : role === "PARTNER"
+            ? "/work-partner/requests"
+            : "/customer/designs",
     });
   } catch (err) {
     console.error("Register error:", err);

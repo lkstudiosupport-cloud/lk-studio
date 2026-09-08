@@ -9,7 +9,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { TermsAcceptanceField } from "@/components/TermsAcceptanceField";
-import { SHOP_MONTHLY_PRICE_INR, TRIAL_DAYS } from "@/lib/subscription";
+import { SHOP_MONTHLY_PRICE_INR, TRIAL_DAYS, isPaymentsPaused } from "@/lib/subscription";
 import {
   FIREBASE_RECAPTCHA_CONTAINER_ID,
   mapFirebasePhoneAuthError,
@@ -23,17 +23,27 @@ function formVal(fd: FormData, key: string): string {
   return v == null ? "" : String(v);
 }
 
-export function RegisterForm({ locale }: { locale: Locale }) {
+export function RegisterForm({
+  locale,
+  partnerOnly = false,
+}: {
+  locale: Locale;
+  partnerOnly?: boolean;
+}) {
   const router = useRouter();
   const { sendOtp, verifyOtpAndGetIdToken, resetRecaptcha } = useFirebasePhoneOtp();
   const [error, setError] = useState("");
-  const [role, setRole] = useState<"SHOP" | "CUSTOMER">("CUSTOMER");
+  const [role, setRole] = useState<"SHOP" | "CUSTOMER" | "PARTNER">(
+    partnerOnly ? "PARTNER" : "CUSTOMER"
+  );
   const [mode, setMode] = useState<RegisterMode>("otp");
   const [phone, setPhone] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
-  const [loginHintRole, setLoginHintRole] = useState<"SHOP" | "CUSTOMER" | null>(null);
+  const [loginHintRole, setLoginHintRole] = useState<"SHOP" | "CUSTOMER" | "PARTNER" | null>(
+    null
+  );
 
   async function checkPhoneAvailable(): Promise<boolean> {
     setLoginHintRole(null);
@@ -50,7 +60,11 @@ export function RegisterForm({ locale }: { locale: Locale }) {
     const key = typeof data.errorKey === "string" ? data.errorKey : null;
     setError(key ? t(locale, key) : String(data.error ?? t(locale, "phoneAlreadyRegistered")));
     const loginRole =
-      data.loginRole === "SHOP" || data.loginRole === "CUSTOMER" ? data.loginRole : role;
+      data.loginRole === "SHOP" ||
+      data.loginRole === "CUSTOMER" ||
+      data.loginRole === "PARTNER"
+        ? data.loginRole
+        : role;
     setLoginHintRole(loginRole);
     return false;
   }
@@ -64,6 +78,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
   }
 
   function switchRole(next: "SHOP" | "CUSTOMER") {
+    if (partnerOnly) return;
     setRole(next);
     setError("");
     setOtpSent(false);
@@ -153,9 +168,20 @@ export function RegisterForm({ locale }: { locale: Locale }) {
       if (!res.ok) {
         const key = typeof data.errorKey === "string" ? data.errorKey : null;
         setError(key ? t(locale, key) : String(data.error ?? "Registration failed"));
-        if (key === "phoneAlreadyRegistered" || key === "phoneAlreadyShop" || key === "phoneAlreadyCustomer") {
+        if (
+          key === "phoneAlreadyRegistered" ||
+          key === "phoneAlreadyShop" ||
+          key === "phoneAlreadyCustomer" ||
+          key === "phoneAlreadyPartner"
+        ) {
           setLoginHintRole(
-            key === "phoneAlreadyShop" ? "SHOP" : key === "phoneAlreadyCustomer" ? "CUSTOMER" : role
+            key === "phoneAlreadyShop"
+              ? "SHOP"
+              : key === "phoneAlreadyCustomer"
+                ? "CUSTOMER"
+                : key === "phoneAlreadyPartner"
+                  ? "PARTNER"
+                  : role
           );
         }
         return;
@@ -172,6 +198,7 @@ export function RegisterForm({ locale }: { locale: Locale }) {
     <form onSubmit={onSubmit} className="card-premium space-y-4 p-4 sm:p-6">
       <div id={FIREBASE_RECAPTCHA_CONTAINER_ID} className="hidden" aria-hidden />
 
+      {!partnerOnly && (
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
@@ -189,17 +216,24 @@ export function RegisterForm({ locale }: { locale: Locale }) {
             role === "SHOP" ? "bg-brand-green text-brand-gold" : "bg-brand-green/10 text-brand-green"
           }`}
         >
-          {t(locale, "registerRoleBusiness", { amount: SHOP_MONTHLY_PRICE_INR })}
+          {isPaymentsPaused()
+            ? t(locale, "registerRoleBusinessFree")
+            : t(locale, "registerRoleBusiness", { amount: SHOP_MONTHLY_PRICE_INR })}
         </button>
       </div>
+      )}
 
       <p className="rounded-lg bg-brand-cream/60 px-3 py-2 text-xs text-zinc-700">
-        {role === "SHOP"
-          ? t(locale, "registerTrialNote", {
-              days: TRIAL_DAYS,
-              amount: SHOP_MONTHLY_PRICE_INR,
-            })
-          : t(locale, "registerCustomerFreeNote")}
+        {partnerOnly
+          ? t(locale, "registerPartnerFreeNote")
+          : isPaymentsPaused()
+          ? t(locale, "registerPaymentsPausedNote")
+          : role === "SHOP"
+            ? t(locale, "registerTrialNote", {
+                days: TRIAL_DAYS,
+                amount: SHOP_MONTHLY_PRICE_INR,
+              })
+            : t(locale, "registerCustomerFreeNote")}
       </p>
 
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -286,7 +320,13 @@ export function RegisterForm({ locale }: { locale: Locale }) {
       {error && <p className="text-sm text-red-600">{error}</p>}
       {loginHintRole && (
         <Link
-          href={loginHintRole === "SHOP" ? "/login/shop" : "/login/customer"}
+          href={
+            loginHintRole === "SHOP"
+              ? "/login/shop"
+              : loginHintRole === "PARTNER"
+                ? "/login/partner"
+                : "/login/customer"
+          }
           className="block text-center text-sm font-semibold text-brand-green underline"
         >
           {t(locale, "phoneAlreadyUseLogin")} →
@@ -304,7 +344,10 @@ export function RegisterForm({ locale }: { locale: Locale }) {
       )}
 
       <div className="pt-2 text-center text-sm">
-        <Link href="/" className="block text-brand-green-soft">
+        <Link
+          href={partnerOnly ? "/work-partner" : "/"}
+          className="block text-brand-green-soft"
+        >
           {t(locale, "backHome")}
         </Link>
       </div>

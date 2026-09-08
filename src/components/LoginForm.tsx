@@ -22,7 +22,7 @@ export function LoginForm({
   role,
 }: {
   locale: Locale;
-  role: "SHOP" | "CUSTOMER";
+  role: "SHOP" | "CUSTOMER" | "PARTNER";
 }) {
   const router = useRouter();
   const { sendOtp, verifyOtpAndGetIdToken, resetRecaptcha } = useFirebasePhoneOtp();
@@ -228,7 +228,10 @@ export function LoginForm({
       )}
 
       <div className="pt-2 text-center text-sm">
-        <Link href="/" className="block text-brand-green-soft">
+        <Link
+          href={role === "PARTNER" ? "/work-partner" : "/"}
+          className="block text-brand-green-soft"
+        >
           {t(locale, "backHome")}
         </Link>
       </div>

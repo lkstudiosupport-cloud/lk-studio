@@ -8,7 +8,8 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
 
   return (
     <select
-      className="shrink-0 min-w-0 max-w-[5.5rem] appearance-auto rounded-lg border border-brand-gold/30 bg-brand-green/80 py-1 pl-1.5 pr-6 text-xs font-medium text-brand-gold shadow-sm sm:max-w-none sm:px-2.5 sm:text-sm"
+      className="shrink-0 rounded-lg border border-brand-gold/30 bg-brand-green/80 py-1.5 pl-2 pr-7 text-xs font-medium text-brand-gold shadow-sm sm:py-2 sm:pl-2.5 sm:pr-8 sm:text-sm"
+      style={{ minWidth: "7.25rem", maxWidth: "9.5rem" }}
       value={current}
       onChange={(e) => {
         document.cookie = `lk_locale=${e.target.value};path=/;max-age=31536000`;

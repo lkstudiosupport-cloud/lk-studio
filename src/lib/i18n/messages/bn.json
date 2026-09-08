@@ -1,4 +1,4 @@
-{
+﻿{
   "appName": "এল কে স্টুডিও",
   "tagline": "দোকান ও গ্রাহকের জন্য টেইলরিং",
   "login": "লগইন",
@@ -10,6 +10,9 @@
   "logout": "লগআউট",
   "logoutFailed": "লগআউট হয়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।",
   "shopLogin": "দোকান মালিক লগইন",
+  "partnerLogin": "টেইলারিং পার্টনার লগইন",
+  "partnerRegisterTitle": "টেইলারিং পার্টনার রেজিস্টার",
+  "registerPartnerFreeNote": "টেইলারিং পার্টনার অ্যাকাউন্ট তৈরি করুন — বিনামূল্যে। লগইনের পর দোকানের কাজ দেখে আবেদন করতে পারবেন।",
   "customerLogin": "গ্রাহক লগইন",
   "email": "ইমেইল",
   "emailPlaceholder": "আপনার ইমেইল",
@@ -24,6 +27,7 @@
   "phoneAlreadyRegistered": "This mobile number is already registered",
   "phoneAlreadyShop": "This number is registered as a shop account. Use shop login or a different number for customer sign-up.",
   "phoneAlreadyCustomer": "This number is registered as a customer account. Use customer login or a different number for shop sign-up.",
+  "phoneAlreadyPartner": "This number is already registered as a Tailoring Partner. Use partner login.",
   "phoneAlreadyUseLogin": "This number is already registered — use Login instead",
   "phoneRoleConflict": "This number is already registered as a {role} account. One number can only be used for one account type.",
   "loginWithPassword": "Password",

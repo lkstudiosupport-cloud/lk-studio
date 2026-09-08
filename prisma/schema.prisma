@@ -11,6 +11,7 @@ enum UserRole {
   SHOP
   CUSTOMER
   ADMIN
+  PARTNER
 }
 
 enum SubscriptionStatus {
@@ -162,6 +163,7 @@ model ShopProfile {
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   shopName           String
   shopCode           String             @unique
+  shopNumber         String?            @unique
   address            String?
   locationLink       String?
   city               String?
