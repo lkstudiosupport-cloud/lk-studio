@@ -1,8 +1,15 @@
-# Google Play Store checklist — LK Studio
+# Google Play Store checklist — LK Studio + Tailoring Partner
 
-Use this before submitting the Android app (Capacitor WebView shell).
+Two **separate** Play Store apps, one shared Render backend (`https://lk-studio-1.onrender.com`).
 
-## App binary
+| App | Package | Start URL | Build |
+|-----|---------|-----------|--------|
+| **LK Studio** (shop + customer) | `com.lkstudio.app` | site home | `npm run build:apk` / `build:aab:release` |
+| **LK Tailoring Partner** (workers) | `com.lkstudio.tailoringpartner` | `/work-partner` | `npm run build:apk:work-partner` |
+
+Shops post jobs in LK Studio; workers see/apply in Tailoring Partner — same DB, live updates. Do **not** put Tailoring Partner entry on the Studio home screen (Play Store listings stay separate).
+
+## App binary — LK Studio
 
 - [ ] Bump `versionCode` in `scripts/android-version.properties` (must be higher than any upload already in Play Console)
 - [ ] Build a **signed release AAB** (not debug APK): `npm run build:aab:release`
@@ -11,7 +18,15 @@ Use this before submitting the Android app (Capacitor WebView shell).
 - [ ] `CAPACITOR_SERVER_URL` points to production HTTPS (e.g. `https://lk-studio-1.onrender.com`)
 - [ ] Test login, photo upload, orders, and account deletion on a release build
 
-## Play Console — Store listing
+## App binary — LK Tailoring Partner
+
+- [ ] First time: `npm run cap:sync:work-partner` (creates `android-work-partner/`)
+- [ ] Debug APK: `npm run build:apk:work-partner` → `LK-Tailoring-Partner-debug.apk`
+- [ ] Separate Play Console listing / keystore recommended (different package id)
+- [ ] Opens landing at `/work-partner` (Register + View jobs) on the same production URL
+- [ ] Test: shop posts request in Studio → appears in Tailoring Partner → accept / WhatsApp / call
+
+## Play Console — Store listing (Studio)
 
 Assets and copy live in [`play-store/`](./play-store/). See [`play-store/ASSETS.md`](./play-store/ASSETS.md).
 
@@ -23,6 +38,13 @@ Assets and copy live in [`play-store/`](./play-store/). See [`play-store/ASSETS.
 - [ ] Phone screenshots (min 1080×1920, 2–8 images)
 - [ ] Category: Business (or Lifestyle)
 - [ ] Contact email: **lkstudio.support@gmail.com**
+
+## Play Console — Store listing (Tailoring Partner)
+
+- [ ] App name: **LK Tailoring Partner**
+- [ ] Package: `com.lkstudio.tailoringpartner`
+- [ ] Describe worker job feed / apply to shop requests (not shop billing)
+- [ ] Same privacy URL: **https://lk-studio-1.onrender.com/privacy**
 
 ## Policy & compliance
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { LocaleLocationBar } from "@/components/LocaleLocationBar";
@@ -7,9 +8,18 @@ import { redirect } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { LegalFooter } from "@/components/LegalFooter";
 import { showDemoLogin } from "@/lib/production";
+import { APP_SURFACE_COOKIE, parseAppSurface } from "@/lib/app-surface";
 
 export default async function HomePage() {
   const locale = await getLocale();
+  const jar = await cookies();
+  const surface = parseAppSurface(jar.get(APP_SURFACE_COOKIE)?.value);
+
+  // Partner APK / cookie — never show shop or customer logins on `/`.
+  if (surface === "partner") {
+    redirect("/work-partner");
+  }
+
   const session = await getSession();
 
   if (session?.role === "SHOP" && session.shopId) redirect("/shop");
@@ -33,9 +43,6 @@ export default async function HomePage() {
           </Link>
           <Link href="/login/customer" className="btn-secondary block py-3">
             {t(locale, "customerLogin")}
-          </Link>
-          <Link href="/work-partner/requests" className="btn-secondary block py-3">
-            {t(locale, "workPartnerAppEntry")}
           </Link>
         </div>
 

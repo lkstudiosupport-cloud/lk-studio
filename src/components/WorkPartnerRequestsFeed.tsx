@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, Store } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
@@ -9,10 +9,8 @@ import type { WorkerPartnerDurationType, WorkerPartnerRole } from "@prisma/clien
 import { WORKER_PARTNER_ROLES, workerPartnerRoleLabelKey } from "@/lib/work-partner-roles";
 import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
 import { CitySelect } from "@/components/CitySelect";
+import { WorkPartnerAcceptForm } from "@/components/WorkPartnerAcceptForm";
 import { whatsAppUrl } from "@/lib/whatsapp";
-
-const WORK_PARTNER_APP_URL =
-  process.env.NEXT_PUBLIC_WORK_PARTNER_URL ?? "https://lk-work-partner.onrender.com";
 
 type ShopInfo = {
   shopName: string;
@@ -48,6 +46,7 @@ export function WorkPartnerRequestsFeed({
   initialCity: string;
 }) {
   const router = useRouter();
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   useEffect(() => {
     const id = window.setInterval(() => router.refresh(), 15_000);
@@ -122,6 +121,7 @@ export function WorkPartnerRequestsFeed({
                 )
               : null;
             const tel = contact ? `tel:${contact.replace(/\D/g, "")}` : null;
+            const isAccepting = acceptingId === req.id;
 
             return (
               <article key={req.id} className="card-premium space-y-3 p-4">
@@ -175,15 +175,22 @@ export function WorkPartnerRequestsFeed({
                 </p>
                 {req.notes && <p className="text-sm text-zinc-600">{req.notes}</p>}
 
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <a
-                    href={`${WORK_PARTNER_APP_URL}/worker`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-primary px-3 py-2 text-sm"
-                  >
-                    {t(locale, "workPartnerOpenApp")}
-                  </a>
+                {isAccepting ? (
+                  <WorkPartnerAcceptForm
+                    locale={locale}
+                    requestId={req.id}
+                    defaultCity={cityLabel ?? undefined}
+                    onCancel={() => setAcceptingId(null)}
+                  />
+                ) : (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      type="button"
+                      className="btn-primary px-3 py-2 text-sm"
+                      onClick={() => setAcceptingId(req.id)}
+                    >
+                      {t(locale, "workPartnerAccept")}
+                    </button>
                     {wa && (
                       <a
                         href={wa}
@@ -200,6 +207,7 @@ export function WorkPartnerRequestsFeed({
                       </a>
                     )}
                   </div>
+                )}
               </article>
             );
           })}

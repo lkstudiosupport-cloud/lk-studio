@@ -1,14 +1,15 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * APK loads your Next.js server in a WebView.
+ * Play Store app 1: LK Studio (shop + customer) — main brand.
+ * Tailoring Partner is a separate APK — see capacitor.work-partner.config.ts
  *
  * Local test (phone + PC same Wi‑Fi):
  *   1. Run: npm run dev -- -H 0.0.0.0
  *   2. Set CAPACITOR_SERVER_URL=http://YOUR_PC_IP:3000
  *   3. npm run cap:sync && npm run build:apk
  *
- * Production: deploy Next.js, then set CAPACITOR_SERVER_URL=https://your-domain.com
+ * Production: CAPACITOR_SERVER_URL=https://lk-studio-1.onrender.com
  */
 const serverUrl = process.env.CAPACITOR_SERVER_URL;
 
@@ -17,12 +18,13 @@ const config: CapacitorConfig = {
   appName: "LK Studio",
   webDir: "public/mobile-shell",
   android: {
+    path: "android",
     allowMixedContent: true,
   },
   ...(serverUrl
     ? {
         server: {
-          url: serverUrl,
+          url: serverUrl.replace(/\/$/, ""),
           cleartext: serverUrl.startsWith("http://"),
           androidScheme: serverUrl.startsWith("https") ? "https" : "http",
         },

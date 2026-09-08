@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { WorkPartnerRequestsFeed } from "@/components/WorkPartnerRequestsFeed";
@@ -28,7 +27,7 @@ export default async function WorkPartnerRequestsPage({
   } catch (err) {
     console.error("[lk-studio] work partner requests error:", err);
     return (
-      <main className="brand-page-bg min-h-dvh">
+      <main>
         <div className="app-main-content mx-auto max-w-2xl space-y-6 py-6">
           <h1 className="page-title">{t(locale, "workPartnerAppTitle")}</h1>
           <ServerRetryPanel locale={locale} />
@@ -38,13 +37,10 @@ export default async function WorkPartnerRequestsPage({
   }
 
   return (
-    <main className="brand-page-bg min-h-dvh">
+    <main>
       <div className="app-main-content mx-auto max-w-2xl space-y-6 py-6">
         <div>
-          <Link href="/" className="text-sm text-brand-green underline">
-            ← {t(locale, "backHome")}
-          </Link>
-          <h1 className="page-title mt-2">{t(locale, "workPartnerAppTitle")}</h1>
+          <h1 className="page-title">{t(locale, "workPartnerAppTitle")}</h1>
           <p className="mt-1 text-sm text-zinc-600">{t(locale, "workPartnerAppHint")}</p>
         </div>
         <WorkPartnerRequestsFeed
