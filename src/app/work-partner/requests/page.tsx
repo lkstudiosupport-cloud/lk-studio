@@ -27,29 +27,27 @@ export default async function WorkPartnerRequestsPage({
   } catch (err) {
     console.error("[lk-studio] work partner requests error:", err);
     return (
-      <main>
-        <div className="app-main-content mx-auto max-w-2xl space-y-6 py-6">
-          <h1 className="page-title">{t(locale, "workPartnerAppTitle")}</h1>
-          <ServerRetryPanel locale={locale} />
-        </div>
+      <main className="partner-app-frame space-y-4 py-4 sm:space-y-6 sm:py-6 md:py-8">
+        <h1 className="page-title">{t(locale, "workPartnerAppTitle")}</h1>
+        <ServerRetryPanel locale={locale} />
       </main>
     );
   }
 
   return (
-    <main>
-      <div className="app-main-content mx-auto max-w-2xl space-y-6 py-6">
-        <div>
-          <h1 className="page-title">{t(locale, "workPartnerAppTitle")}</h1>
-          <p className="mt-1 text-sm text-zinc-600">{t(locale, "workPartnerAppHint")}</p>
-        </div>
-        <WorkPartnerRequestsFeed
-          locale={locale}
-          requests={requests}
-          initialRole={params.role ?? ""}
-          initialCity={params.city ?? ""}
-        />
+    <main className="partner-app-frame space-y-4 py-4 sm:space-y-6 sm:py-6 md:py-8">
+      <div className="max-w-3xl">
+        <h1 className="page-title">{t(locale, "workPartnerAppTitle")}</h1>
+        <p className="mt-1 text-sm text-zinc-600 sm:text-base md:mt-2 md:text-lg">
+          {t(locale, "workPartnerAppHint")}
+        </p>
       </div>
+      <WorkPartnerRequestsFeed
+        locale={locale}
+        requests={requests}
+        initialRole={params.role ?? ""}
+        initialCity={params.city ?? ""}
+      />
     </main>
   );
 }

@@ -74,7 +74,7 @@ export function WorkPartnerRequestsFeed({
   return (
     <div className="space-y-4">
       <form
-        className="card-premium grid gap-3 p-4 sm:grid-cols-2"
+        className="card-premium grid gap-3 p-3.5 sm:grid-cols-2 sm:gap-4 sm:p-4 md:p-5"
         onSubmit={(e) => {
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
@@ -106,11 +106,11 @@ export function WorkPartnerRequestsFeed({
       <p className="text-xs text-zinc-500">{t(locale, "workPartnerOpenOnlyHint")}</p>
 
       {requests.length === 0 ? (
-        <div className="card-premium p-6 text-center text-sm text-zinc-600">
+        <div className="card-premium p-6 text-center text-sm text-zinc-600 sm:p-8 sm:text-base md:p-10">
           {t(locale, "workPartnerNoOpenRequests")}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
           {requests.map((req) => {
             const contact = req.shop.whatsapp || req.shop.phone;
             const cityLabel = req.city || req.shop.city;
@@ -124,7 +124,12 @@ export function WorkPartnerRequestsFeed({
             const isAccepting = acceptingId === req.id;
 
             return (
-              <article key={req.id} className="card-premium space-y-3 p-4">
+              <article
+                key={req.id}
+                className={`card-premium flex h-full flex-col space-y-3 p-3.5 sm:p-4 md:p-5 ${
+                  isAccepting ? "md:col-span-2 xl:col-span-3" : ""
+                }`}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="font-bold text-brand-green">
                     {roleLabel(req.role, req.customRole)}
@@ -183,10 +188,10 @@ export function WorkPartnerRequestsFeed({
                     onCancel={() => setAcceptingId(null)}
                   />
                 ) : (
-                  <div className="flex flex-wrap gap-2 pt-1">
+                  <div className="mt-auto flex flex-wrap gap-2 pt-1">
                     <button
                       type="button"
-                      className="btn-primary px-3 py-2 text-sm"
+                      className="btn-primary min-h-11 flex-1 px-3 py-2 text-sm sm:flex-none sm:text-base"
                       onClick={() => setAcceptingId(req.id)}
                     >
                       {t(locale, "workPartnerAccept")}
@@ -196,13 +201,16 @@ export function WorkPartnerRequestsFeed({
                         href={wa}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-secondary px-3 py-2 text-sm"
+                        className="btn-secondary min-h-11 flex-1 px-3 py-2 text-sm sm:flex-none sm:text-base"
                       >
                         {t(locale, "workPartnerContactWhatsApp")}
                       </a>
                     )}
                     {tel && (
-                      <a href={tel} className="btn-secondary px-3 py-2 text-sm">
+                      <a
+                        href={tel}
+                        className="btn-secondary min-h-11 flex-1 px-3 py-2 text-sm sm:flex-none sm:text-base"
+                      >
                         {t(locale, "workPartnerCallShop")}
                       </a>
                     )}
