@@ -17,6 +17,7 @@ export function BillShareActions({
   showShare,
   editHref,
   compact,
+  dock,
   itemsJson,
   amount,
   receipt,
@@ -29,6 +30,8 @@ export function BillShareActions({
   editHref?: string;
   /** Inline bar for fullscreen receipt hero view. */
   compact?: boolean;
+  /** Fixed bottom dock — always visible above page chrome. */
+  dock?: boolean;
   itemsJson?: string;
   amount?: number;
   /** When set, show speaker to read S.No / items / totals aloud. */
@@ -61,15 +64,18 @@ export function BillShareActions({
     }
   }
 
-  const barClass = compact
-    ? "bill-detail-actions bill-detail-actions--compact flex min-w-0 flex-1 flex-nowrap items-center gap-1.5"
-    : "bill-detail-actions sticky top-[var(--app-sticky-under-header)] z-10 mb-4 flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur";
+  const barClass = dock
+    ? "bill-detail-actions bill-detail-actions--dock flex w-full min-w-0 flex-nowrap items-center justify-center gap-2"
+    : compact
+      ? "bill-detail-actions bill-detail-actions--compact flex min-w-0 flex-1 flex-nowrap items-center gap-1.5"
+      : "bill-detail-actions sticky top-[var(--app-sticky-under-header)] z-10 mb-4 flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur";
 
-  const backLabel = compact ? t(locale, "backShort") : t(locale, "backToBills");
+  const backLabel = compact || dock ? t(locale, "backShort") : t(locale, "backToBills");
   const shareLabel = sharing ? t(locale, "sharingBill") : t(locale, "shareBill");
-  const btnBase = compact
-    ? "inline-flex shrink-0 items-center gap-1 rounded-xl px-2 py-2 text-xs font-semibold"
-    : "inline-flex shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-sm font-semibold";
+  const btnBase =
+    compact || dock
+      ? "inline-flex shrink-0 items-center gap-1 rounded-xl px-2.5 py-2.5 text-xs font-semibold"
+      : "inline-flex shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-sm font-semibold";
 
   return (
     <div className={barClass}>
@@ -86,7 +92,7 @@ export function BillShareActions({
           className={`${btnBase} border border-brand-green/20 bg-white text-brand-green`}
         >
           <Pencil className="h-4 w-4 shrink-0" />
-          <span>{compact ? t(locale, "editShort") : t(locale, "editBill")}</span>
+          <span>{compact || dock ? t(locale, "editShort") : t(locale, "editBill")}</span>
         </Link>
       )}
       {showShare && (
@@ -97,8 +103,8 @@ export function BillShareActions({
           aria-label={t(locale, "shareBill")}
           title={t(locale, "shareBillHint")}
           className={
-            compact
-              ? "inline-flex shrink-0 items-center gap-1 rounded-xl bg-brand-green px-2.5 py-2 text-xs font-bold text-white shadow-md disabled:opacity-70"
+            compact || dock
+              ? "inline-flex shrink-0 items-center gap-1 rounded-xl bg-brand-green px-3 py-2.5 text-xs font-bold text-white shadow-md disabled:opacity-70"
               : "inline-flex items-center gap-2 rounded-xl bg-brand-green px-4 py-2 text-sm font-bold text-white shadow-md disabled:opacity-70"
           }
         >
@@ -106,8 +112,8 @@ export function BillShareActions({
           <span>{shareLabel}</span>
         </button>
       )}
-      {/* Read after Edit/Share — same toolbar, not a floating CTA */}
-      {receipt && <BillReadAloudButton locale={locale} bill={receipt} compact={compact} />}
+      {/* Read after Edit/Share */}
+      {receipt && <BillReadAloudButton locale={locale} bill={receipt} compact={compact || dock} />}
       {error && <p className="w-full shrink-0 basis-full text-sm text-red-600">{error}</p>}
     </div>
   );

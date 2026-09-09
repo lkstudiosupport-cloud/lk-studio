@@ -440,6 +440,34 @@ button {
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
+/* Portaled Edit / Share / Read — always visible on bill detail (above fixed header stacking). */
+.bill-detail-actions-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 80;
+  padding: 0.5rem max(0.75rem, env(safe-area-inset-left, 0px))
+    max(0.75rem, env(safe-area-inset-bottom, 0px)) max(0.75rem, env(safe-area-inset-right, 0px));
+  background: rgb(250 246 238 / 0.97);
+  border-top: 1px solid rgb(27 48 34 / 0.12);
+  box-shadow: 0 -6px 20px rgb(27 48 34 / 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.bill-detail-actions--dock {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bill-detail-page {
+  padding-bottom: max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 4.25rem));
+}
+
 .bill-detail-status {
   margin-left: max(1rem, env(safe-area-inset-left, 0px));
   margin-right: max(1rem, env(safe-area-inset-right, 0px));

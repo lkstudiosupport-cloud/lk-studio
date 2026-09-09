@@ -1,6 +1,7 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Locale } from "@/lib/i18n/locales";
 import type { BillReceiptData } from "@/lib/bill-receipt-text";
 import { BillReceipt } from "@/components/BillReceipt";
@@ -28,19 +29,11 @@ export function ShopBillDetailView({
   errorLabel: string;
   fallbackHint: string;
 }) {
-  const [receiptFullscreen, setReceiptFullscreen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  useLayoutEffect(() => {
-    if (isPostCreate && window.matchMedia("(max-width: 639px)").matches) {
-      setReceiptFullscreen(true);
-    }
-  }, [isPostCreate]);
-
-  const handleFullscreenChange = (fullscreen: boolean) => {
-    setReceiptFullscreen(fullscreen);
-  };
-
-  const hideChromeWhileFullscreen = isPostCreate && receiptFullscreen;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const shareActions = (
     <BillShareActions
@@ -56,7 +49,8 @@ export function ShopBillDetailView({
     />
   );
 
-  const shareActionsCompact = (
+  /** Always-visible dock: Edit → Share → Read (portaled above shop chrome stacking). */
+  const dockActions = (
     <BillShareActions
       locale={locale}
       backHref="/shop/bills"
@@ -67,45 +61,38 @@ export function ShopBillDetailView({
       amount={receiptData.amount}
       receipt={receiptData}
       showShare
-      compact
+      dock
     />
   );
 
   return (
-    <BillDetailPage
-      receiptHero={isPostCreate}
-      receiptFullscreen={receiptFullscreen}
-      actions={shareActions}
-      extra={
-        <BillShareAutoSend
-          billNumber={receiptData.billNumber}
-          shopName={receiptData.shop.shopName}
-          itemsJson={receiptData.itemsJson}
-          amount={receiptData.amount}
-          enabled={isPostCreate}
-          silent={hideChromeWhileFullscreen}
-          preparingLabel={preparingLabel}
-          errorLabel={errorLabel}
-          fallbackHint={fallbackHint}
-        />
-      }
-      /* Fullscreen embeds Back/Edit/Share/Read in the toolbar — no floating Read. */
-      hideActions={receiptFullscreen}
-      hideExtra={hideChromeWhileFullscreen}
-      receipt={
-        <BillReceiptShell
-          locale={locale}
-          defaultFullscreen={isPostCreate}
-          autoFullscreenOnMobile={!isPostCreate}
-          onFullscreenChange={handleFullscreenChange}
-          embedActionsInFullscreen
-          fullscreenActions={shareActionsCompact}
-        >
-          <BillReceipt bill={receiptData} locale={locale} />
-        </BillReceiptShell>
-      }
-      paymentPanel={
-        hideChromeWhileFullscreen ? null : (
+    <>
+      <BillDetailPage
+        receiptHero={isPostCreate}
+        actions={shareActions}
+        extra={
+          <BillShareAutoSend
+            billNumber={receiptData.billNumber}
+            shopName={receiptData.shop.shopName}
+            itemsJson={receiptData.itemsJson}
+            amount={receiptData.amount}
+            enabled={isPostCreate}
+            preparingLabel={preparingLabel}
+            errorLabel={errorLabel}
+            fallbackHint={fallbackHint}
+          />
+        }
+        receipt={
+          <BillReceiptShell
+            locale={locale}
+            /* Do not auto-fullscreen — that overlay sits under fixed shop header and hides actions. */
+            autoFullscreenOnMobile={false}
+            defaultFullscreen={false}
+          >
+            <BillReceipt bill={receiptData} locale={locale} />
+          </BillReceiptShell>
+        }
+        paymentPanel={
           <BillPaymentPanel
             billId={billId}
             amount={receiptData.amount}
@@ -115,8 +102,14 @@ export function ShopBillDetailView({
             locale={locale}
             collapsibleOnMobile
           />
-        )
-      }
-    />
+        }
+      />
+      {mounted
+        ? createPortal(
+            <div className="bill-detail-actions-dock print:hidden">{dockActions}</div>,
+            document.body
+          )
+        : null}
+    </>
   );
 }
