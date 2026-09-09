@@ -562,12 +562,16 @@ button {
 
 .bill-receipt-speak-bar {
   position: sticky;
-  top: 0;
+  top: var(--app-sticky-under-header);
   z-index: 5;
   background: rgb(250 246 238 / 0.96);
   padding-top: 0.5rem;
   padding-bottom: 0.25rem;
   backdrop-filter: blur(4px);
+}
+
+.bill-receipt-fullscreen .bill-receipt-speak-bar {
+  top: 0;
 }
 
 .bill-detail-status--subtle {
@@ -736,6 +740,7 @@ button {
   .bill-detail-actions,
   .bill-detail-status,
   .bill-receipt-shell-toolbar,
+  .bill-receipt-speak-bar,
   nav {
     display: none !important;
   }
