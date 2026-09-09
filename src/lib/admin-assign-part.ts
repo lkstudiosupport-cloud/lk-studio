@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { nextPartCatalogDesignNumber } from "@/lib/catalog-design-number";
+import { bumpCatalogSyncVersion } from "@/lib/catalog-sync-version";
 import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import type { CatalogPart } from "@prisma/client";
@@ -26,10 +27,11 @@ export async function assignCatalogDesignPart(
   }
 
   const catalogNumber = await nextPartCatalogDesignNumber(prisma, design.category, catalogPart);
+  const syncVersion = await bumpCatalogSyncVersion();
 
   await prisma.design.update({
     where: { id: design.id },
-    data: { catalogPart, catalogNumber },
+    data: { catalogPart, catalogNumber, syncVersion },
   });
 
   return { catalogNumber };

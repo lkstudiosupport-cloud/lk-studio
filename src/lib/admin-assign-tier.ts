@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { nextTierCatalogDesignNumber } from "@/lib/catalog-design-number";
+import { bumpCatalogSyncVersion } from "@/lib/catalog-sync-version";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import type { DesignSizeTier } from "@prisma/client";
@@ -26,10 +27,11 @@ export async function assignCatalogDesignSizeTier(
   }
 
   const catalogNumber = await nextTierCatalogDesignNumber(prisma, design.category, sizeTier);
+  const syncVersion = await bumpCatalogSyncVersion();
 
   await prisma.design.update({
     where: { id: design.id },
-    data: { sizeTier, catalogNumber },
+    data: { sizeTier, catalogNumber, syncVersion },
   });
 
   return { catalogNumber };

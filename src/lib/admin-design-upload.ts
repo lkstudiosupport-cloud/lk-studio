@@ -4,6 +4,7 @@ import {
   nextPartCatalogDesignNumber,
   nextTierCatalogDesignNumber,
 } from "@/lib/catalog-design-number";
+import { bumpCatalogSyncVersion } from "@/lib/catalog-sync-version";
 import { categoryHasCatalogParts } from "@/lib/design-catalog-part";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 import { saveCatalogDesignUpload } from "@/lib/shop-storage";
@@ -62,6 +63,7 @@ export async function persistAdminCatalogDesign(
     imagePath = await saveCatalogDesignUpload(category, file);
   }
 
+  const syncVersion = await bumpCatalogSyncVersion();
   await prisma.design.create({
     data: {
       isCatalog: true,
@@ -77,6 +79,8 @@ export async function persistAdminCatalogDesign(
       imagePath,
       imagesJson: JSON.stringify([imagePath]),
       active: true,
+      syncVersion,
+      createdSyncVersion: syncVersion,
     },
   });
 

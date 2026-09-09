@@ -6,6 +6,7 @@ import { ShopProfileForm } from "@/components/ShopProfileForm";
 import { ProfileLogout } from "@/components/ProfileLogout";
 import { LegalFooter } from "@/components/LegalFooter";
 import { ProfileSubscriptionSection } from "@/components/ProfileSubscriptionSection";
+import { DesignCatalogAutoUpdateSetting } from "@/components/DesignCatalogAutoUpdateSetting";
 import { Store } from "lucide-react";
 import { SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
 import { isRazorpayConfigured } from "@/lib/razorpay-config";
@@ -39,6 +40,7 @@ export default async function ShopProfilePage({
         {t(locale, "shopProfileTitle")}
       </h1>
       <ShopProfileForm locale={locale} profile={profile} />
+      <DesignCatalogAutoUpdateSetting locale={locale} />
       {!isDemo && (
         <ProfileSubscriptionSection
           locale={locale}

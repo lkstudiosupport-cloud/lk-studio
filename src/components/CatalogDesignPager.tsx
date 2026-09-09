@@ -35,6 +35,7 @@ export function CatalogDesignPager({
   total: initialTotal,
   hasMore: initialHasMore,
   apiQuery,
+  loadLocalPage,
   children,
 }: {
   locale: Locale;
@@ -43,6 +44,10 @@ export function CatalogDesignPager({
   hasMore: boolean;
   /** Query string after ? (e.g. category=MAGGAM&size=SMALL&mode=browse) */
   apiQuery: string;
+  /** When set, page 2+ come from IndexedDB cache (cache-first). */
+  loadLocalPage?: (
+    page: number
+  ) => { items: DesignListItem[]; total: number | null; hasMore: boolean } | null;
   children: (designs: DesignListItem[]) => React.ReactNode;
 }) {
   const [designs, setDesigns] = useState(initialDesigns);
@@ -97,6 +102,25 @@ export function CatalogDesignPager({
         return cached;
       }
 
+      const local = loadLocalPage?.(nextPage);
+      if (local) {
+        const data: PageResult = {
+          items: local.items,
+          total: local.total,
+          page: nextPage,
+          hasMore: local.hasMore,
+        };
+        if (apply) {
+          setDesigns((prev) => [...prev, ...data.items]);
+          if (data.total != null) setTotal(data.total);
+          setPage(data.page);
+          pageRef.current = data.page;
+          setHasMore(data.hasMore);
+          hasMoreRef.current = data.hasMore;
+        }
+        return data;
+      }
+
       const url = `/api/catalog/designs?${apiQuery}&page=${nextPage}`;
       const res = await fetch(url, { credentials: "same-origin" });
       const data = (await res.json()) as PageResult & { error?: string };
@@ -113,7 +137,7 @@ export function CatalogDesignPager({
 
       return data;
     },
-    [apiQuery]
+    [apiQuery, loadLocalPage]
   );
 
   const loadMore = useCallback(async () => {
@@ -144,7 +168,6 @@ export function CatalogDesignPager({
     }
   }, [fetchPage]);
 
-  /** Auto-load when user scrolls near the bottom — no extra tap needed. */
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node || !hasMore) return;
@@ -162,7 +185,6 @@ export function CatalogDesignPager({
     return () => observer.disconnect();
   }, [hasMore, loadMore, apiQuery]);
 
-  /** Prefetch the next page shortly after the current page is shown. */
   useEffect(() => {
     if (!hasMore || page < 1) return;
     const timer = window.setTimeout(() => {

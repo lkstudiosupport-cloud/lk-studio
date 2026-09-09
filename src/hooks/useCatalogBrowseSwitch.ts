@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CatalogPart, DesignSizeTier, ServiceCategory } from "@prisma/client";
 import { catalogBrowseApiQuery } from "@/lib/catalog-browse-query";
 import { defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
@@ -10,6 +10,13 @@ import { defaultSizeTierForCategory } from "@/lib/design-size-tier";
 import { DESIGN_SIZE_TIERS } from "@/lib/design-size-tier";
 import { categoryHasSizeTiers } from "@/lib/design-size-tier";
 import type { DesignListItem } from "@/lib/design-list-select";
+import {
+  filterCachedCatalogDesigns,
+  pageCachedDesigns,
+} from "@/lib/catalog-sync/filter";
+import type { CachedDesign } from "@/lib/catalog-sync/types";
+import { isShopOwnedUploadCategory } from "@/lib/design-access";
+import { CATALOG_PAGE_SIZE } from "@/lib/limits";
 
 type PageResult = {
   items: DesignListItem[];
@@ -26,7 +33,24 @@ function defaultBrowseQuery(category: ServiceCategory) {
   };
 }
 
-/** Client-side category / tier / part switching — no full page reload (Capacitor-safe). */
+function pageFromCache(
+  all: CachedDesign[],
+  category: ServiceCategory,
+  sizeTier?: DesignSizeTier,
+  catalogPart?: CatalogPart
+): PageResult | null {
+  if (isShopOwnedUploadCategory(category)) return null;
+  if (!all.length) return null;
+  const filtered = filterCachedCatalogDesigns(all, { category, sizeTier, catalogPart });
+  const page = pageCachedDesigns(filtered, 1, CATALOG_PAGE_SIZE);
+  return {
+    items: page.items,
+    total: page.total,
+    hasMore: page.hasMore,
+  };
+}
+
+/** Client-side category / tier / part switching — cache-first when IndexedDB catalog is warm. */
 export function useCatalogBrowseSwitch({
   initialCategory,
   catalogCategories,
@@ -38,6 +62,7 @@ export function useCatalogBrowseSwitch({
   initialApiQuery,
   initialBrowseCache,
   pageUrl,
+  cachedCatalogDesigns,
 }: {
   initialCategory: ServiceCategory;
   /** Categories to prefetch in the background (e.g. Maggam, Blouse, …). */
@@ -55,19 +80,45 @@ export function useCatalogBrowseSwitch({
     sizeTier?: DesignSizeTier,
     catalogPart?: CatalogPart
   ) => string;
+  /** Full catalog from IndexedDB — enables cache-first category switches. */
+  cachedCatalogDesigns?: CachedDesign[];
 }) {
+  const cacheFirstPage = useMemo(
+    () =>
+      pageFromCache(
+        cachedCatalogDesigns ?? [],
+        initialCategory,
+        initialSizeTier,
+        initialCatalogPart
+      ),
+    [cachedCatalogDesigns, initialCategory, initialSizeTier, initialCatalogPart]
+  );
+
+  const bootDesigns = cacheFirstPage?.items?.length ? cacheFirstPage.items : initialDesigns;
+  const bootTotal = cacheFirstPage?.total ?? initialTotal;
+  const bootHasMore = cacheFirstPage?.hasMore ?? initialHasMore;
+
   const [category, setCategory] = useState(initialCategory);
   const [sizeTier, setSizeTier] = useState(initialSizeTier);
   const [catalogPart, setCatalogPart] = useState(initialCatalogPart);
-  const [designs, setDesigns] = useState(initialDesigns);
-  const [total, setTotal] = useState(initialTotal);
-  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [designs, setDesigns] = useState(bootDesigns);
+  const [total, setTotal] = useState(bootTotal);
+  const [hasMore, setHasMore] = useState(bootHasMore);
   const [apiQuery, setApiQuery] = useState(initialApiQuery);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState("");
+  /** When true, CatalogDesignPager pages from IndexedDB instead of the network. */
+  const [useLocalPager, setUseLocalPager] = useState(
+    () => Boolean(cacheFirstPage?.items?.length && (cachedCatalogDesigns?.length ?? 0) > 0)
+  );
 
   const cacheRef = useRef<Map<string, PageResult>>(new Map());
   const inflightRef = useRef<Map<string, Promise<PageResult>>>(new Map());
+  const cachedAllRef = useRef(cachedCatalogDesigns ?? []);
+
+  useEffect(() => {
+    cachedAllRef.current = cachedCatalogDesigns ?? [];
+  }, [cachedCatalogDesigns]);
 
   const applyResult = useCallback(
     (
@@ -75,7 +126,8 @@ export function useCatalogBrowseSwitch({
       q: string,
       cat: ServiceCategory,
       tier?: DesignSizeTier,
-      part?: CatalogPart
+      part?: CatalogPart,
+      local = false
     ) => {
       setDesigns(data.items);
       if (data.total != null) setTotal(data.total);
@@ -84,6 +136,7 @@ export function useCatalogBrowseSwitch({
       setCategory(cat);
       if (tier !== undefined) setSizeTier(tier);
       if (part !== undefined) setCatalogPart(part);
+      setUseLocalPager(local);
       cacheRef.current.set(q, data);
     },
     []
@@ -93,12 +146,27 @@ export function useCatalogBrowseSwitch({
     setCategory(initialCategory);
     setSizeTier(initialSizeTier);
     setCatalogPart(initialCatalogPart);
-    setDesigns(initialDesigns);
-    setTotal(initialTotal);
-    setHasMore(initialHasMore);
-    setApiQuery(initialApiQuery);
     setSwitchError("");
     setSwitching(false);
+
+    const fromCache = pageFromCache(
+      cachedCatalogDesigns ?? [],
+      initialCategory,
+      initialSizeTier,
+      initialCatalogPart
+    );
+    if (fromCache?.items.length) {
+      setDesigns(fromCache.items);
+      setTotal(fromCache.total ?? fromCache.items.length);
+      setHasMore(fromCache.hasMore);
+      setUseLocalPager(true);
+    } else {
+      setDesigns(initialDesigns);
+      setTotal(initialTotal);
+      setHasMore(initialHasMore);
+      setUseLocalPager(false);
+    }
+    setApiQuery(initialApiQuery);
 
     if (initialBrowseCache) {
       for (const [key, value] of Object.entries(initialBrowseCache)) {
@@ -106,9 +174,9 @@ export function useCatalogBrowseSwitch({
       }
     } else {
       cacheRef.current.set(initialApiQuery, {
-        items: initialDesigns,
-        total: initialTotal,
-        hasMore: initialHasMore,
+        items: fromCache?.items.length ? fromCache.items : initialDesigns,
+        total: fromCache?.total ?? initialTotal,
+        hasMore: fromCache?.hasMore ?? initialHasMore,
       });
     }
   }, [
@@ -120,7 +188,21 @@ export function useCatalogBrowseSwitch({
     initialHasMore,
     initialApiQuery,
     initialBrowseCache,
+    cachedCatalogDesigns,
   ]);
+
+  /** When IDB catalog updates after background sync, refresh the active filter. */
+  useEffect(() => {
+    if (!cachedCatalogDesigns?.length) return;
+    if (isShopOwnedUploadCategory(category)) return;
+    const fromCache = pageFromCache(cachedCatalogDesigns, category, sizeTier, catalogPart);
+    if (!fromCache) return;
+    setDesigns(fromCache.items);
+    if (fromCache.total != null) setTotal(fromCache.total);
+    setHasMore(fromCache.hasMore);
+    setUseLocalPager(true);
+    cacheRef.current.set(apiQuery, fromCache);
+  }, [cachedCatalogDesigns]); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: only on cache identity change
 
   const fetchQuery = useCallback(async (q: string): Promise<PageResult> => {
     const cached = cacheRef.current.get(q);
@@ -148,6 +230,18 @@ export function useCatalogBrowseSwitch({
   const prefetchQuery = useCallback(
     (q: string) => {
       if (cacheRef.current.has(q) || inflightRef.current.has(q)) return;
+      // Prefer IndexedDB filter for catalog categories
+      const params = new URLSearchParams(q);
+      const cat = params.get("category") as ServiceCategory | null;
+      if (cat && !isShopOwnedUploadCategory(cat) && cachedAllRef.current.length) {
+        const tier = (params.get("size") as DesignSizeTier | null) || undefined;
+        const part = (params.get("part") as CatalogPart | null) || undefined;
+        const local = pageFromCache(cachedAllRef.current, cat, tier, part);
+        if (local) {
+          cacheRef.current.set(q, local);
+          return;
+        }
+      }
       void fetchQuery(q).catch(() => {
         /* ignore background prefetch errors */
       });
@@ -212,9 +306,16 @@ export function useCatalogBrowseSwitch({
         (nextCategory ? defaultCatalogPartForCategory(nextCategory) : catalogPart);
       const q = catalogBrowseApiQuery({ category: cat, sizeTier: tier, catalogPart: part });
 
+      const local = pageFromCache(cachedAllRef.current, cat, tier, part);
+      if (local?.items.length || (local && cachedAllRef.current.length > 0 && !isShopOwnedUploadCategory(cat))) {
+        applyResult(local, q, cat, tier, part, true);
+        window.history.replaceState(null, "", pageUrl(cat, tier, part));
+        return;
+      }
+
       const cached = cacheRef.current.get(q);
       if (cached) {
-        applyResult(cached, q, cat, tier, part);
+        applyResult(cached, q, cat, tier, part, false);
         window.history.replaceState(null, "", pageUrl(cat, tier, part));
         return;
       }
@@ -223,7 +324,7 @@ export function useCatalogBrowseSwitch({
       setSwitchError("");
       try {
         const data = await fetchQuery(q);
-        applyResult(data, q, cat, tier, part);
+        applyResult(data, q, cat, tier, part, false);
         window.history.replaceState(null, "", pageUrl(cat, tier, part));
       } catch (e) {
         setSwitchError(e instanceof Error ? e.message : "Load failed");
@@ -279,6 +380,24 @@ export function useCatalogBrowseSwitch({
     [category, sizeTier, prefetchQuery]
   );
 
+  const loadLocalPage = useCallback(
+    (page: number): PageResult | null => {
+      if (!useLocalPager || isShopOwnedUploadCategory(category)) return null;
+      const filtered = filterCachedCatalogDesigns(cachedAllRef.current, {
+        category,
+        sizeTier,
+        catalogPart,
+      });
+      const paged = pageCachedDesigns(filtered, page, CATALOG_PAGE_SIZE);
+      return {
+        items: paged.items,
+        total: paged.total,
+        hasMore: paged.hasMore,
+      };
+    },
+    [useLocalPager, category, sizeTier, catalogPart]
+  );
+
   return {
     category,
     sizeTier,
@@ -289,6 +408,8 @@ export function useCatalogBrowseSwitch({
     apiQuery,
     switching,
     switchError,
+    useLocalPager,
+    loadLocalPage,
     pickCategory,
     pickSizeTier,
     pickCatalogPart,

@@ -7,6 +7,7 @@ import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { persistAdminCatalogDesign, isAdminCatalogCategory } from "@/lib/admin-design-upload";
 import { assignCatalogDesignSizeTier } from "@/lib/admin-assign-tier";
 import { assignCatalogDesignPart } from "@/lib/admin-assign-part";
+import { bumpCatalogSyncVersion, recordCatalogDesignDeletion } from "@/lib/catalog-sync-version";
 import { CATALOG_CATEGORIES } from "@/lib/design-access";
 import { parseDesignImages } from "@/lib/design-images";
 import { deleteStoredUpload } from "@/lib/storage";
@@ -166,7 +167,9 @@ export async function DELETE(req: Request) {
 
   const images = parseDesignImages(design.imagesJson, design.imagePath);
   await Promise.all(images.map((p) => deleteStoredUpload(p)));
+  const syncVersion = await bumpCatalogSyncVersion();
   await prisma.design.delete({ where: { id } });
+  await recordCatalogDesignDeletion(id, syncVersion);
 
   revalidatePath("/admin/designs");
   revalidatePath("/customer/designs");

@@ -9,6 +9,7 @@ import {
 } from "@/components/CustomerProfileForm";
 import { ProfileLogout } from "@/components/ProfileLogout";
 import { LegalFooter } from "@/components/LegalFooter";
+import { DesignCatalogAutoUpdateSetting } from "@/components/DesignCatalogAutoUpdateSetting";
 import { LayoutDashboard, ChevronRight } from "lucide-react";
 
 export default async function CustomerProfilePage() {
@@ -42,6 +43,7 @@ export default async function CustomerProfilePage() {
       </Link>
 
       <CustomerProfileForm locale={locale} user={user} />
+      <DesignCatalogAutoUpdateSetting locale={locale} />
       <div className="mt-4 border-t border-brand-green/10 pt-4 pb-4">
         <ProfileLogout locale={locale} />
       </div>

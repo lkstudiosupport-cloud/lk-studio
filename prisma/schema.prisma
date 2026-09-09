@@ -411,6 +411,11 @@ model Design {
   imagesJson  String?
   active      Boolean         @default(true)
   createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  /** Last global DesignSync.version that included this row (catalog only). */
+  syncVersion Int             @default(0)
+  /** DesignSync.version at create time — distinguishes added vs updated in deltas. */
+  createdSyncVersion Int      @default(0)
 
   orders Order[]
   favorites CustomerFavorite[]
@@ -421,6 +426,23 @@ model Design {
   @@index([shopId, createdAt])
   @@index([isCatalog, category, sizeTier])
   @@index([isCatalog, category, catalogPart])
+  @@index([isCatalog, syncVersion])
+}
+
+/** Singleton global catalog version — bump on admin catalog create/update/delete. */
+model DesignSync {
+  id        String   @id @default("global")
+  version   Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+/** Tombstones for hard-deleted catalog designs (incremental client sync). */
+model DesignDeletion {
+  id        String   @id
+  version   Int
+  deletedAt DateTime @default(now())
+
+  @@index([version])
 }
 
 model Order {

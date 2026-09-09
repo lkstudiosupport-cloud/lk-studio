@@ -178,7 +178,45 @@ async function main() {
     `CREATE UNIQUE INDEX IF NOT EXISTS "WorkRequirement_workerPartnerRequestId_key" ON "WorkRequirement"("workerPartnerRequestId") WHERE "workerPartnerRequestId" IS NOT NULL;`
   );
 
-  console.log("[lk-studio] production schema OK (User + ShopProfile + WorkerPartnerRequest + WorkPartnerProfile)");
+  // Catalog design incremental sync (IndexedDB cache-first clients).
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "Design" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;`
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "Design" ADD COLUMN IF NOT EXISTS "syncVersion" INTEGER NOT NULL DEFAULT 0;`
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "Design" ADD COLUMN IF NOT EXISTS "createdSyncVersion" INTEGER NOT NULL DEFAULT 0;`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "Design_isCatalog_syncVersion_idx" ON "Design" ("isCatalog", "syncVersion");`
+  );
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "DesignSync" (
+      "id" TEXT NOT NULL,
+      "version" INTEGER NOT NULL DEFAULT 0,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "DesignSync_pkey" PRIMARY KEY ("id")
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO "DesignSync" ("id", "version", "updatedAt")
+    VALUES ('global', 0, CURRENT_TIMESTAMP)
+    ON CONFLICT ("id") DO NOTHING;
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "DesignDeletion" (
+      "id" TEXT NOT NULL,
+      "version" INTEGER NOT NULL,
+      "deletedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "DesignDeletion_pkey" PRIMARY KEY ("id")
+    );
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "DesignDeletion_version_idx" ON "DesignDeletion" ("version");`
+  );
+
+  console.log("[lk-studio] production schema OK (User + ShopProfile + WorkerPartnerRequest + WorkPartnerProfile + DesignSync)");
 }
 
 main()

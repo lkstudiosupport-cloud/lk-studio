@@ -14,10 +14,13 @@ import type { DesignListItem } from "@/lib/design-queries";
 import { ShopDesignCollections } from "@/components/ShopDesignCollections";
 import { CatalogDesignPager } from "@/components/CatalogDesignPager";
 import { CatalogCategoryTabs } from "@/components/CatalogCategoryTabs";
+import { DesignSyncStatus, PullToRefreshHint } from "@/components/DesignSyncStatus";
 import { SizeTierButtons } from "@/components/SizeTierButtons";
 import { CatalogPartButtons } from "@/components/CatalogPartButtons";
 import { withQueryParam } from "@/lib/query-string";
 import { useCatalogBrowseSwitch } from "@/hooks/useCatalogBrowseSwitch";
+import { useDesignCatalogCache } from "@/hooks/useDesignCatalogCache";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { Loader2 } from "lucide-react";
 
 function catalogUrl(
@@ -63,6 +66,8 @@ export function CustomerCatalogPanel({
   initialBrowseCache?: Record<string, { items: DesignListItem[]; total: number | null; hasMore: boolean }>;
 }) {
   const tabs = CATEGORIES.filter((c) => CATALOG_CATEGORIES.includes(c.key));
+  const catalogCache = useDesignCatalogCache(designs);
+  const pull = usePullToRefresh(catalogCache.refresh);
   const pageUrl = useCallback(
     (cat: ServiceCategory, sizeTier?: DesignSizeTier, catalogPart?: CatalogPart) =>
       catalogUrl(cat, sizeTier, catalogPart),
@@ -79,6 +84,7 @@ export function CustomerCatalogPanel({
     initialApiQuery: apiQuery,
     initialBrowseCache,
     pageUrl,
+    cachedCatalogDesigns: catalogCache.designs,
   });
   const { category, sizeTier, catalogPart, pickSizeTier, pickCatalogPart } = browse;
   const tierCounts = allTierCounts[category] ?? null;
@@ -95,6 +101,19 @@ export function CustomerCatalogPanel({
     <div className="space-y-6">
       <div>
         <h1 className="page-title">{t(locale, "designs")}</h1>
+        <DesignSyncStatus
+          locale={locale}
+          status={catalogCache.status}
+          newDesignCount={catalogCache.newDesignCount}
+          onDismissNew={catalogCache.dismissNewBadge}
+        />
+        <PullToRefreshHint
+          pulling={pull.pulling}
+          refreshing={pull.refreshing}
+          label={
+            pull.refreshing ? t(locale, "updatingDesigns") : t(locale, "pullToRefreshDesigns")
+          }
+        />
       </div>
 
       <CatalogCategoryTabs
@@ -144,7 +163,7 @@ export function CustomerCatalogPanel({
         />
       )}
 
-      {category && subgroupReady && (
+      {category && subgroupReady && !catalogCache.offlineNoCache && (
         <div className="relative space-y-4">
           {browse.switching && (
             <div className="flex items-center justify-center gap-2 py-1 text-sm text-zinc-600">
@@ -162,11 +181,12 @@ export function CustomerCatalogPanel({
               total={browse.total}
               hasMore={browse.hasMore}
               apiQuery={browse.apiQuery}
+              loadLocalPage={browse.useLocalPager ? browse.loadLocalPage : undefined}
             >
               {(pagedDesigns) => (
                 <ShopDesignCollections
                   locale={locale}
-                  designs={pagedDesigns}
+                  designs={pagedDesigns as DesignListItem[]}
                   shopId={priceShopId}
                   favoriteDesignIds={favorites}
                   detailHrefForDesign={(d) =>
@@ -177,6 +197,12 @@ export function CustomerCatalogPanel({
             </CatalogDesignPager>
           </div>
         </div>
+      )}
+
+      {catalogCache.offlineNoCache && (
+        <p className="card-premium py-10 text-center text-sm text-zinc-500">
+          {t(locale, "noDesignsAvailableOffline")}
+        </p>
       )}
     </div>
   );

@@ -9,6 +9,7 @@ import { CATEGORIES, isCategoryShopUpload } from "@/lib/categories";
 import type { CatalogPartCounts, CatalogSizeTierCounts } from "@/lib/catalog-design-counts";
 import { CatalogCategoryTabs } from "@/components/CatalogCategoryTabs";
 import { CatalogDesignPager } from "@/components/CatalogDesignPager";
+import { DesignSyncStatus, PullToRefreshHint } from "@/components/DesignSyncStatus";
 import { isShopOwnedUploadCategory } from "@/lib/design-access";
 import type { DesignListItem } from "@/lib/design-list-select";
 import { withQueryParam } from "@/lib/query-string";
@@ -20,6 +21,8 @@ import { categoryHasSizeTiers, defaultSizeTierForCategory } from "@/lib/design-s
 import { categoryHasCatalogParts, defaultCatalogPartForCategory } from "@/lib/design-catalog-part";
 import { compressImageFile } from "@/lib/compress-image";
 import { useCatalogBrowseSwitch } from "@/hooks/useCatalogBrowseSwitch";
+import { useDesignCatalogCache } from "@/hooks/useDesignCatalogCache";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { Loader2, Plus } from "lucide-react";
 
 const BASE_PATH = "/shop/designs";
@@ -70,6 +73,9 @@ export function ShopDesignsPanel({
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
 
+  const catalogCache = useDesignCatalogCache(designs);
+  const pull = usePullToRefresh(catalogCache.refresh);
+
   const pageUrl = useCallback(
     (cat: ServiceCategory, tier?: DesignSizeTier, part?: CatalogPart) =>
       shopDesignsUrl(cat, tier, part),
@@ -87,6 +93,7 @@ export function ShopDesignsPanel({
     initialApiQuery: apiQuery,
     initialBrowseCache,
     pageUrl,
+    cachedCatalogDesigns: catalogCache.designs,
   });
   const category = browse.category;
   const activeSizeTier = browse.sizeTier;
@@ -147,6 +154,19 @@ export function ShopDesignsPanel({
     <div className="space-y-6">
       <div>
         <h1 className="page-title">{t(locale, "designs")}</h1>
+        <DesignSyncStatus
+          locale={locale}
+          status={catalogCache.status}
+          newDesignCount={catalogCache.newDesignCount}
+          onDismissNew={catalogCache.dismissNewBadge}
+        />
+        <PullToRefreshHint
+          pulling={pull.pulling}
+          refreshing={pull.refreshing}
+          label={
+            pull.refreshing ? t(locale, "updatingDesigns") : t(locale, "pullToRefreshDesigns")
+          }
+        />
       </div>
 
       <CatalogCategoryTabs
@@ -220,7 +240,13 @@ export function ShopDesignsPanel({
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        {subgroupReady && (
+        {catalogCache.offlineNoCache && !isShopOwnedUploadCategory(category) && (
+          <p className="card-premium py-10 text-center text-sm text-zinc-500">
+            {t(locale, "noDesignsAvailableOffline")}
+          </p>
+        )}
+
+        {subgroupReady && !(catalogCache.offlineNoCache && !isShopOwnedUploadCategory(category)) && (
           <div className="relative space-y-4">
             {browse.switching && (
               <div className="flex items-center justify-center gap-2 py-1 text-sm text-zinc-600">
@@ -238,6 +264,7 @@ export function ShopDesignsPanel({
               total={browse.total}
               hasMore={browse.hasMore}
               apiQuery={browse.apiQuery}
+              loadLocalPage={browse.useLocalPager ? browse.loadLocalPage : undefined}
             >
             {(pagedDesigns) => (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -282,7 +309,7 @@ export function ShopDesignsPanel({
           </p>
         )}
 
-        {visibleDesigns.length === 0 && !canUpload && subgroupReady && (
+        {visibleDesigns.length === 0 && !canUpload && subgroupReady && !catalogCache.offlineNoCache && (
           <p className="card-premium py-10 text-center text-sm text-zinc-500">
             {t(locale, "noCatalogDesignsYet")}
           </p>
