@@ -1,4 +1,4 @@
-/** Coordinates first-open shop boot: priority tabs first, designs after. */
+/** Coordinates first-open shop boot: priority tabs gate UX; designs warm quietly after. */
 
 let priorityReady = false;
 const waiters: Array<() => void> = [];

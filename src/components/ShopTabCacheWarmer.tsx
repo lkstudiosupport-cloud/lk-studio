@@ -14,12 +14,11 @@ import {
   shopBootAlreadyDoneThisSession,
 } from "@/lib/shop-boot";
 
-type Phase = "tabs" | "designs" | "done";
+type Phase = "tabs" | "done";
 
 /**
- * First APK/shop open — two load groups:
- * 1) Home, Orders, Bills
- * 2) Designs (only after group 1 finishes)
+ * First APK/shop open — warm priority tabs with a short toast, then quietly
+ * prefetch Designs in the background so the spinner never sticks on 2/2.
  */
 export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
   const router = useRouter();
@@ -35,7 +34,7 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
       if (!quiet) setPhase("tabs");
       else markShopPriorityTabsReady();
 
-      // —— Category 1: Home + Orders + Bills in parallel ——
+      // —— Priority: Home + Orders + Bills in parallel ——
       await Promise.all([
         fetchShopTabData("dashboard").catch(() => null),
         fetchShopTabData("orders").catch(() => null),
@@ -44,6 +43,8 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
       if (cancelled) return;
 
       markShopPriorityTabsReady();
+      markShopBootDoneThisSession();
+      setPhase("done");
 
       // Warm create-bill so the button opens instantly.
       try {
@@ -56,9 +57,7 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
         /* ignore */
       }
 
-      // —— Category 2: Designs (after priority tabs) ——
-      if (!quiet) setPhase("designs");
-
+      // Designs: background only — never blocks boot UI / toast.
       try {
         router.prefetch("/shop/designs");
         const size = defaultSizeTierForCategory("MAGGAM");
@@ -66,17 +65,13 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
           category: "MAGGAM",
           ...(size ? { sizeTier: size } : {}),
         });
-        await fetch(`/api/catalog/designs?${q}&page=1`, {
+        void fetch(`/api/catalog/designs?${q}&page=1`, {
           credentials: "include",
           cache: "no-store",
-        });
+        }).catch(() => {});
       } catch {
         /* ignore */
       }
-      if (cancelled) return;
-
-      markShopBootDoneThisSession();
-      setPhase("done");
     }
 
     void boot();
@@ -94,10 +89,7 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
 
   if (phase === "done") return null;
 
-  const label =
-    phase === "designs"
-      ? t(locale, "shopBootLoadingDesigns")
-      : t(locale, "shopBootLoadingTabs");
+  const label = t(locale, "shopBootLoadingTabs");
 
   return (
     <div
