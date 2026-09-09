@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Volume2, Square } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -47,8 +48,10 @@ export function BillReadAloudButton({
 }) {
   const [speaking, setSpeaking] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     return () => stopBillSpeech();
   }, []);
 
@@ -80,8 +83,9 @@ export function BillReadAloudButton({
   const hint = t(locale, "readBillAloudHint");
 
   if (floating) {
-    return (
-      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[70] flex justify-center px-3 print:hidden">
+    if (!mounted) return null;
+    const ui = (
+      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[80] flex justify-center px-3 print:hidden">
         <div className="pointer-events-auto flex max-w-md flex-col items-stretch gap-1">
           <button
             type="button"
@@ -99,6 +103,7 @@ export function BillReadAloudButton({
         </div>
       </div>
     );
+    return createPortal(ui, document.body);
   }
 
   if (prominent) {
