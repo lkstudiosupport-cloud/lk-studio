@@ -304,7 +304,6 @@ export function MultiPieceBillForm({
                         updateLine(line.id, {
                           name: label,
                           presetId,
-                          quantity: line.quantity > 0 ? line.quantity : 1,
                         })
                       }
                       placeholder={t(locale, "pieceNamePlaceholder")}
