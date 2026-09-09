@@ -154,7 +154,7 @@ export function NavShell({
 
   return (
     <>
-      <header className="brand-header sticky top-0 z-20">
+      <header className="brand-header">
         <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-1 px-2 py-2 sm:gap-2 sm:px-4 sm:py-3.5 md:py-4">
           <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
             <BrandLogoMark locale={locale} />

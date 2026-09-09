@@ -63,7 +63,7 @@ export function BillShareActions({
 
   const barClass = compact
     ? "bill-detail-actions bill-detail-actions--compact flex min-w-0 flex-1 flex-nowrap items-center gap-1.5"
-    : "bill-detail-actions sticky top-0 z-10 mb-4 flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur";
+    : "bill-detail-actions sticky top-[var(--app-sticky-under-header)] z-10 mb-4 flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur";
 
   const backLabel = compact ? t(locale, "backShort") : t(locale, "backToBills");
   const shareLabel = sharing ? t(locale, "sharingBill") : t(locale, "shareBill");

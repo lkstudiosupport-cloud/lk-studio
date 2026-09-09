@@ -38,6 +38,8 @@
   --app-header-estimate: 4.25rem;
   /* Brand row + Home/Orders/Bill/Partner/Designs top tabs */
   --app-header-with-top-nav: 7.75rem;
+  /* Sticky bars sit under fixed brand header (overridden when top tabs are present) */
+  --app-sticky-under-header: var(--app-header-estimate);
   --app-bottom-nav-bar: 3.5rem;
   --app-bottom-nav-safe-offset: calc(
     var(--app-bottom-nav-bar) + env(safe-area-inset-bottom, 0px)
@@ -408,6 +410,17 @@ button {
   z-index: 1;
 }
 
+/* Keep shell chrome fixed — `.brand-page-bg > *` would otherwise force relative */
+.brand-page-bg > .brand-header {
+  position: fixed;
+  z-index: 50;
+}
+
+.brand-page-bg > .brand-bottom-nav {
+  position: fixed;
+  z-index: 40;
+}
+
 /* Bill detail — full page scroll on phone (no nested scroll trap) */
 .bill-detail-page {
   margin-top: -1.5rem;
@@ -541,8 +554,20 @@ button {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 0 env(safe-area-inset-right, 0px) max(1.5rem, env(safe-area-inset-bottom, 0px))
+  /* Extra bottom space so floating Read bill CTA does not cover totals */
+  padding: 0 env(safe-area-inset-right, 0px)
+    max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem))
     env(safe-area-inset-left, 0px);
+}
+
+.bill-receipt-speak-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgb(250 246 238 / 0.96);
+  padding-top: 0.5rem;
+  padding-bottom: 0.25rem;
+  backdrop-filter: blur(4px);
 }
 
 .bill-detail-status--subtle {

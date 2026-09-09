@@ -50,7 +50,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
           navPosition="bottom"
         />
         <SwipeNavContent navHrefs={navLinks.map((l) => l.href)}>
-          <div className="app-main-content app-main-content-with-bottom-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
+          <div className="app-main-content app-main-content-with-fixed-header app-main-content-with-bottom-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
             {children}
           </div>
         </SwipeNavContent>
