@@ -113,7 +113,9 @@ export function BillShareActions({
         </button>
       )}
       {/* Read after Edit/Share */}
-      {receipt && <BillReadAloudButton locale={locale} bill={receipt} compact={compact || dock} />}
+      {receipt && (
+        <BillReadAloudButton locale={locale} bill={receipt} compact={Boolean(compact) && !dock} />
+      )}
       {error && <p className="w-full shrink-0 basis-full text-sm text-red-600">{error}</p>}
     </div>
   );
