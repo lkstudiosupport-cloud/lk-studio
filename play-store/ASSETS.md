@@ -12,13 +12,15 @@
 
 ## App icon from repo
 
-Source vector: [`public/icon.svg`](../public/icon.svg) (brand green `#1b3022`, gold sewing machine).
+Source: [`public/brand-logo-source.jpg`](../public/brand-logo-source.jpg) (brand green `#1b3022`, gold sewing machine).
 
-**Export 512×512 PNG** (pick one):
+Regenerate web + Android launcher icons:
 
-1. Open `public/icon.svg` in Figma / Inkscape / browser → export PNG 512×512 → save as `play-store/icon-512.png`
-2. Or with ImageMagick: `magick -background none -resize 512x512 public/icon.svg play-store/icon-512.png`
-3. Or copy an existing `logo.png` if you add one under `public/`
+```bash
+node scripts/generate-app-logo.mjs
+```
+
+This writes `play-store/icon-512.png`, `public/logo.png`, and Android `ic_launcher*` assets.
 
 ## Text files in this folder
 
