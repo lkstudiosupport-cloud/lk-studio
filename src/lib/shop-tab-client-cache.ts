@@ -83,6 +83,7 @@ export async function fetchShopTabData<T extends ShopTabId>(
   const promise = (async () => {
     const res = await fetch(`/api/shop/tabs?${qs.toString()}`, {
       credentials: "include",
+      // Always bypass HTTP cache — client Map + server tags own freshness.
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`Tab load failed (${res.status})`);

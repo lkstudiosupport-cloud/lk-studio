@@ -768,7 +768,9 @@ function revalidateBillPaths(billId: string, shopId: string) {
 }
 
 /** Shop marks customer payment — full balance or partial amount received now. */
-export async function recordBillPayment(formData: FormData) {
+export async function recordBillPayment(
+  formData: FormData
+): Promise<{ paid: boolean }> {
   const shop = await shopId();
   const billId = String(formData.get("billId"));
   const bill = await prisma.bill.findFirst({ where: { id: billId, shopId: shop } });
@@ -783,7 +785,7 @@ export async function recordBillPayment(formData: FormData) {
       });
       revalidateBillPaths(billId, shop);
     }
-    return;
+    return { paid: true };
   }
 
   const markFull = formData.get("markFull") === "true";
@@ -804,7 +806,8 @@ export async function recordBillPayment(formData: FormData) {
     data: {
       paidAmount,
       paid,
-      paidAt: paid ? (bill.paidAt ?? new Date()) : null,
+      // Always stamp paidAt when newly fully paid so the Paid folder month/day filter finds it.
+      paidAt: paid ? new Date() : null,
     },
   });
 

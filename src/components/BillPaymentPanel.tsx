@@ -10,6 +10,7 @@ import { formatMoney } from "@/lib/bill-items";
 import { billPending } from "@/lib/bill-payment";
 import { recordBillPayment } from "@/app/shop/actions";
 import { currentMonthValue } from "@/lib/bill-list-filter";
+import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
 
 export function BillPaymentPanel({
   billId,
@@ -71,10 +72,14 @@ export function BillPaymentPanel({
       try {
         const result = await recordBillPayment(fd);
         setPaymentAmount("");
+        // Match order/worker mutations: drop stale tab payloads so paid/pending lists refresh.
+        clearShopTabCache("bills");
+        clearShopTabCache("dashboard");
         if (markFull || result?.paid) {
           router.push(
             `/shop/bills?tab=paid&mode=month&period=${encodeURIComponent(currentMonthValue())}`
           );
+          router.refresh();
         } else {
           router.refresh();
         }
