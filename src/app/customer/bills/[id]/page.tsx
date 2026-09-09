@@ -46,7 +46,13 @@ export default async function CustomerBillDetailPage({ params }: { params: Promi
 
   return (
     <BillDetailPage
-      actions={<BillShareActions locale={locale} backHref="/customer/bills" />}
+      actions={
+        <BillShareActions
+          locale={locale}
+          backHref="/customer/bills"
+          receipt={receiptData}
+        />
+      }
     >
       <BillReceiptShell locale={locale} autoFullscreenOnMobile>
         <BillReceipt bill={receiptData} locale={locale} />

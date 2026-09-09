@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Calendar } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import type { WorkerPartnerDurationType, WorkerPartnerRole } from "@prisma/client";
@@ -12,6 +13,7 @@ import {
   workerPartnerDurationLabelKey,
 } from "@/lib/work-partner-duration";
 import { createWorkerPartnerRequest } from "@/app/shop/actions";
+import { VoiceNotes } from "@/components/VoiceNotes";
 
 export function ShopWorkPartnerRequestForm({
   locale,
@@ -21,6 +23,7 @@ export function ShopWorkPartnerRequestForm({
   onCreated?: () => void;
 }) {
   const router = useRouter();
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const [role, setRole] = useState<WorkerPartnerRole>("STITCHING_WORKER");
   const [durationType, setDurationType] = useState<WorkerPartnerDurationType>("ONE_DAY");
   const [error, setError] = useState("");
@@ -45,6 +48,18 @@ export function ShopWorkPartnerRequestForm({
       setError(err instanceof Error ? err.message : "Failed");
     } finally {
       setPending(false);
+    }
+  }
+
+  function openDatePicker() {
+    const el = dateInputRef.current;
+    if (!el) return;
+    el.focus();
+    try {
+      // Chromium / Android WebView
+      (el as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
+    } catch {
+      /* ignore — native date UI still opens on tap */
     }
   }
 
@@ -83,19 +98,31 @@ export function ShopWorkPartnerRequestForm({
         </div>
       </fieldset>
 
-      <label className="block">
+      <div>
         <span className="mb-1 block text-sm font-semibold text-brand-green">
           {t(locale, "workerPartnerNeededFrom")}
         </span>
-        <input
-          type="date"
-          name="neededFrom"
-          required
-          min={todayDateInputValue()}
-          className="input-premium w-full"
-        />
+        <div className="relative">
+          <input
+            ref={dateInputRef}
+            type="date"
+            name="neededFrom"
+            required
+            min={todayDateInputValue()}
+            className="input-premium w-full pe-12"
+            onClick={openDatePicker}
+          />
+          <button
+            type="button"
+            onClick={openDatePicker}
+            className="absolute inset-y-0 end-0 flex items-center px-3 text-brand-green"
+            aria-label={t(locale, "workerPartnerSelectDate")}
+          >
+            <Calendar className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
         <p className="mt-1 text-xs text-zinc-500">{t(locale, "workerPartnerSelectDate")}</p>
-      </label>
+      </div>
 
       <fieldset className="space-y-2">
         <legend className="mb-2 text-sm font-semibold text-brand-green">
@@ -142,17 +169,16 @@ export function ShopWorkPartnerRequestForm({
         </label>
       )}
 
-      <label className="block">
-        <span className="mb-1 block text-sm font-semibold text-brand-green">
-          {t(locale, "workerPartnerNotes")}
-        </span>
-        <textarea
-          name="notes"
-          rows={3}
-          className="input-premium w-full"
-          placeholder={t(locale, "workerPartnerNotesPlaceholder")}
-        />
-      </label>
+      <VoiceNotes
+        locale={locale}
+        fieldName="notes"
+        textLabel={t(locale, "workerPartnerNotes")}
+        hintLabel={t(locale, "voiceDictationHint")}
+        startLabel={t(locale, "startListening")}
+        stopLabel={t(locale, "stopListening")}
+        micErrorLabel={t(locale, "micPermissionError")}
+        transliterate
+      />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

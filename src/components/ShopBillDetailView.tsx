@@ -59,6 +59,7 @@ export function ShopBillDetailView({
           shopName={receiptData.shop.shopName}
           itemsJson={receiptData.itemsJson}
           amount={receiptData.amount}
+          receipt={receiptData}
           showShare
         />
       }
@@ -93,6 +94,7 @@ export function ShopBillDetailView({
               shopName={receiptData.shop.shopName}
               itemsJson={receiptData.itemsJson}
               amount={receiptData.amount}
+              receipt={receiptData}
               showShare
               compact
             />

@@ -6,6 +6,8 @@ import { Share2, ArrowLeft, Pencil } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { preloadBillCaptureLib, shareBillImage, billShareCacheKey } from "@/lib/share-bill-image";
+import type { BillReceiptData } from "@/lib/bill-receipt-text";
+import { BillReadAloudButton } from "@/components/BillReadAloudButton";
 
 export function BillShareActions({
   locale,
@@ -17,6 +19,7 @@ export function BillShareActions({
   compact,
   itemsJson,
   amount,
+  receipt,
 }: {
   locale: Locale;
   backHref: string;
@@ -28,6 +31,8 @@ export function BillShareActions({
   compact?: boolean;
   itemsJson?: string;
   amount?: number;
+  /** When set, show speaker to read S.No / items / totals aloud. */
+  receipt?: BillReceiptData;
 }) {
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState("");
@@ -84,6 +89,7 @@ export function BillShareActions({
           <span>{compact ? t(locale, "editShort") : t(locale, "editBill")}</span>
         </Link>
       )}
+      {receipt && <BillReadAloudButton locale={locale} bill={receipt} compact={compact} />}
       {showShare && (
         <button
           type="button"
