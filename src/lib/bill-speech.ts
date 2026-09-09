@@ -64,33 +64,110 @@ export function stopBillSpeech() {
   window.speechSynthesis.cancel();
 }
 
-export function speakBillScript(text: string, locale: Locale): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      reject(new Error("Speech not supported"));
-      return;
-    }
+export function isBillSpeechAvailable(): boolean {
+  return typeof window !== "undefined" && "speechSynthesis" in window && !!window.speechSynthesis;
+}
 
-    window.speechSynthesis.cancel();
+/** Android Chrome / Capacitor WebView often returns [] until voiceschanged. */
+function waitForVoices(timeoutMs = 2500): Promise<SpeechSynthesisVoice[]> {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    return Promise.resolve([]);
+  }
+  const synth = window.speechSynthesis;
+  const existing = synth.getVoices();
+  if (existing.length > 0) return Promise.resolve(existing);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      synth.removeEventListener("voiceschanged", onChanged);
+      window.clearTimeout(timer);
+      resolve(synth.getVoices());
+    };
+    const onChanged = () => finish();
+    synth.addEventListener("voiceschanged", onChanged);
+    // Kick the engine — some WebViews populate voices only after cancel/getVoices.
+    try {
+      synth.cancel();
+      void synth.getVoices();
+    } catch {
+      /* ignore */
+    }
+    const timer = window.setTimeout(finish, timeoutMs);
+  });
+}
+
+function pickVoiceForLocale(
+  voices: SpeechSynthesisVoice[],
+  locale: Locale
+): SpeechSynthesisVoice | null {
+  if (voices.length === 0) return null;
+  const lang = speechLocaleFor(locale).toLowerCase();
+  const exact = voices.find((v) => v.lang.toLowerCase() === lang);
+  if (exact) return exact;
+  const prefix = voices.find((v) => v.lang.toLowerCase().startsWith(lang.slice(0, 2)));
+  if (prefix) return prefix;
+  const en = voices.find((v) => v.lang.toLowerCase().startsWith("en"));
+  return en ?? voices[0] ?? null;
+}
+
+export async function speakBillScript(text: string, locale: Locale): Promise<void> {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    throw new Error("Speech not supported");
+  }
+
+  const synth = window.speechSynthesis;
+  synth.cancel();
+
+  const voices = await waitForVoices();
+  const voice = pickVoiceForLocale(voices, locale);
+
+  // Empty voices is common briefly on Android — still try default engine voice.
+  // Only treat as hard failure when speechSynthesis itself is missing (checked above).
+
+  await new Promise<void>((resolve, reject) => {
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = speechLocaleFor(locale);
     utter.rate = 0.95;
+    if (voice) utter.voice = voice;
 
-    const pickVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      const lang = speechLocaleFor(locale).toLowerCase();
-      const exact = voices.find((v) => v.lang.toLowerCase() === lang);
-      const prefix = voices.find((v) => v.lang.toLowerCase().startsWith(lang.slice(0, 2)));
-      utter.voice = exact ?? prefix ?? null;
+    let finished = false;
+    const done = (ok: boolean, err?: Error) => {
+      if (finished) return;
+      finished = true;
+      window.clearInterval(keepAlive);
+      if (ok) resolve();
+      else reject(err ?? new Error("Speech failed"));
     };
 
-    pickVoice();
-    if (!utter.voice && window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.addEventListener("voiceschanged", pickVoice, { once: true });
+    utter.onend = () => done(true);
+    utter.onerror = (event) => {
+      const code = event.error;
+      // User stopped, or a new utterance replaced this one — not a hard failure.
+      if (code === "interrupted" || code === "canceled") {
+        done(true);
+        return;
+      }
+      done(false, new Error(code || "Speech failed"));
+    };
+
+    synth.speak(utter);
+    // Chrome / Android WebView sometimes pauses the queue until resume.
+    try {
+      synth.resume();
+    } catch {
+      /* ignore */
     }
 
-    utter.onend = () => resolve();
-    utter.onerror = () => reject(new Error("Speech failed"));
-    window.speechSynthesis.speak(utter);
+    // Keep the utterance alive on some Chromium builds that pause after ~15s.
+    const keepAlive = window.setInterval(() => {
+      try {
+        if (synth.speaking) synth.resume();
+      } catch {
+        /* ignore */
+      }
+    }, 8000);
   });
 }

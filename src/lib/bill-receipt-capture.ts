@@ -2,8 +2,16 @@ import { withTimeout } from "@/lib/platform";
 
 export const BILL_RECEIPT_CAPTURE_ID = "bill-receipt-capture";
 
-/** Scale 1 keeps receipt sharp at 448px width without oversized canvas work. */
-export const BILL_CAPTURE_SCALE = 1;
+/**
+ * html2canvas scale for HD bill shares.
+ * Scale 1 (1 CSS px → 1 canvas px) looks soft on retina phones when shared/zoomed.
+ * Floor at 2×, cap at 3× to stay sharp without huge canvases.
+ */
+export function getBillCaptureScale(): number {
+  if (typeof window === "undefined") return 2;
+  const dpr = window.devicePixelRatio || 1;
+  return Math.min(3, Math.max(2, dpr));
+}
 
 const CAPTURE_READY_MAX_MS = 3000;
 const CAPTURE_CANVAS_TIMEOUT_MS = 10000;
@@ -94,7 +102,7 @@ export async function captureReceiptCanvas(el: HTMLElement) {
   return withTimeout(
     html2canvas(el, {
       backgroundColor: "#ffffff",
-      scale: BILL_CAPTURE_SCALE,
+      scale: getBillCaptureScale(),
       logging: false,
       useCORS: true,
       width: el.offsetWidth || el.scrollWidth,

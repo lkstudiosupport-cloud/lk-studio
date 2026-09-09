@@ -352,7 +352,7 @@
   "stopReadingBill": "Stop",
   "readBillAloudHint": "Hear S.No, item, quantity, price, line total and overall total",
   "rupeesSpoken": "rupees",
-  "readBillNotSupported": "This phone cannot read the bill aloud. Check device text-to-speech settings.",
+  "readBillNotSupported": "Could not start reading yet. Try again, or turn on Text-to-speech in phone settings.",
   "shareOrderWork": "Share for stitching",
   "shareOrderWorkHint": "Share measurements and photos on WhatsApp for stitching",
   "shareOrderWorkFooter": "Stitching order from LK Studio",

@@ -1,8 +1,8 @@
 import { isCapacitorNative, isMobileWeb, withTimeout } from "@/lib/platform";
 import {
-  BILL_CAPTURE_SCALE,
   BILL_RECEIPT_CAPTURE_ID,
   captureReceiptCanvas,
+  getBillCaptureScale,
   loadHtml2Canvas,
   preloadBillCaptureLib,
   waitForBillReceiptReady,
@@ -10,7 +10,8 @@ import {
 import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
 
 const CAPTURE_WIDTH_PX = 448;
-const JPEG_QUALITY = 0.88;
+/** Slightly higher quality keeps small receipt glyphs crisp after WhatsApp recompress. */
+const JPEG_QUALITY = 0.94;
 const CAPTURE_TOTAL_TIMEOUT_MS = 12000;
 
 export { preloadBillCaptureLib };
@@ -70,6 +71,9 @@ async function captureInIsolatedIframe(originalRoot: HTMLElement) {
         padding: 0;
         background: #ffffff;
         font-family: "Poppins", "Segoe UI", system-ui, sans-serif;
+        -webkit-font-smoothing: subpixel-antialiased;
+        -moz-osx-font-smoothing: auto;
+        text-rendering: geometricPrecision;
       }
       ${BILL_RECEIPT_STYLES}
     `;
@@ -102,7 +106,7 @@ async function captureInIsolatedIframe(originalRoot: HTMLElement) {
     const html2canvas = await loadHtml2Canvas();
     return await html2canvas(clone, {
       backgroundColor: "#ffffff",
-      scale: BILL_CAPTURE_SCALE,
+      scale: getBillCaptureScale(),
       logging: false,
       useCORS: true,
       width: CAPTURE_WIDTH_PX,

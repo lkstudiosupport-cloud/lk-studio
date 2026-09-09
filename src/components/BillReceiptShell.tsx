@@ -15,7 +15,7 @@ export function BillReceiptShell({
   defaultFullscreen,
   autoFullscreenOnMobile = true,
   onFullscreenChange,
-  embedActionsInFullscreen,
+  embedActionsInFullscreen = true,
   fullscreenActions,
 }: {
   locale: Locale;
@@ -25,7 +25,7 @@ export function BillReceiptShell({
   /** Open fullscreen receipt on mobile bill detail load (default on). */
   autoFullscreenOnMobile?: boolean;
   onFullscreenChange?: (fullscreen: boolean) => void;
-  /** Show share/back/print bar inside fullscreen (post-create hero view). */
+  /** Embed Back/Edit/Share in the fullscreen toolbar (default on when actions provided). */
   embedActionsInFullscreen?: boolean;
   fullscreenActions?: React.ReactNode;
 }) {
@@ -49,7 +49,8 @@ export function BillReceiptShell({
     };
   }, [fullscreen]);
 
-  const showEmbeddedActions = fullscreen && embedActionsInFullscreen && fullscreenActions;
+  const showEmbeddedActions =
+    fullscreen && embedActionsInFullscreen !== false && Boolean(fullscreenActions);
 
   return (
     <div className={fullscreen ? "bill-receipt-shell bill-receipt-fullscreen" : "bill-receipt-shell"}>

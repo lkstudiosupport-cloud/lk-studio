@@ -85,7 +85,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           />
           {/* Tabs stay fixed in header — change only on tap. */}
           <div className="app-scroll-body-with-top-nav w-full min-w-0">
-            <div className="app-main-content app-main-content-with-top-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
+            {/* pb only — padding-top comes from .app-main-content-with-top-nav (py-* would override it). */}
+            <div className="app-main-content app-main-content-with-top-nav mx-auto w-full min-w-0 max-w-5xl pb-4 sm:pb-6">
               {children}
             </div>
           </div>

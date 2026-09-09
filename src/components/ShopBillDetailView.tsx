@@ -38,33 +38,46 @@ export function ShopBillDetailView({
   }, [isPostCreate]);
 
   const handleFullscreenChange = (fullscreen: boolean) => {
-    if (isPostCreate) {
-      if (!fullscreen) setReceiptFullscreen(false);
-      return;
-    }
     setReceiptFullscreen(fullscreen);
   };
 
   const hideChromeWhileFullscreen = isPostCreate && receiptFullscreen;
+
+  const shareActions = (
+    <BillShareActions
+      locale={locale}
+      backHref="/shop/bills"
+      editHref={`/shop/bills/${billId}/edit`}
+      billNumber={receiptData.billNumber}
+      shopName={receiptData.shop.shopName}
+      itemsJson={receiptData.itemsJson}
+      amount={receiptData.amount}
+      receipt={receiptData}
+      showShare
+    />
+  );
+
+  const shareActionsCompact = (
+    <BillShareActions
+      locale={locale}
+      backHref="/shop/bills"
+      editHref={`/shop/bills/${billId}/edit`}
+      billNumber={receiptData.billNumber}
+      shopName={receiptData.shop.shopName}
+      itemsJson={receiptData.itemsJson}
+      amount={receiptData.amount}
+      receipt={receiptData}
+      showShare
+      compact
+    />
+  );
 
   return (
     <>
       <BillDetailPage
         receiptHero={isPostCreate}
         receiptFullscreen={receiptFullscreen}
-        actions={
-          <BillShareActions
-            locale={locale}
-            backHref="/shop/bills"
-            editHref={`/shop/bills/${billId}/edit`}
-            billNumber={receiptData.billNumber}
-            shopName={receiptData.shop.shopName}
-            itemsJson={receiptData.itemsJson}
-            amount={receiptData.amount}
-            receipt={receiptData}
-            showShare
-          />
-        }
+        actions={shareActions}
         extra={
           <BillShareAutoSend
             billNumber={receiptData.billNumber}
@@ -78,7 +91,9 @@ export function ShopBillDetailView({
             fallbackHint={fallbackHint}
           />
         }
-        hideActions={hideChromeWhileFullscreen}
+        /* Page-level actions sit under the fullscreen overlay — keep chrome for
+           non-fullscreen; fullscreen always embeds Share/Edit/Back in the toolbar. */
+        hideActions={receiptFullscreen}
         hideExtra={hideChromeWhileFullscreen}
         receipt={
           <BillReceiptShell
@@ -86,21 +101,8 @@ export function ShopBillDetailView({
             defaultFullscreen={isPostCreate}
             autoFullscreenOnMobile={!isPostCreate}
             onFullscreenChange={handleFullscreenChange}
-            embedActionsInFullscreen={isPostCreate}
-            fullscreenActions={
-              <BillShareActions
-                locale={locale}
-                backHref="/shop/bills"
-                editHref={`/shop/bills/${billId}/edit`}
-                billNumber={receiptData.billNumber}
-                shopName={receiptData.shop.shopName}
-                itemsJson={receiptData.itemsJson}
-                amount={receiptData.amount}
-                receipt={receiptData}
-                showShare
-                compact
-              />
-            }
+            embedActionsInFullscreen
+            fullscreenActions={shareActionsCompact}
           >
             <BillReceipt bill={receiptData} locale={locale} />
           </BillReceiptShell>

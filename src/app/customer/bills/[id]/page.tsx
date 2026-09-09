@@ -55,11 +55,19 @@ export default async function CustomerBillDetailPage({ params }: { params: Promi
             receipt={receiptData}
           />
         }
-      >
-        <BillReceiptShell locale={locale} autoFullscreenOnMobile>
-          <BillReceipt bill={receiptData} locale={locale} />
-        </BillReceiptShell>
-      </BillDetailPage>
+        receipt={
+          <BillReceiptShell
+            locale={locale}
+            autoFullscreenOnMobile
+            embedActionsInFullscreen
+            fullscreenActions={
+              <BillShareActions locale={locale} backHref="/customer/bills" receipt={receiptData} compact />
+            }
+          >
+            <BillReceipt bill={receiptData} locale={locale} />
+          </BillReceiptShell>
+        }
+      />
       <BillReadAloudButton locale={locale} bill={receiptData} floating />
     </>
   );

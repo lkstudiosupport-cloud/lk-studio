@@ -8,6 +8,7 @@ import { t } from "@/lib/i18n";
 import type { BillReceiptData } from "@/lib/bill-receipt-text";
 import {
   buildBillReadAloudScript,
+  isBillSpeechAvailable,
   speakBillScript,
   stopBillSpeech,
   type BillSpeechLabels,
@@ -62,17 +63,18 @@ export function BillReadAloudButton({
       setSpeaking(false);
       return;
     }
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    if (!isBillSpeechAvailable()) {
       setError(t(locale, "readBillNotSupported"));
       return;
     }
     const script = buildBillReadAloudScript(bill, labelsFor(locale));
     setSpeaking(true);
     try {
-      // Some Android WebViews need a warm-up cancel before the first speak.
+      // Warm-up cancel helps some Android WebViews before the first speak.
       window.speechSynthesis.cancel();
       await speakBillScript(script, locale);
     } catch {
+      // Soft message — speechSynthesis usually exists; engine may still fail.
       setError(t(locale, "readBillNotSupported"));
     } finally {
       setSpeaking(false);
@@ -99,7 +101,11 @@ export function BillReadAloudButton({
             {speaking ? <Square className="h-5 w-5 shrink-0" /> : <Volume2 className="h-5 w-5 shrink-0" />}
             <span>{label}</span>
           </button>
-          {error ? <p className="rounded-lg bg-white/95 px-3 py-1 text-center text-xs text-red-600">{error}</p> : null}
+          {error ? (
+            <p className="rounded-lg bg-white/95 px-3 py-1.5 text-center text-xs text-brand-green-soft">
+              {error}
+            </p>
+          ) : null}
         </div>
       </div>
     );
@@ -121,7 +127,7 @@ export function BillReadAloudButton({
           {speaking ? <Square className="h-5 w-5 shrink-0" /> : <Volume2 className="h-5 w-5 shrink-0" />}
           <span>{label}</span>
         </button>
-        {error ? <p className="text-center text-xs text-red-600">{error}</p> : null}
+        {error ? <p className="text-center text-xs text-brand-green-soft">{error}</p> : null}
       </div>
     );
   }
@@ -132,7 +138,7 @@ export function BillReadAloudButton({
         type="button"
         onClick={() => void toggle()}
         aria-label={label}
-        title={hint}
+        title={error || hint}
         className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm ${
           speaking ? "bg-red-600 text-white" : "bg-brand-green text-white"
         }`}

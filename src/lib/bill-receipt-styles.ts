@@ -15,6 +15,10 @@ export const BILL_RECEIPT_STYLES = `
   border-radius: 2px;
   background: #ffffff;
   box-shadow: 0 10px 15px -3px rgba(27, 48, 34, 0.1);
+  /* Crisp glyph edges — avoid soft grayscale smoothing on receipt body */
+  -webkit-font-smoothing: subpixel-antialiased;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: geometricPrecision;
 }
 
 .bill-receipt-content {
@@ -86,7 +90,8 @@ export const BILL_RECEIPT_STYLES = `
 .bill-receipt-corner-name {
   margin: 0;
   font-size: 0.7rem;
-  font-weight: 900;
+  /* 700 matches loaded Poppins weights — 900 was faux-bold and looked soft */
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -133,7 +138,7 @@ export const BILL_RECEIPT_STYLES = `
 .bill-receipt-shop-name {
   margin: 0;
   font-size: 1.35rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.25;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -166,7 +171,7 @@ export const BILL_RECEIPT_STYLES = `
 
 .bill-receipt-brand-label {
   font-size: 0.875rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #1b3022;
