@@ -81,11 +81,11 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
             profileLabel={t(locale, "shopProfileTitle")}
             profilePhoto={profile?.profilePhoto}
             links={navLinks}
-            navPosition="bottom"
+            navPosition="top"
           />
-          {/* No swipe between Home/Orders/Bill/Partner/Designs — tabs change only on tap. */}
-          <div className="app-scroll-body-with-bottom-nav w-full min-w-0">
-            <div className="app-main-content app-main-content-with-bottom-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
+          {/* Tabs stay fixed in header — change only on tap. */}
+          <div className="app-scroll-body-with-top-nav w-full min-w-0">
+            <div className="app-main-content app-main-content-with-top-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
               {children}
             </div>
           </div>

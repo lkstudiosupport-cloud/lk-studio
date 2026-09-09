@@ -36,6 +36,8 @@
   --accent: #f1d35e;
   /* Mobile shell — keep bottom nav clearance in sync everywhere */
   --app-header-estimate: 4.25rem;
+  /* Brand row + Home/Orders/Bill/Partner/Designs top tabs */
+  --app-header-with-top-nav: 7.75rem;
   --app-bottom-nav-bar: 3.5rem;
   --app-bottom-nav-safe-offset: calc(
     var(--app-bottom-nav-bar) + env(safe-area-inset-bottom, 0px)
@@ -103,6 +105,13 @@ button {
 
 .brand-header {
   @apply bg-brand-green text-white shadow-lg shadow-brand-green/30;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  width: 100%;
+  transform: none;
   padding-top: env(safe-area-inset-top, 0px);
 }
 
@@ -164,6 +173,21 @@ button {
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.app-main-content-with-top-nav {
+  padding-top: calc(var(--app-header-with-top-nav) + 0.75rem);
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.app-scroll-body-with-top-nav {
+  --app-sticky-under-header: var(--app-header-with-top-nav);
+  min-height: calc(100dvh - var(--app-header-with-top-nav));
+}
+
+/* Brand row only (customer / layouts without top tabs) */
+.app-main-content-with-fixed-header {
+  padding-top: calc(var(--app-header-estimate) + 0.75rem);
 }
 
 .app-main-content-with-bottom-nav {
@@ -956,6 +980,7 @@ a,
 @media (max-width: 430px) {
   :root {
     --app-header-estimate: 3.75rem;
+    --app-header-with-top-nav: 7.25rem;
     --app-bottom-nav-bar: 3.625rem;
   }
 

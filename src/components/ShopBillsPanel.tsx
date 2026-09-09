@@ -89,7 +89,7 @@ export function ShopBillsPanel({
         </Link>
       </div>
 
-      <div className="scroll-nav sticky top-[var(--app-header-estimate)] z-10 -mx-1 flex gap-2 bg-[#faf6ee]/80 px-1 pb-2 pt-1 backdrop-blur-sm">
+      <div className="scroll-nav sticky top-[var(--app-sticky-under-header)] z-10 -mx-1 flex gap-2 bg-[#faf6ee]/95 px-1 pb-2 pt-1 backdrop-blur-sm">
         {tabs.map(({ id, label, count }) => (
           <button
             key={id}

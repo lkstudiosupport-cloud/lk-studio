@@ -352,6 +352,7 @@
   "stopReadingBill": "থামুন",
   "readBillAloudHint": "ক্রমিক নং, আইটেম, পরিমাণ, দাম ও মোট শুনুন",
   "rupeesSpoken": "টাকা",
+  "readBillNotSupported": "এই ফোনে বিল পড়া যাচ্ছে না। টেক্সট-টু-স্পিচ সেটিং দেখুন।",
   "shareOrderWork": "সেলাইয়ের জন্য শেয়ার",
   "shareOrderWorkHint": "Share measurements and photos on WhatsApp for stitching",
   "shareOrderWorkFooter": "Stitching order from LK Studio",

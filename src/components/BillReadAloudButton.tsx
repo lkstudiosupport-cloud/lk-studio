@@ -35,69 +35,99 @@ export function BillReadAloudButton({
   bill,
   compact,
   prominent,
+  floating,
 }: {
   locale: Locale;
   bill: BillReceiptData;
   compact?: boolean;
   /** Full-width CTA above the receipt paper. */
   prominent?: boolean;
+  /** Fixed floating control — always on screen on the bill page. */
+  floating?: boolean;
 }) {
   const [speaking, setSpeaking] = useState(false);
-  const [supported, setSupported] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    setSupported(typeof window !== "undefined" && "speechSynthesis" in window);
     return () => stopBillSpeech();
   }, []);
 
-  if (!supported) return null;
-
   async function toggle() {
+    setError("");
     if (speaking) {
       stopBillSpeech();
       setSpeaking(false);
       return;
     }
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setError(t(locale, "readBillNotSupported"));
+      return;
+    }
     const script = buildBillReadAloudScript(bill, labelsFor(locale));
     setSpeaking(true);
     try {
+      // Some Android WebViews need a warm-up cancel before the first speak.
+      window.speechSynthesis.cancel();
       await speakBillScript(script, locale);
     } catch {
-      /* unsupported / interrupted */
+      setError(t(locale, "readBillNotSupported"));
     } finally {
       setSpeaking(false);
     }
   }
 
   const label = speaking ? t(locale, "stopReadingBill") : t(locale, "readBillAloud");
+  const hint = t(locale, "readBillAloudHint");
 
-  if (prominent) {
+  if (floating) {
     return (
-      <button
-        type="button"
-        onClick={() => void toggle()}
-        aria-label={label}
-        title={t(locale, "readBillAloudHint")}
-        className={`inline-flex w-full max-w-md items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold shadow-md ${
-          speaking
-            ? "bg-red-600 text-white"
-            : "bg-brand-green text-white"
-        }`}
-      >
-        {speaking ? <Square className="h-5 w-5 shrink-0" /> : <Volume2 className="h-5 w-5 shrink-0" />}
-        <span>{label}</span>
-      </button>
+      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[70] flex justify-center px-3 print:hidden">
+        <div className="pointer-events-auto flex max-w-md flex-col items-stretch gap-1">
+          <button
+            type="button"
+            onClick={() => void toggle()}
+            aria-label={label}
+            title={hint}
+            className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold shadow-lg ${
+              speaking ? "bg-red-600 text-white" : "bg-brand-green text-brand-gold"
+            }`}
+          >
+            {speaking ? <Square className="h-5 w-5 shrink-0" /> : <Volume2 className="h-5 w-5 shrink-0" />}
+            <span>{label}</span>
+          </button>
+          {error ? <p className="rounded-lg bg-white/95 px-3 py-1 text-center text-xs text-red-600">{error}</p> : null}
+        </div>
+      </div>
     );
   }
 
-  // Compact toolbar: icon-only so it always fits next to Share.
+  if (prominent) {
+    return (
+      <div className="flex w-full max-w-md flex-col items-stretch gap-1">
+        <button
+          type="button"
+          onClick={() => void toggle()}
+          aria-label={label}
+          title={hint}
+          className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold shadow-md ${
+            speaking ? "bg-red-600 text-white" : "bg-brand-green text-white"
+          }`}
+        >
+          {speaking ? <Square className="h-5 w-5 shrink-0" /> : <Volume2 className="h-5 w-5 shrink-0" />}
+          <span>{label}</span>
+        </button>
+        {error ? <p className="text-center text-xs text-red-600">{error}</p> : null}
+      </div>
+    );
+  }
+
   if (compact) {
     return (
       <button
         type="button"
         onClick={() => void toggle()}
         aria-label={label}
-        title={t(locale, "readBillAloudHint")}
+        title={hint}
         className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm ${
           speaking ? "bg-red-600 text-white" : "bg-brand-green text-white"
         }`}
@@ -112,7 +142,7 @@ export function BillReadAloudButton({
       type="button"
       onClick={() => void toggle()}
       aria-label={label}
-      title={t(locale, "readBillAloudHint")}
+      title={hint}
       className="inline-flex items-center gap-2 rounded-xl border border-brand-green/25 bg-white px-4 py-2 text-sm font-bold text-brand-green shadow-sm"
     >
       {speaking ? <Square className="h-4 w-4 shrink-0" /> : <Volume2 className="h-4 w-4 shrink-0" />}

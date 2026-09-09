@@ -352,6 +352,7 @@
   "stopReadingBill": "रोकें",
   "readBillAloudHint": "क्रमांक, वस्तु, मात्रा, कीमत और कुल सुनें",
   "rupeesSpoken": "रुपये",
+  "readBillNotSupported": "इस फ़ोन पर बिल नहीं पढ़ा जा सकता। टेक्स्ट-टू-स्पीच सेटिंग जाँचें।",
   "shareOrderWork": "सिलाई के लिए शेयर",
   "shareOrderWorkHint": "सिलाई के लिए माप और फोटो WhatsApp पर भेजें",
   "shareOrderWorkFooter": "LK Studio सिलाई ऑर्डर",
