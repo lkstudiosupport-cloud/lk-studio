@@ -183,7 +183,7 @@ export function NavShell({
       </header>
 
       {!hideNav && navPosition === "bottom" && (
-        <nav className="brand-bottom-nav fixed inset-x-0 bottom-0 z-30" aria-label={t(locale, "appName")}>
+        <nav className="brand-bottom-nav" aria-label={t(locale, "appName")}>
           <div className="mx-auto flex w-full min-w-0 max-w-5xl items-stretch justify-around gap-0 px-0.5 pt-0.5 sm:gap-0.5 sm:px-2 sm:pt-1">
             {navItems}
           </div>

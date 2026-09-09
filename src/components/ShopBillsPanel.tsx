@@ -69,10 +69,10 @@ export function ShopBillsPanel({
     });
   }
 
-  const tabs: { id: BillsTab; label: string; count: number; small?: boolean }[] = [
-    { id: "all", label: t(locale, "billsTabAll"), count: counts.all },
+  const tabs: { id: BillsTab; label: string; count: number }[] = [
     { id: "pending", label: t(locale, "billsTabPending"), count: counts.pending },
-    { id: "paid", label: t(locale, "billsTabPaid"), count: counts.paid, small: true },
+    { id: "paid", label: t(locale, "billsTabPaid"), count: counts.paid },
+    { id: "all", label: t(locale, "billsTabAll"), count: counts.all },
   ];
 
   return (
@@ -89,15 +89,13 @@ export function ShopBillsPanel({
         </Link>
       </div>
 
-      <div className="scroll-nav -mx-1 flex gap-2 px-1 pb-1">
-        {tabs.map(({ id, label, count, small }) => (
+      <div className="scroll-nav sticky top-[var(--app-header-estimate)] z-10 -mx-1 flex gap-2 bg-[#faf6ee]/80 px-1 pb-2 pt-1 backdrop-blur-sm">
+        {tabs.map(({ id, label, count }) => (
           <button
             key={id}
             type="button"
             onClick={() => navigate({ tab: id })}
-            className={`shrink-0 whitespace-nowrap rounded-full font-semibold ring-1 ring-brand-green/15 transition ${
-              small ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
-            } ${
+            className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold ring-1 ring-brand-green/15 transition ${
               tab === id
                 ? "bg-brand-green text-brand-gold ring-brand-green"
                 : "bg-white text-brand-green hover:bg-brand-cream/80"

@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { NavShell } from "@/components/NavShell";
-import { SwipeNavContent } from "@/components/SwipeNavContent";
 import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { SessionRefresh } from "@/components/SessionRefresh";
 import { ServerKeepAlive } from "@/components/ServerKeepAlive";
@@ -84,11 +83,12 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
             links={navLinks}
             navPosition="bottom"
           />
-          <SwipeNavContent navHrefs={navLinks.map((l) => l.href)}>
+          {/* No swipe between Home/Orders/Bill/Partner/Designs — tabs change only on tap. */}
+          <div className="app-scroll-body-with-bottom-nav w-full min-w-0">
             <div className="app-main-content app-main-content-with-bottom-nav mx-auto w-full min-w-0 max-w-5xl py-4 sm:py-6">
               {children}
             </div>
-          </SwipeNavContent>
+          </div>
         </div>
       </AutopayGuard>
     </SubscriptionGate>

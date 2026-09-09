@@ -37,7 +37,7 @@ export function resolveBillsListFilter(
   now = new Date()
 ) {
   const tab: BillsTab =
-    tabRaw === "pending" || tabRaw === "paid" ? tabRaw : "all";
+    tabRaw === "all" || tabRaw === "paid" || tabRaw === "pending" ? tabRaw : "pending";
   const mode: BillsDateMode = modeRaw === "day" ? "day" : "month";
 
   let period = periodRaw?.trim() ?? "";
