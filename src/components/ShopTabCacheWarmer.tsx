@@ -18,7 +18,7 @@ type Phase = "tabs" | "designs" | "done";
 
 /**
  * First APK/shop open — two load groups:
- * 1) Home, Orders, Bills, Partner
+ * 1) Home, Orders, Bills
  * 2) Designs (only after group 1 finishes)
  */
 export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
@@ -35,18 +35,11 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
       if (!quiet) setPhase("tabs");
       else markShopPriorityTabsReady();
 
-      // —— Category 1: Home → Orders / Bills / Partner ——
-      try {
-        await fetchShopTabData("dashboard");
-      } catch {
-        /* ignore */
-      }
-      if (cancelled) return;
-
+      // —— Category 1: Home + Orders + Bills in parallel ——
       await Promise.all([
+        fetchShopTabData("dashboard").catch(() => null),
         fetchShopTabData("orders").catch(() => null),
         fetchShopTabData("bills").catch(() => null),
-        fetchShopTabData("workers").catch(() => null),
       ]);
       if (cancelled) return;
 

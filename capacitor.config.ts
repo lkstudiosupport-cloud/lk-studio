@@ -13,6 +13,18 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const serverUrl = process.env.CAPACITOR_SERVER_URL;
 
+const splashPlugin = {
+  SplashScreen: {
+    launchShowDuration: 0,
+    launchAutoHide: false,
+    backgroundColor: "#1b3022",
+    androidSplashResourceName: "splash",
+    showSpinner: false,
+    splashFullScreen: true,
+    splashImmersive: true,
+  },
+};
+
 const config: CapacitorConfig = {
   appId: "com.lkstudio.app",
   appName: "LK Studio",
@@ -21,6 +33,7 @@ const config: CapacitorConfig = {
     path: "android",
     allowMixedContent: true,
   },
+  plugins: splashPlugin,
   ...(serverUrl
     ? {
         server: {

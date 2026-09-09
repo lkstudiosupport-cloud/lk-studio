@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
-/** Ping lightweight health while app is open — reduces Render cold-start delays on tab switch. */
-const KEEP_ALIVE_MS = 90 * 1000;
+/** Ping health while app is open — reduces host sleep between tab switches. */
+const KEEP_ALIVE_MS = 4 * 60 * 1000;
 
 export function ServerKeepAlive() {
   useEffect(() => {
+    let cancelled = false;
+
     async function ping() {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || cancelled) return;
       try {
-        await fetch("/api/health", { cache: "no-store", credentials: "include" });
+        await fetch("/api/health", { cache: "no-store", credentials: "omit" });
       } catch {
         /* offline or server waking up */
       }
@@ -23,6 +25,7 @@ export function ServerKeepAlive() {
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
+      cancelled = true;
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
     };

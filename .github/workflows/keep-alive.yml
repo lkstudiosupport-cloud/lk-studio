@@ -1,0 +1,23 @@
+# Ping production so Render Free is less likely to sleep between APK opens.
+# Safe no-op if the host is already always-on. Disable after upgrading to Starter.
+name: Keep Render warm
+
+on:
+  schedule:
+    # Every 10 minutes
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Health ping
+        run: |
+          set -e
+          URL="${{ vars.PRODUCTION_HEALTH_URL }}"
+          if [ -z "$URL" ]; then
+            URL="https://lk-studio-1.onrender.com/api/health"
+          fi
+          curl -fsS --retry 3 --retry-delay 2 "$URL"
+          echo "OK $URL"

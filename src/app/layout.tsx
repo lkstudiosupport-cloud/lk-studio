@@ -1,5 +1,6 @@
 import { Poppins } from "next/font/google";
 import type { Metadata, Viewport } from "next";
+import { CapAppReady } from "@/components/CapAppReady";
 import { FirebaseAnalytics } from "@/components/FirebaseAnalytics";
 import "./globals.css";
 
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${poppins.variable} min-h-dvh antialiased font-[family-name:var(--font-brand)]`}>
+        <CapAppReady />
         <FirebaseAnalytics />
         {children}
       </body>

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { getLocale } from "@/lib/locale-server";
 import { t } from "@/lib/i18n";
 import { LocaleLocationBar } from "@/components/LocaleLocationBar";
-import { getSession } from "@/lib/auth";
+import { getSessionFromCookie } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { LegalFooter } from "@/components/LegalFooter";
@@ -20,10 +20,12 @@ export default async function HomePage() {
     redirect("/work-partner");
   }
 
-  const session = await getSession();
+  // Cookie JWT only — avoid a DB round-trip before redirect on cold open.
+  const session = await getSessionFromCookie();
 
   if (session?.role === "SHOP" && session.shopId) redirect("/shop");
   if (session?.role === "CUSTOMER") redirect("/customer/designs");
+  if (session?.role === "PARTNER") redirect("/work-partner/requests");
 
   return (
     <main className="brand-page-bg app-page-shell mx-auto flex min-h-dvh w-full max-w-lg flex-col py-6 sm:max-w-xl sm:py-8 md:max-w-2xl">

@@ -4,8 +4,9 @@ services:
     name: lk-studio
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npx tsx scripts/ensure-production-schema.ts && npx next start -H 0.0.0.0 -p $PORT
+    # Schema patches at build (not on every cold start) so next start listens ASAP.
+    buildCommand: npm install && npm run build && npx tsx scripts/ensure-production-schema.ts
+    startCommand: npx next start -H 0.0.0.0 -p $PORT
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION

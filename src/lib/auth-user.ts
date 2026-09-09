@@ -7,25 +7,34 @@ export async function findUserByPhone(role: UserRole, rawPhone: string) {
   const keys = phoneLookupKeys(rawPhone);
   if (keys.length === 0) return null;
 
+  // Partners never have a shop profile — skip the include to avoid unrelated schema drift.
+  const includeShop = role === "SHOP" || role === "ADMIN";
+
   const byNormalized = await prisma.user.findFirst({
     where: { role, phoneNormalized: { in: keys } },
-    include: { shopProfile: true },
+    ...(includeShop ? { include: { shopProfile: true } } : {}),
   });
-  if (byNormalized) return byNormalized;
+  if (byNormalized) {
+    return includeShop
+      ? byNormalized
+      : { ...byNormalized, shopProfile: null as null };
+  }
 
   // Legacy rows without phoneNormalized — match stored phone/whatsapp text
   const candidates = await prisma.user.findMany({
     where: { role, phoneNormalized: null },
-    include: { shopProfile: true },
+    ...(includeShop ? { include: { shopProfile: true } } : {}),
   });
 
-  return (
+  const matched =
     candidates.find((u) => {
       const p = u.phone ? normalizePhone(u.phone) : "";
       const w = u.whatsapp ? normalizePhone(u.whatsapp) : "";
       return keys.some((k) => k === p || k === w);
-    }) ?? null
-  );
+    }) ?? null;
+
+  if (!matched) return null;
+  return includeShop ? matched : { ...matched, shopProfile: null as null };
 }
 
 export async function findUserByPhoneAnyRole(rawPhone: string) {

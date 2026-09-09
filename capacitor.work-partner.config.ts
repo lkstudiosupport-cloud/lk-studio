@@ -23,6 +23,17 @@ const config: CapacitorConfig = {
     path: "android-work-partner",
     allowMixedContent: true,
   },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 0,
+      launchAutoHide: false,
+      backgroundColor: "#1b3022",
+      androidSplashResourceName: "splash",
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
+  },
   server: {
     url: serverUrl,
     cleartext: serverUrl.startsWith("http://"),

@@ -14,11 +14,17 @@ async function main() {
   await prisma.$executeRawUnsafe(
     `CREATE INDEX IF NOT EXISTS "ShopProfile_city_idx" ON "ShopProfile" ("city");`
   );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "ShopProfile" ADD COLUMN IF NOT EXISTS "shopNumber" TEXT;`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "ShopProfile_shopNumber_key" ON "ShopProfile"("shopNumber") WHERE "shopNumber" IS NOT NULL;`
+  );
 
   // Verify columns are readable (fails fast if schema is still broken).
   await prisma.$queryRawUnsafe(`SELECT "city", "autopayEnabled" FROM "User" LIMIT 1;`);
   await prisma.$queryRawUnsafe(
-    `SELECT "city", "autopayEnabled", "subscriptionStatus" FROM "ShopProfile" LIMIT 1;`
+    `SELECT "city", "autopayEnabled", "subscriptionStatus", "shopNumber" FROM "ShopProfile" LIMIT 1;`
   );
 
   await prisma.$executeRawUnsafe(`
