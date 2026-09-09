@@ -89,7 +89,6 @@ export function BillShareActions({
           <span>{compact ? t(locale, "editShort") : t(locale, "editBill")}</span>
         </Link>
       )}
-      {receipt && <BillReadAloudButton locale={locale} bill={receipt} compact={compact} />}
       {showShare && (
         <button
           type="button"
@@ -107,6 +106,8 @@ export function BillShareActions({
           <span>{shareLabel}</span>
         </button>
       )}
+      {/* Read after Edit/Share — same toolbar, not a floating CTA */}
+      {receipt && <BillReadAloudButton locale={locale} bill={receipt} compact={compact} />}
       {error && <p className="w-full shrink-0 basis-full text-sm text-red-600">{error}</p>}
     </div>
   );

@@ -9,7 +9,6 @@ import { BillCornerMark } from "@/components/BillCornerMark";
 import type { BillReceiptData } from "@/lib/bill-receipt-text";
 import { BILL_RECEIPT_CAPTURE_ID } from "@/lib/bill-receipt-capture";
 import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
-import { BillReadAloudButton } from "@/components/BillReadAloudButton";
 
 function formatReceiptDate(d: Date | string) {
   const date = d instanceof Date ? d : new Date(d);
@@ -37,10 +36,6 @@ export function BillReceipt({ bill, locale }: { bill: BillReceiptData; locale: L
     <>
       <style dangerouslySetInnerHTML={{ __html: BILL_RECEIPT_STYLES }} />
       <div className="bill-receipt">
-        {/* Outside capture — speaker must stay visible on final bill screen */}
-        <div className="bill-receipt-speak-bar mb-3 flex justify-center px-2 print:hidden">
-          <BillReadAloudButton locale={locale} bill={bill} prominent />
-        </div>
       <div id={BILL_RECEIPT_CAPTURE_ID} className="bill-receipt-paper">
         <div className="bill-receipt-corners" aria-hidden>
           {(["tl", "tr", "bl", "br"] as const).map((pos) => (

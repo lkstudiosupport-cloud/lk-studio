@@ -6,7 +6,6 @@ import { BillReceipt } from "@/components/BillReceipt";
 import { BillReceiptShell } from "@/components/BillReceiptShell";
 import { BillShareActions } from "@/components/BillShareActions";
 import { BillDetailPage } from "@/components/BillDetailPage";
-import { BillReadAloudButton } from "@/components/BillReadAloudButton";
 import { billReceiptCustomer } from "@/lib/bill-customer";
 
 export default async function CustomerBillDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -46,29 +45,26 @@ export default async function CustomerBillDetailPage({ params }: { params: Promi
   };
 
   return (
-    <>
-      <BillDetailPage
-        actions={
-          <BillShareActions
-            locale={locale}
-            backHref="/customer/bills"
-            receipt={receiptData}
-          />
-        }
-        receipt={
-          <BillReceiptShell
-            locale={locale}
-            autoFullscreenOnMobile
-            embedActionsInFullscreen
-            fullscreenActions={
-              <BillShareActions locale={locale} backHref="/customer/bills" receipt={receiptData} compact />
-            }
-          >
-            <BillReceipt bill={receiptData} locale={locale} />
-          </BillReceiptShell>
-        }
-      />
-      <BillReadAloudButton locale={locale} bill={receiptData} floating />
-    </>
+    <BillDetailPage
+      actions={
+        <BillShareActions
+          locale={locale}
+          backHref="/customer/bills"
+          receipt={receiptData}
+        />
+      }
+      receipt={
+        <BillReceiptShell
+          locale={locale}
+          autoFullscreenOnMobile
+          embedActionsInFullscreen
+          fullscreenActions={
+            <BillShareActions locale={locale} backHref="/customer/bills" receipt={receiptData} compact />
+          }
+        >
+          <BillReceipt bill={receiptData} locale={locale} />
+        </BillReceiptShell>
+      }
+    />
   );
 }
