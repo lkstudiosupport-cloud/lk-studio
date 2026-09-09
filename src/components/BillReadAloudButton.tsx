@@ -34,13 +34,16 @@ export function BillReadAloudButton({
   locale,
   bill,
   compact,
+  prominent,
 }: {
   locale: Locale;
   bill: BillReceiptData;
   compact?: boolean;
+  /** Full-width CTA above the receipt paper. */
+  prominent?: boolean;
 }) {
   const [speaking, setSpeaking] = useState(false);
-  const [supported, setSupported] = useState(true);
+  const [supported, setSupported] = useState(false);
 
   useEffect(() => {
     setSupported(typeof window !== "undefined" && "speechSynthesis" in window);
@@ -67,9 +70,42 @@ export function BillReadAloudButton({
   }
 
   const label = speaking ? t(locale, "stopReadingBill") : t(locale, "readBillAloud");
-  const className = compact
-    ? "inline-flex shrink-0 items-center gap-1 rounded-xl border border-brand-green/25 bg-white px-2.5 py-2 text-xs font-bold text-brand-green shadow-sm"
-    : "inline-flex items-center gap-2 rounded-xl border border-brand-green/25 bg-white px-4 py-2 text-sm font-bold text-brand-green shadow-sm";
+
+  if (prominent) {
+    return (
+      <button
+        type="button"
+        onClick={() => void toggle()}
+        aria-label={label}
+        title={t(locale, "readBillAloudHint")}
+        className={`inline-flex w-full max-w-md items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold shadow-md ${
+          speaking
+            ? "bg-red-600 text-white"
+            : "bg-brand-green text-white"
+        }`}
+      >
+        {speaking ? <Square className="h-5 w-5 shrink-0" /> : <Volume2 className="h-5 w-5 shrink-0" />}
+        <span>{label}</span>
+      </button>
+    );
+  }
+
+  // Compact toolbar: icon-only so it always fits next to Share.
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={() => void toggle()}
+        aria-label={label}
+        title={t(locale, "readBillAloudHint")}
+        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm ${
+          speaking ? "bg-red-600 text-white" : "bg-brand-green text-white"
+        }`}
+      >
+        {speaking ? <Square className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+      </button>
+    );
+  }
 
   return (
     <button
@@ -77,7 +113,7 @@ export function BillReadAloudButton({
       onClick={() => void toggle()}
       aria-label={label}
       title={t(locale, "readBillAloudHint")}
-      className={className}
+      className="inline-flex items-center gap-2 rounded-xl border border-brand-green/25 bg-white px-4 py-2 text-sm font-bold text-brand-green shadow-sm"
     >
       {speaking ? <Square className="h-4 w-4 shrink-0" /> : <Volume2 className="h-4 w-4 shrink-0" />}
       <span>{label}</span>
