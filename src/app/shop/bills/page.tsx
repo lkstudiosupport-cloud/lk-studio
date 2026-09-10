@@ -1,13 +1,12 @@
 import { Suspense } from "react";
-import { cachedLocale } from "@/lib/cached-server";
 import { ShopBillsClient } from "@/components/ShopBillsClient";
 import { PageLoadingSkeleton } from "@/components/PageLoadingSkeleton";
 
-export default async function ShopBillsPage() {
-  const locale = await cachedLocale();
+/** Sync shell — avoids awaiting locale RSC on every Bills tab switch. */
+export default function ShopBillsPage() {
   return (
     <Suspense fallback={<PageLoadingSkeleton />}>
-      <ShopBillsClient locale={locale} />
+      <ShopBillsClient />
     </Suspense>
   );
 }

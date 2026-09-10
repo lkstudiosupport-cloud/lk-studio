@@ -6,6 +6,7 @@ import {
   clearShopTabCache,
   fetchShopTabData,
   getShopTabCache,
+  isShopTabCacheFresh,
 } from "@/lib/shop-tab-client-cache";
 
 export function useShopTabData<T extends ShopTabId>(tab: T, query = "") {
@@ -22,10 +23,12 @@ export function useShopTabData<T extends ShopTabId>(tab: T, query = "") {
         setData(cached);
         setLoading(false);
         setError(false);
-        // Soft refresh in background
-        void fetchShopTabData(tab, query, { force: true })
-          .then((fresh) => setData(fresh))
-          .catch(() => {});
+        // Soft refresh only when stale — avoid a network hit on every tab remount.
+        if (!isShopTabCacheFresh(tab, query)) {
+          void fetchShopTabData(tab, query, { force: true })
+            .then((fresh) => setData(fresh))
+            .catch(() => {});
+        }
         return;
       }
 

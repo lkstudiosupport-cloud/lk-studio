@@ -34,11 +34,12 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
       if (!quiet) setPhase("tabs");
       else markShopPriorityTabsReady();
 
-      // —— Priority: Home + Orders + Bills in parallel ——
+      // —— Priority: Home + Orders + Bills + Workers in parallel ——
       await Promise.all([
         fetchShopTabData("dashboard").catch(() => null),
         fetchShopTabData("orders").catch(() => null),
         fetchShopTabData("bills").catch(() => null),
+        fetchShopTabData("workers").catch(() => null),
       ]);
       if (cancelled) return;
 

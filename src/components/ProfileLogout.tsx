@@ -7,6 +7,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { parseApiResponse } from "@/lib/parse-api-response";
 import { getOrCreateDeviceId } from "@/lib/device-id";
+import { clearShopShellCaches } from "@/components/ShopShellProvider";
 
 export function ProfileLogout({
   locale,
@@ -38,6 +39,7 @@ export function ProfileLogout({
         setPending(false);
         return;
       }
+      clearShopShellCaches();
       router.replace(
         typeof data.redirect === "string" && redirectTo === "/"
           ? data.redirect

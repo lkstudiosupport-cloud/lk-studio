@@ -4,23 +4,51 @@ import type { ShopTabId, ShopTabPayloadMap } from "@/lib/shop-tab-types";
 
 type CacheEntry<T> = { data: T; at: number };
 
-const TTL_MS = 90_000;
+/** Prefer background refresh after this age. */
+const SOFT_TTL_MS = 45_000;
+/** Keep showing stale data until this age (true SWR). */
+const HARD_TTL_MS = 30 * 60_000;
+
 const store = new Map<string, CacheEntry<unknown>>();
 const inflight = new Map<string, Promise<unknown>>();
 
+/** Active shop — cache keys are scoped so another shop never sees this data. */
+let activeShopId: string | null = null;
+
 function cacheKey(tab: ShopTabId, query = ""): string {
-  return query ? `${tab}?${query}` : tab;
+  const scope = activeShopId ?? "_";
+  return query ? `${scope}:${tab}?${query}` : `${scope}:${tab}`;
+}
+
+function tabPrefix(tab: ShopTabId): string {
+  const scope = activeShopId ?? "_";
+  return `${scope}:${tab}`;
+}
+
+/** Bind tab cache to the logged-in shop; clears when shop changes. */
+export function bindShopTabCacheScope(shopId: string) {
+  if (activeShopId === shopId) return;
+  activeShopId = shopId;
+  store.clear();
+  inflight.clear();
 }
 
 export function getShopTabCache<T>(tab: ShopTabId, query = ""): T | null {
   const key = cacheKey(tab, query);
   const hit = store.get(key) as CacheEntry<T> | undefined;
   if (!hit) return null;
-  if (Date.now() - hit.at > TTL_MS) {
+  if (Date.now() - hit.at > HARD_TTL_MS) {
     store.delete(key);
     return null;
   }
   return hit.data;
+}
+
+export function isShopTabCacheFresh(tab: ShopTabId, query = ""): boolean {
+  const key = cacheKey(tab, query);
+  const hit = store.get(key);
+  if (!hit) return false;
+  return Date.now() - hit.at <= SOFT_TTL_MS;
 }
 
 export function setShopTabCache<T>(tab: ShopTabId, data: T, query = "") {
@@ -33,11 +61,23 @@ export function clearShopTabCache(tab?: ShopTabId) {
     inflight.clear();
     return;
   }
+  const prefix = tabPrefix(tab);
   for (const key of [...store.keys()]) {
-    if (key === tab || key.startsWith(`${tab}?`)) store.delete(key);
+    if (key === prefix || key.startsWith(`${prefix}?`)) store.delete(key);
   }
   for (const key of [...inflight.keys()]) {
-    if (key === tab || key.startsWith(`${tab}?`)) inflight.delete(key);
+    if (key === prefix || key.startsWith(`${prefix}?`)) inflight.delete(key);
+  }
+}
+
+/**
+ * Drop cached tab(s) and immediately prefetch fresh payloads so the next
+ * navigation can paint from memory instead of a cold skeleton.
+ */
+export function invalidateAndPrefetchShopTabs(...tabs: ShopTabId[]) {
+  for (const tab of tabs) {
+    clearShopTabCache(tab);
+    void fetchShopTabData(tab, "", { force: true }).catch(() => {});
   }
 }
 
@@ -73,10 +113,23 @@ export async function fetchShopTabData<T extends ShopTabId>(
   const key = cacheKey(tab, query);
   if (!opts?.force) {
     const cached = getShopTabCache<ShopTabPayloadMap[T]>(tab, query);
-    if (cached) return cached;
+    if (cached && isShopTabCacheFresh(tab, query)) return cached;
     const pending = inflight.get(key) as Promise<ShopTabPayloadMap[T]> | undefined;
-    if (pending) return pending;
+    if (pending) {
+      // Stale-while-revalidate: paint immediately if we have anything.
+      if (cached) return cached;
+      return pending;
+    }
+    // Soft-stale: return cached now and refresh in background when caller
+    // only needs a value (prefetch). useShopTabData also triggers refresh.
+    if (cached) {
+      void fetchShopTabData(tab, query, { force: true }).catch(() => {});
+      return cached;
+    }
   }
+
+  const existing = inflight.get(key) as Promise<ShopTabPayloadMap[T]> | undefined;
+  if (opts?.force && existing) return existing;
 
   const qs = new URLSearchParams(query);
   qs.set("tab", tab);
@@ -97,7 +150,7 @@ export async function fetchShopTabData<T extends ShopTabId>(
   try {
     return await promise;
   } finally {
-    inflight.delete(key);
+    if (inflight.get(key) === promise) inflight.delete(key);
   }
 }
 

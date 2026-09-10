@@ -1,7 +1,6 @@
-import { cachedLocale } from "@/lib/cached-server";
 import { ShopWorkersClient } from "@/components/ShopWorkersClient";
 
-export default async function ShopWorkersPage() {
-  const locale = await cachedLocale();
-  return <ShopWorkersClient locale={locale} />;
+/** Sync shell — avoids awaiting locale RSC on every Workers tab switch. */
+export default function ShopWorkersPage() {
+  return <ShopWorkersClient />;
 }

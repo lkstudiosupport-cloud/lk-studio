@@ -18,7 +18,7 @@ import type { ServiceCategory } from "@prisma/client";
 import type { ShopOrderData, ShopOrderDesignItem } from "@/lib/shop-order-types";
 import type { ShopOrderListItem } from "@/lib/shop-tab-types";
 import { shareOrderWorkViaWhatsApp } from "@/lib/share-order-work";
-import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
+import { invalidateAndPrefetchShopTabs } from "@/lib/shop-tab-client-cache";
 
 const detailCache = new Map<string, ShopOrderData>();
 
@@ -113,8 +113,7 @@ export function ShopOrderLightCard({
   }
 
   function handleStatusUpdated(tabId: string) {
-    clearShopTabCache("orders");
-    clearShopTabCache("dashboard");
+    invalidateAndPrefetchShopTabs("orders", "dashboard");
     clearShopOrderDetailCache(order.id);
     onStatusUpdated?.(tabId);
   }

@@ -1,18 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
-import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { PageLoadingSkeleton } from "@/components/PageLoadingSkeleton";
 import { ShopWorkPartnerRequestForm } from "@/components/ShopWorkPartnerRequestForm";
 import { ShopWorkPartnerRequestsList } from "@/components/ShopWorkPartnerRequestsList";
 import { useShopTabData } from "@/hooks/useShopTabData";
-import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
+import { useShopShell } from "@/components/ShopShellProvider";
+import { fetchShopTabData, invalidateAndPrefetchShopTabs } from "@/lib/shop-tab-client-cache";
 
-export function ShopWorkersClient({ locale }: { locale: Locale }) {
-  const { data, loading, error, refresh } = useShopTabData("workers");
+export function ShopWorkersClient() {
+  const { locale } = useShopShell();
+  const { data, loading, error, refresh, setData } = useShopTabData("workers");
 
-  // Keep checking for new acceptances while requests are open.
+  // Keep checking for new acceptances while requests are open — silent SWR, no skeleton.
   useEffect(() => {
     const hasOpen = (data?.requests ?? []).some(
       (r) =>
@@ -22,11 +23,12 @@ export function ShopWorkersClient({ locale }: { locale: Locale }) {
     if (!hasOpen) return;
     const id = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      clearShopTabCache("workers");
-      void refresh();
+      void fetchShopTabData("workers", "", { force: true })
+        .then((fresh) => setData(fresh))
+        .catch(() => {});
     }, 15_000);
     return () => window.clearInterval(id);
-  }, [data?.requests, refresh]);
+  }, [data?.requests, setData]);
 
   if (loading && !data) {
     return (
@@ -68,7 +70,7 @@ export function ShopWorkersClient({ locale }: { locale: Locale }) {
       <ShopWorkPartnerRequestForm
         locale={locale}
         onCreated={() => {
-          clearShopTabCache("workers");
+          invalidateAndPrefetchShopTabs("workers");
           void refresh();
         }}
       />
@@ -76,7 +78,7 @@ export function ShopWorkersClient({ locale }: { locale: Locale }) {
         locale={locale}
         requests={requests}
         onRefresh={() => {
-          clearShopTabCache("workers");
+          invalidateAndPrefetchShopTabs("workers");
           void refresh();
         }}
       />

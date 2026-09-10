@@ -3,10 +3,11 @@
 import { ShopDashboard } from "@/components/ShopDashboard";
 import { PageLoadingSkeleton } from "@/components/PageLoadingSkeleton";
 import { useShopTabData } from "@/hooks/useShopTabData";
-import type { Locale } from "@/lib/i18n/locales";
+import { useShopShell } from "@/components/ShopShellProvider";
 import { t } from "@/lib/i18n";
 
-export function ShopDashboardClient({ locale }: { locale: Locale }) {
+export function ShopDashboardClient() {
+  const { locale } = useShopShell();
   const { data, loading, error, refresh } = useShopTabData("dashboard");
 
   if (loading && !data) return <PageLoadingSkeleton />;

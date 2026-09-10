@@ -4,6 +4,7 @@ import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { SessionRefresh } from "@/components/SessionRefresh";
 import { ServerKeepAlive } from "@/components/ServerKeepAlive";
 import { ShopTabCacheWarmer } from "@/components/ShopTabCacheWarmer";
+import { ShopShellProvider } from "@/components/ShopShellProvider";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
 import { isDemoAccountUser } from "@/lib/demo-accounts";
@@ -67,31 +68,35 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     { href: "/shop/designs", label: t(locale, "designs"), shortLabel: t(locale, "navShortDesigns") },
   ];
 
+  const shopId = session.shopId!;
+
   return (
     <SubscriptionGate>
       <SessionRefresh />
       <ServerKeepAlive />
-      <ShopTabCacheWarmer locale={locale} />
-      <AutopayGuard hasAccess={hasAccess} setupPath="/register/autopay">
-        <div className="brand-page-bg min-h-dvh w-full min-w-0">
-          <NavShell
-            locale={locale}
-            title={profile?.shopName ?? t(locale, "appName")}
-            profileHref="/shop/profile"
-            profileLabel={t(locale, "shopProfileTitle")}
-            profilePhoto={profile?.profilePhoto}
-            links={navLinks}
-            navPosition="top"
-          />
-          {/* Tabs stay fixed in header — change only on tap. */}
-          <div className="app-scroll-body-with-top-nav w-full min-w-0">
-            {/* pb only — padding-top comes from .app-main-content-with-top-nav (py-* would override it). */}
-            <div className="app-main-content app-main-content-with-top-nav mx-auto w-full min-w-0 max-w-5xl pb-4 sm:pb-6">
-              {children}
+      <ShopShellProvider locale={locale} shopId={shopId}>
+        <ShopTabCacheWarmer locale={locale} />
+        <AutopayGuard hasAccess={hasAccess} setupPath="/register/autopay">
+          <div className="brand-page-bg min-h-dvh w-full min-w-0">
+            <NavShell
+              locale={locale}
+              title={profile?.shopName ?? t(locale, "appName")}
+              profileHref="/shop/profile"
+              profileLabel={t(locale, "shopProfileTitle")}
+              profilePhoto={profile?.profilePhoto}
+              links={navLinks}
+              navPosition="top"
+            />
+            {/* Tabs stay fixed in header — change only on tap. */}
+            <div className="app-scroll-body-with-top-nav w-full min-w-0">
+              {/* pb only — padding-top comes from .app-main-content-with-top-nav (py-* would override it). */}
+              <div className="app-main-content app-main-content-with-top-nav mx-auto w-full min-w-0 max-w-5xl pb-4 sm:pb-6">
+                {children}
+              </div>
             </div>
           </div>
-        </div>
-      </AutopayGuard>
+        </AutopayGuard>
+      </ShopShellProvider>
     </SubscriptionGate>
   );
 }

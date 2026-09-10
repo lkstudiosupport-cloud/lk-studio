@@ -9,7 +9,7 @@ import { t } from "@/lib/i18n";
 import { formatMoney } from "@/lib/bill-items";
 import { billPending } from "@/lib/bill-payment";
 import { recordBillPayment } from "@/app/shop/actions";
-import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
+import { invalidateAndPrefetchShopTabs } from "@/lib/shop-tab-client-cache";
 
 export function BillPaymentPanel({
   billId,
@@ -71,10 +71,8 @@ export function BillPaymentPanel({
       try {
         await recordBillPayment(fd);
         setPaymentAmount("");
-        // Match order/worker mutations: drop stale tab payloads so paid/pending lists refresh.
-        clearShopTabCache("bills");
-        clearShopTabCache("dashboard");
-        // Stay on the current screen/tab — user opens Paid manually if they want.
+        // Prefetch list tabs for instant Bill book / Dashboard; refresh this bill page only.
+        invalidateAndPrefetchShopTabs("bills", "dashboard");
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : t(locale, "paymentRecordFailed"));

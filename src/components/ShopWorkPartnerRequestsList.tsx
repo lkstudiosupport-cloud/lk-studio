@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { CheckCircle2, MapPin, Phone, RefreshCw, Star, UserRound } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -9,7 +8,7 @@ import type { WorkerPartnerRequestStatus, WorkerPartnerRole } from "@prisma/clie
 import { workerPartnerRoleLabelKey } from "@/lib/work-partner-roles";
 import { formatWorkerPartnerSchedule } from "@/lib/work-partner-duration";
 import { cancelWorkerPartnerRequest, rateAcceptedWorkPartner, acceptWorkerPartnerApplication, rejectWorkerPartnerApplication, cancelShopWorkRequirement } from "@/app/shop/actions";
-import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
+import { invalidateAndPrefetchShopTabs } from "@/lib/shop-tab-client-cache";
 import type { ShopWorkerRequestListItem } from "@/lib/shop-tab-types";
 import { whatsAppUrl } from "@/lib/whatsapp";
 
@@ -36,7 +35,6 @@ export function ShopWorkPartnerRequestsList({
   requests: ShopWorkerRequestListItem[];
   onRefresh?: () => void;
 }) {
-  const router = useRouter();
   const [filter, setFilter] = useState<FilterTab>("all");
   const [ratingPending, setRatingPending] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState<string | null>(null);
@@ -72,9 +70,8 @@ export function ShopWorkPartnerRequestsList({
       } else {
         await cancelWorkerPartnerRequest(req.id);
       }
-      clearShopTabCache("workers");
+      invalidateAndPrefetchShopTabs("workers");
       onRefresh?.();
-      router.refresh();
     } catch {
       /* ignore */
     }
@@ -84,9 +81,8 @@ export function ShopWorkPartnerRequestsList({
     setActionPending(submissionId);
     try {
       await acceptWorkerPartnerApplication(submissionId);
-      clearShopTabCache("workers");
+      invalidateAndPrefetchShopTabs("workers");
       onRefresh?.();
-      router.refresh();
     } catch {
       /* ignore */
     } finally {
@@ -98,9 +94,8 @@ export function ShopWorkPartnerRequestsList({
     setActionPending(submissionId);
     try {
       await rejectWorkerPartnerApplication(submissionId);
-      clearShopTabCache("workers");
+      invalidateAndPrefetchShopTabs("workers");
       onRefresh?.();
-      router.refresh();
     } catch {
       /* ignore */
     } finally {
@@ -115,9 +110,8 @@ export function ShopWorkPartnerRequestsList({
       fd.set("requestId", requestId);
       fd.set("rating", String(rating));
       await rateAcceptedWorkPartner(fd);
-      clearShopTabCache("workers");
+      invalidateAndPrefetchShopTabs("workers");
       onRefresh?.();
-      router.refresh();
     } catch {
       /* ignore */
     } finally {

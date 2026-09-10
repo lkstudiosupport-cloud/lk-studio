@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { replyPriceRequest } from "@/app/shop/actions";
 import type { Locale } from "@/lib/i18n/locales";
@@ -10,7 +9,7 @@ import { categoryLabelKey } from "@/lib/categories";
 import type { ShopPriceRequestListItem } from "@/lib/shop-tab-types";
 import { designImageSrc } from "@/lib/design-images";
 import type { PriceRequestStatus, ServiceCategory } from "@prisma/client";
-import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
+import { invalidateAndPrefetchShopTabs } from "@/lib/shop-tab-client-cache";
 
 function statusLabel(locale: Locale, status: PriceRequestStatus) {
   return status === "QUOTED" ? t(locale, "priceQuoted") : t(locale, "pricePending");
@@ -45,7 +44,6 @@ function ShopPriceRequestCard({
   locale: Locale;
   request: ShopPriceRequestListItem;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
@@ -137,8 +135,7 @@ function ShopPriceRequestCard({
               startTransition(async () => {
                 try {
                   await replyPriceRequest(fd);
-                  clearShopTabCache("orders");
-                  router.refresh();
+                  invalidateAndPrefetchShopTabs("orders");
                 } catch (err) {
                   setError(err instanceof Error ? err.message : t(locale, "sendQuoteFailed"));
                 }

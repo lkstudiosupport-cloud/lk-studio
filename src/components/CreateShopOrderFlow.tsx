@@ -28,7 +28,7 @@ import {
   type LastMeasurementSnapshot,
 } from "@/lib/shop-measurements";
 import { useSwipeNavBlock } from "@/hooks/useSwipeTabs";
-import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
+import { invalidateAndPrefetchShopTabs } from "@/lib/shop-tab-client-cache";
 import { ShopOrderGuide, ShopOrderGuideHelpButton } from "@/components/ShopOrderGuide";
 import {
   buildLookupGuideSteps,
@@ -121,6 +121,8 @@ export function CreateShopOrderFlow({
       }
       setOrdersSavedCount((n) => n + 1);
       setShowPostSave(true);
+      // Warm Orders/Dashboard while user reads the success screen.
+      invalidateAndPrefetchShopTabs("orders", "dashboard");
     }
   }, [state.ok]);
 
@@ -172,10 +174,9 @@ export function CreateShopOrderFlow({
   }
 
   function handleViewOrders() {
-    clearShopTabCache("orders");
-    clearShopTabCache("dashboard");
+    // Cache already invalidated+prefetched on save; avoid router.refresh() (full RSC stall).
+    invalidateAndPrefetchShopTabs("orders", "dashboard");
     router.push("/shop/orders?tab=pending");
-    router.refresh();
   }
 
   async function continueToOrder(opts?: {

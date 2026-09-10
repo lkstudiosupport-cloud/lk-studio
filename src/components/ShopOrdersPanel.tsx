@@ -10,7 +10,7 @@ import { ShopPriceRequestsPanel } from "@/components/ShopPriceRequestsPanel";
 import type { ShopOrderTabCounts } from "@/lib/order-stats";
 import type { ShopOrderListItem, ShopPriceRequestListItem } from "@/lib/shop-tab-types";
 import { useSwipeTabs } from "@/hooks/useSwipeTabs";
-import { clearShopTabCache } from "@/lib/shop-tab-client-cache";
+import { invalidateAndPrefetchShopTabs } from "@/lib/shop-tab-client-cache";
 
 const ORDER_STATUS_TABS = [
   {
@@ -89,8 +89,7 @@ export function ShopOrdersPanel({
 
   const handleStatusUpdated = useCallback(
     (tabId: string) => {
-      clearShopTabCache("orders");
-      clearShopTabCache("dashboard");
+      invalidateAndPrefetchShopTabs("orders", "dashboard");
       onRefresh?.();
       selectTab(tabId);
     },

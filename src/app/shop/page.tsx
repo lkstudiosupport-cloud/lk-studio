@@ -1,7 +1,6 @@
-import { cachedLocale } from "@/lib/cached-server";
 import { ShopDashboardClient } from "@/components/ShopDashboardClient";
 
-export default async function ShopDashboardPage() {
-  const locale = await cachedLocale();
-  return <ShopDashboardClient locale={locale} />;
+/** Sync shell — locale comes from ShopShellProvider; data from client tab cache. */
+export default function ShopDashboardPage() {
+  return <ShopDashboardClient />;
 }

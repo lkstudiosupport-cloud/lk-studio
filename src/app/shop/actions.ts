@@ -226,7 +226,7 @@ export async function createShopOrder(
   formData: FormData
 ): Promise<ActionState> {
   try {
-    const sid = await shopId();
+    const sid = await shopIdOnly();
     const customerId = String(formData.get("customerId") ?? "").trim();
     const personId = String(formData.get("personId") ?? "").trim() || null;
     const measurementMode = String(formData.get("measurementMode") ?? "").trim();
@@ -343,10 +343,9 @@ export async function createShopOrder(
       };
     }
 
-    revalidatePath("/shop/orders");
-    revalidatePath("/shop");
-    revalidatePath("/customer/orders");
+    // Client tab cache is the UX layer; tag bump refreshes /api/shop/tabs.
     bumpShopTabs(sid);
+    revalidatePath("/customer/orders");
     return { ok: true, message: "orderPlaced" };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Failed" };

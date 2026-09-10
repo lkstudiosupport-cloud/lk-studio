@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { PageLoadingSkeleton } from "@/components/PageLoadingSkeleton";
 import { ShopOrdersPanel } from "@/components/ShopOrdersPanel";
 import { useShopTabData } from "@/hooks/useShopTabData";
+import { useShopShell } from "@/components/ShopShellProvider";
 
-export function ShopOrdersClient({ locale }: { locale: Locale }) {
+export function ShopOrdersClient() {
+  const { locale } = useShopShell();
   const { data, loading, error, refresh } = useShopTabData("orders");
 
   if (loading && !data) return <PageLoadingSkeleton />;

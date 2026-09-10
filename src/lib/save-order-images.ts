@@ -16,17 +16,17 @@ export async function appendOrderImagesFromForm(
   uploadedBy: ImageUploader,
   prefix = "orderImg"
 ) {
-  const paths: string[] = [];
+  const files: File[] = [];
   for (const [key, value] of Array.from(formData.entries())) {
     if (key.startsWith(prefix) && value instanceof File && value.size > 0) {
-      paths.push(await addImage(orderId, value, uploadedBy));
+      files.push(value);
     }
   }
-  const multi = formData.getAll(`${prefix}Multi`);
-  for (const value of multi) {
+  for (const value of formData.getAll(`${prefix}Multi`)) {
     if (value instanceof File && value.size > 0) {
-      paths.push(await addImage(orderId, value, uploadedBy));
+      files.push(value);
     }
   }
-  return paths;
+  if (files.length === 0) return [] as string[];
+  return Promise.all(files.map((file) => addImage(orderId, file, uploadedBy)));
 }

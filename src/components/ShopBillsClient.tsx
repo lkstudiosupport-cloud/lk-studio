@@ -2,14 +2,15 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { PageLoadingSkeleton } from "@/components/PageLoadingSkeleton";
 import { ShopBillsPanel } from "@/components/ShopBillsPanel";
 import { useShopTabData } from "@/hooks/useShopTabData";
+import { useShopShell } from "@/components/ShopShellProvider";
 import type { BillsDateMode, BillsTab } from "@/lib/bill-list-filter";
 
-export function ShopBillsClient({ locale }: { locale: Locale }) {
+export function ShopBillsClient() {
+  const { locale } = useShopShell();
   const searchParams = useSearchParams();
   const query = useMemo(() => {
     const params = new URLSearchParams();
