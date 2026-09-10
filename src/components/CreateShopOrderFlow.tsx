@@ -46,12 +46,13 @@ type MeasurementReuseChoice = "same" | "different";
 
 export function CreateShopOrderFlow({
   locale,
-  customers,
+  customers: initialCustomers = [],
 }: {
   locale: Locale;
-  customers: SavedCustomer[];
+  customers?: SavedCustomer[];
 }) {
   const router = useRouter();
+  const [customers, setCustomers] = useState<SavedCustomer[]>(initialCustomers);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [lookupError, setLookupError] = useState("");
@@ -77,6 +78,27 @@ export function CreateShopOrderFlow({
 
   useEffect(() => {
     if (!hasSeenShopOrderGuide()) setGuideOpen(true);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/shop/bill-customers", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { ok?: boolean; customers?: SavedCustomer[] };
+        if (cancelled || !json.ok || !Array.isArray(json.customers)) return;
+        setCustomers(json.customers);
+      } catch {
+        /* keep empty / initial */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const guideSteps = useMemo(() => {
@@ -156,14 +178,20 @@ export function CreateShopOrderFlow({
     router.refresh();
   }
 
-  async function continueToOrder(byId?: string) {
+  async function continueToOrder(opts?: {
+    customerId?: string;
+    phone?: string;
+    name?: string;
+  }) {
     setLookupError("");
     setLookupPending(true);
     try {
+      const byId = opts?.customerId?.trim();
+      const isSyntheticWalkIn = !!byId && byId.startsWith("walkin-");
       const result = await lookupShopOrderCustomer({
-        customerId: byId,
-        phone: byId ? undefined : phone,
-        name: customerName,
+        customerId: byId && !isSyntheticWalkIn ? byId : undefined,
+        phone: byId && !isSyntheticWalkIn ? undefined : (opts?.phone ?? phone),
+        name: opts?.name ?? customerName,
       });
       if (!result.ok) {
         setLookupError(t(locale, result.error));
@@ -173,6 +201,9 @@ export function CreateShopOrderFlow({
       setCustomer(result.customer);
       setCustomerIsRegistered(result.isRegistered);
       setCustomerName(result.customer.name);
+      if (result.customer.phone || result.customer.whatsapp) {
+        setPhone(result.customer.phone || result.customer.whatsapp || "");
+      }
       const firstPerson = result.customer.persons[0];
       setPersonId(firstPerson?.id ?? "");
       setMeasurementMode(result.customer.persons.length > 0 ? "view" : "manual");
@@ -180,6 +211,21 @@ export function CreateShopOrderFlow({
     } finally {
       setLookupPending(false);
     }
+  }
+
+  function pickSavedCustomer(id: string) {
+    const c = customers.find((x) => x.id === id);
+    if (!c) return;
+    if (id.startsWith("walkin-")) {
+      setCustomerName(c.name);
+      const nextPhone = c.phone || c.whatsapp || "";
+      setPhone(nextPhone);
+      if (nextPhone.trim()) {
+        void continueToOrder({ phone: nextPhone, name: c.name });
+      }
+      return;
+    }
+    void continueToOrder({ customerId: id });
   }
 
   function toggleDesign(id: string) {
@@ -246,7 +292,7 @@ export function CreateShopOrderFlow({
               defaultValue=""
               onChange={(e) => {
                 const id = e.target.value;
-                if (id) void continueToOrder(id);
+                if (id) pickSavedCustomer(id);
                 e.target.value = "";
               }}
               className="input-premium w-full text-sm"
@@ -273,6 +319,7 @@ export function CreateShopOrderFlow({
         >
           {lookupPending ? "..." : t(locale, "continueNewOrder")}
         </button>
+        <p className="text-center text-xs text-zinc-500">{t(locale, "newShopOrderExistingOrWalkIn")}</p>
         </div>
       </>
     );

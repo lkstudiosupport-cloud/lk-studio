@@ -177,8 +177,11 @@ export async function lookupShopOrderCustomer(input: {
   const sid = await shopIdOnly();
 
   const phone = input.phone?.trim();
-  const customerId = input.customerId?.trim();
+  const rawCustomerId = input.customerId?.trim();
   const name = input.name?.trim();
+  // Bill picker uses synthetic walkin-* ids — never treat as User ids.
+  const customerId =
+    rawCustomerId && !rawCustomerId.startsWith("walkin-") ? rawCustomerId : undefined;
 
   let userId = customerId;
   let createdWalkIn = false;
@@ -187,6 +190,12 @@ export async function lookupShopOrderCustomer(input: {
     const found = await findUserByPhone("CUSTOMER", phone);
     if (found) {
       userId = found.id;
+      if (name && isWalkInCustomerEmail(found.email) && found.name !== name) {
+        await prisma.user.update({
+          where: { id: found.id },
+          data: { name },
+        });
+      }
     } else {
       const otherRole = await findUserByPhoneAnyRole(phone);
       if (otherRole && otherRole.role !== "CUSTOMER") {
@@ -198,7 +207,10 @@ export async function lookupShopOrderCustomer(input: {
     }
   }
 
-  if (!userId) return { ok: false, error: "enterCustomerPhone" };
+  if (!userId) {
+    if (!name) return { ok: false, error: "enterCustomerName" };
+    return { ok: false, error: "enterCustomerPhone" };
+  }
 
   const row = await fetchShopOrderCustomer(sid, userId);
   if (!row) return { ok: false, error: "customerNotRegistered" };
