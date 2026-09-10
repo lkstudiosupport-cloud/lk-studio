@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Share2, ArrowLeft, Pencil } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
-import { preloadBillCaptureLib, shareBillImage, billShareCacheKey } from "@/lib/share-bill-image";
+import { preloadBillCaptureLib, shareBillImage, billShareCacheKey, clearBillShareCache } from "@/lib/share-bill-image";
 import type { BillReceiptData } from "@/lib/bill-receipt-text";
 import { BillReadAloudButton } from "@/components/BillReadAloudButton";
 
@@ -48,6 +48,8 @@ export function BillShareActions({
     setError("");
     setSharing(true);
     try {
+      // Fresh capture every share — avoids stale/blank images after edits.
+      clearBillShareCache();
       await shareBillImage({
         fileName: `${billNumber ?? "bill"}.jpg`,
         shopName,
@@ -68,7 +70,7 @@ export function BillShareActions({
     ? "bill-detail-actions bill-detail-actions--dock flex w-full min-w-0 flex-nowrap items-center justify-center gap-2"
     : compact
       ? "bill-detail-actions bill-detail-actions--compact flex min-w-0 flex-1 flex-nowrap items-center gap-1.5"
-      : "bill-detail-actions sticky top-[var(--app-sticky-under-header)] z-10 mb-4 flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur";
+      : "bill-detail-actions sticky top-[var(--app-sticky-under-header)] z-40 mb-4 flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-brand-green/10 bg-brand-cream/95 py-3 backdrop-blur";
 
   const backLabel = compact || dock ? t(locale, "backShort") : t(locale, "backToBills");
   const shareLabel = sharing ? t(locale, "sharingBill") : t(locale, "shareBill");

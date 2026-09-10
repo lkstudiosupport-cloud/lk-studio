@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Maximize2, X } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
@@ -30,6 +31,11 @@ export function BillReceiptShell({
   fullscreenActions?: React.ReactNode;
 }) {
   const [fullscreen, setFullscreen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useLayoutEffect(() => {
     if (!isMobileViewport()) return;
@@ -52,55 +58,64 @@ export function BillReceiptShell({
   const showEmbeddedActions =
     fullscreen && embedActionsInFullscreen !== false && Boolean(fullscreenActions);
 
-  return (
-    <div className={fullscreen ? "bill-receipt-shell bill-receipt-fullscreen" : "bill-receipt-shell"}>
-      <div
-        className={
-          fullscreen
-            ? showEmbeddedActions
-              ? "bill-receipt-fullscreen-bar bill-receipt-fullscreen-bar--with-actions"
-              : "bill-receipt-fullscreen-bar"
-            : "bill-receipt-shell-toolbar"
-        }
-      >
-        {fullscreen ? (
-          showEmbeddedActions ? (
-            <>
-              <div className="bill-receipt-fullscreen-actions">{fullscreenActions}</div>
-              <button
-                type="button"
-                onClick={() => setFullscreen(false)}
-                className="bill-receipt-fullscreen-close shrink-0"
-                aria-label={t(locale, "closeReceipt")}
-              >
-                <X className="h-5 w-5" aria-hidden />
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setFullscreen(false)}
-              className="bill-receipt-fullscreen-close"
-              aria-label={t(locale, "backToBills")}
+  if (fullscreen && mounted) {
+    return (
+      <>
+        <div className="bill-receipt-shell bill-receipt-shell--placeholder" aria-hidden />
+        {createPortal(
+          <div className="bill-receipt-shell bill-receipt-fullscreen" role="dialog" aria-modal="true">
+            <div
+              className={
+                showEmbeddedActions
+                  ? "bill-receipt-fullscreen-bar bill-receipt-fullscreen-bar--with-actions"
+                  : "bill-receipt-fullscreen-bar"
+              }
             >
-              <X className="h-5 w-5" aria-hidden />
-            </button>
-          )
-        ) : (
-          <button
-            type="button"
-            onClick={() => setFullscreen(true)}
-            className="bill-receipt-expand-btn"
-            aria-label={t(locale, "viewFullBill")}
-          >
-            <Maximize2 className="h-4 w-4" aria-hidden />
-            <span>{t(locale, "viewFullBill")}</span>
-          </button>
+              {showEmbeddedActions ? (
+                <>
+                  <div className="bill-receipt-fullscreen-actions">{fullscreenActions}</div>
+                  <button
+                    type="button"
+                    onClick={() => setFullscreen(false)}
+                    className="bill-receipt-fullscreen-close shrink-0"
+                    aria-label={t(locale, "closeReceipt")}
+                  >
+                    <X className="h-5 w-5" aria-hidden />
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setFullscreen(false)}
+                  className="bill-receipt-fullscreen-close"
+                  aria-label={t(locale, "closeReceipt")}
+                >
+                  <X className="h-5 w-5" aria-hidden />
+                </button>
+              )}
+            </div>
+            <div className="bill-receipt-fullscreen-scroll">{children}</div>
+          </div>,
+          document.body
         )}
+      </>
+    );
+  }
+
+  return (
+    <div className="bill-receipt-shell">
+      <div className="bill-receipt-shell-toolbar">
+        <button
+          type="button"
+          onClick={() => setFullscreen(true)}
+          className="bill-receipt-expand-btn"
+          aria-label={t(locale, "viewFullBill")}
+        >
+          <Maximize2 className="h-4 w-4" aria-hidden />
+          <span>{t(locale, "viewFullBill")}</span>
+        </button>
       </div>
-      <div className={fullscreen ? "bill-receipt-fullscreen-scroll" : "bill-receipt-shell-body"}>
-        {children}
-      </div>
+      <div className="bill-receipt-shell-body">{children}</div>
     </div>
   );
 }

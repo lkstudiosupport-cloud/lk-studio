@@ -68,37 +68,6 @@ export function isBillSpeechAvailable(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window && !!window.speechSynthesis;
 }
 
-/** Android Chrome / Capacitor WebView often returns [] until voiceschanged. */
-function waitForVoices(timeoutMs = 2500): Promise<SpeechSynthesisVoice[]> {
-  if (typeof window === "undefined" || !window.speechSynthesis) {
-    return Promise.resolve([]);
-  }
-  const synth = window.speechSynthesis;
-  const existing = synth.getVoices();
-  if (existing.length > 0) return Promise.resolve(existing);
-
-  return new Promise((resolve) => {
-    let settled = false;
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      synth.removeEventListener("voiceschanged", onChanged);
-      window.clearTimeout(timer);
-      resolve(synth.getVoices());
-    };
-    const onChanged = () => finish();
-    synth.addEventListener("voiceschanged", onChanged);
-    // Kick the engine — some WebViews populate voices only after cancel/getVoices.
-    try {
-      synth.cancel();
-      void synth.getVoices();
-    } catch {
-      /* ignore */
-    }
-    const timer = window.setTimeout(finish, timeoutMs);
-  });
-}
-
 function pickVoiceForLocale(
   voices: SpeechSynthesisVoice[],
   locale: Locale
@@ -113,26 +82,29 @@ function pickVoiceForLocale(
   return en ?? voices[0] ?? null;
 }
 
-export async function speakBillScript(text: string, locale: Locale): Promise<void> {
+/**
+ * Must call speak() inside the user-gesture stack (no awaits before speak).
+ * Android WebView blocks speech started after async gaps.
+ */
+export function speakBillScript(text: string, locale: Locale): Promise<void> {
   if (typeof window === "undefined" || !window.speechSynthesis) {
-    throw new Error("Speech not supported");
+    return Promise.reject(new Error("Speech not supported"));
   }
 
   const synth = window.speechSynthesis;
-  synth.cancel();
+  try {
+    synth.cancel();
+  } catch {
+    /* ignore */
+  }
 
-  const voices = await waitForVoices();
-  const voice = pickVoiceForLocale(voices, locale);
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = speechLocaleFor(locale);
+  utter.rate = 0.92;
+  const voice = pickVoiceForLocale(synth.getVoices(), locale);
+  if (voice) utter.voice = voice;
 
-  // Empty voices is common briefly on Android — still try default engine voice.
-  // Only treat as hard failure when speechSynthesis itself is missing (checked above).
-
-  await new Promise<void>((resolve, reject) => {
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = speechLocaleFor(locale);
-    utter.rate = 0.95;
-    if (voice) utter.voice = voice;
-
+  return new Promise<void>((resolve, reject) => {
     let finished = false;
     const done = (ok: boolean, err?: Error) => {
       if (finished) return;
@@ -145,7 +117,6 @@ export async function speakBillScript(text: string, locale: Locale): Promise<voi
     utter.onend = () => done(true);
     utter.onerror = (event) => {
       const code = event.error;
-      // User stopped, or a new utterance replaced this one — not a hard failure.
       if (code === "interrupted" || code === "canceled") {
         done(true);
         return;
@@ -153,21 +124,48 @@ export async function speakBillScript(text: string, locale: Locale): Promise<voi
       done(false, new Error(code || "Speech failed"));
     };
 
+    // Speak immediately while still in the tap gesture.
     synth.speak(utter);
-    // Chrome / Android WebView sometimes pauses the queue until resume.
     try {
       synth.resume();
     } catch {
       /* ignore */
     }
 
-    // Keep the utterance alive on some Chromium builds that pause after ~15s.
-    const keepAlive = window.setInterval(() => {
+    // Some Android builds never fire onstart/onend if the engine is paused.
+    window.setTimeout(() => {
       try {
-        if (synth.speaking) synth.resume();
+        if (synth.paused) synth.resume();
+        if (!synth.speaking && !synth.pending && !finished) {
+          // Engine dropped the utterance — retry once with default voice.
+          try {
+            synth.cancel();
+          } catch {
+            /* ignore */
+          }
+          const retry = new SpeechSynthesisUtterance(text);
+          retry.lang = "en-IN";
+          retry.rate = 0.92;
+          retry.onend = () => done(true);
+          retry.onerror = () => done(false, new Error("Speech failed"));
+          synth.speak(retry);
+          try {
+            synth.resume();
+          } catch {
+            /* ignore */
+          }
+        }
       } catch {
         /* ignore */
       }
-    }, 8000);
+    }, 400);
+
+    const keepAlive = window.setInterval(() => {
+      try {
+        if (synth.speaking || synth.pending) synth.resume();
+      } catch {
+        /* ignore */
+      }
+    }, 5000);
   });
 }

@@ -53,10 +53,16 @@ export function BillReadAloudButton({
 
   useEffect(() => {
     setMounted(true);
+    // Warm voices list early (does not speak).
+    try {
+      window.speechSynthesis?.getVoices();
+    } catch {
+      /* ignore */
+    }
     return () => stopBillSpeech();
   }, []);
 
-  async function toggle() {
+  function toggle() {
     setError("");
     if (speaking) {
       stopBillSpeech();
@@ -69,16 +75,14 @@ export function BillReadAloudButton({
     }
     const script = buildBillReadAloudScript(bill, labelsFor(locale));
     setSpeaking(true);
-    try {
-      // Warm-up cancel helps some Android WebViews before the first speak.
-      window.speechSynthesis.cancel();
-      await speakBillScript(script, locale);
-    } catch {
-      // Soft message — speechSynthesis usually exists; engine may still fail.
-      setError(t(locale, "readBillNotSupported"));
-    } finally {
-      setSpeaking(false);
-    }
+    // Do not await before speak — Android requires speak() in the tap gesture.
+    void speakBillScript(script, locale)
+      .catch(() => {
+        setError(t(locale, "readBillNotSupported"));
+      })
+      .finally(() => {
+        setSpeaking(false);
+      });
   }
 
   const label = speaking ? t(locale, "stopReadingBill") : t(locale, "readBillAloud");
@@ -91,7 +95,7 @@ export function BillReadAloudButton({
         <div className="pointer-events-auto flex max-w-md flex-col items-stretch gap-1">
           <button
             type="button"
-            onClick={() => void toggle()}
+            onClick={toggle}
             aria-label={label}
             title={hint}
             className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold shadow-lg ${
@@ -117,7 +121,7 @@ export function BillReadAloudButton({
       <div className="flex w-full max-w-md flex-col items-stretch gap-1">
         <button
           type="button"
-          onClick={() => void toggle()}
+          onClick={toggle}
           aria-label={label}
           title={hint}
           className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold shadow-md ${
@@ -136,7 +140,7 @@ export function BillReadAloudButton({
     return (
       <button
         type="button"
-        onClick={() => void toggle()}
+        onClick={toggle}
         aria-label={label}
         title={error || hint}
         className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm ${
@@ -149,15 +153,22 @@ export function BillReadAloudButton({
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => void toggle()}
-      aria-label={label}
-      title={hint}
-      className="inline-flex items-center gap-2 rounded-xl border border-brand-green/25 bg-white px-4 py-2 text-sm font-bold text-brand-green shadow-sm"
-    >
-      {speaking ? <Square className="h-4 w-4 shrink-0" /> : <Volume2 className="h-4 w-4 shrink-0" />}
-      <span>{label}</span>
-    </button>
+    <div className="flex shrink-0 flex-col items-stretch gap-0.5">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={label}
+        title={hint}
+        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold shadow-sm ${
+          speaking
+            ? "bg-red-600 text-white"
+            : "border border-brand-green/25 bg-white text-brand-green"
+        }`}
+      >
+        {speaking ? <Square className="h-4 w-4 shrink-0" /> : <Volume2 className="h-4 w-4 shrink-0" />}
+        <span>{label}</span>
+      </button>
+      {error ? <p className="max-w-[10rem] text-[10px] leading-tight text-brand-green-soft">{error}</p> : null}
+    </div>
   );
 }
