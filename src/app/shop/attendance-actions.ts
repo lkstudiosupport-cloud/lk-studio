@@ -102,6 +102,71 @@ export async function listShopStaff(includeInactive = false): Promise<StaffRow[]
   return rows.map(toStaffRow);
 }
 
+/** Single round-trip for first paint — avoid parallel server-action POSTs (Next.js breaks). */
+export async function loadAttendanceBootstrap(input?: {
+  includeInactive?: boolean;
+  date?: string;
+  weekStart?: string;
+}): Promise<{
+  staff: StaffRow[];
+  attendance: {
+    date: string;
+    rows: (StaffRow & { present: boolean; overtimeHours: number; note: string | null })[];
+  };
+  invoices: {
+    weekStart: string;
+    weekEnd: string;
+    invoices: SalaryInvoiceRow[];
+  };
+}> {
+  const shopId = await requireShopId();
+  const includeInactive = Boolean(input?.includeInactive);
+  const date = parseDateOnly(input?.date?.trim() || istDateString()) ?? parseDateOnly(istDateString())!;
+  const dateKey = formatDateOnly(date);
+  const weekStart = mondayOfWeekIst(input?.weekStart?.trim() || istDateString());
+  const weekEnd = sundayOfWeekIst(weekStart);
+
+  const [staffAll, attendance, shop, invoices] = await Promise.all([
+    prisma.shopStaff.findMany({
+      where: { shopId },
+      orderBy: [{ active: "desc" }, { staffNo: "asc" }],
+    }),
+    prisma.shopAttendance.findMany({ where: { shopId, date } }),
+    prisma.shopProfile.findUnique({ where: { id: shopId }, select: { shopName: true } }),
+    prisma.shopSalaryInvoice.findMany({
+      where: { shopId, weekStart },
+      include: { staff: { select: { staffNo: true, name: true, phone: true } } },
+      orderBy: [{ staff: { staffNo: "asc" } }, { createdAt: "desc" }],
+    }),
+  ]);
+
+  const staff = includeInactive ? staffAll : staffAll.filter((s) => s.active);
+  const activeStaff = staffAll.filter((s) => s.active);
+  const byStaff = new Map(attendance.map((a) => [a.staffId, a]));
+  const shopName = shop?.shopName ?? "Shop";
+
+  return {
+    staff: staff.map(toStaffRow),
+    attendance: {
+      date: dateKey,
+      rows: activeStaff.map((s) => {
+        const a = byStaff.get(s.id);
+        return {
+          ...toStaffRow(s),
+          present: a?.present ?? false,
+          overtimeHours: a?.overtimeHours ?? 0,
+          note: a?.note ?? null,
+        };
+      }),
+    },
+    invoices: {
+      weekStart: formatDateOnly(weekStart),
+      weekEnd: formatDateOnly(weekEnd),
+      invoices: invoices.map((inv) => toInvoiceRow(inv, shopName)),
+    },
+  };
+}
+
 export async function upsertShopStaff(input: {
   id?: string;
   name: string;

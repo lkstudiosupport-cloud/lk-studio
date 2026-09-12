@@ -20,6 +20,7 @@ import {
   getAttendanceForDate,
   listSalaryInvoices,
   listShopStaff,
+  loadAttendanceBootstrap,
   markSalaryInvoiceShared,
   saveAttendanceForDate,
   setShopStaffActive,
@@ -91,15 +92,58 @@ export function ShopAttendancePanel() {
     setInvoices(data.invoices);
   }, []);
 
+  const applyAttendanceRows = useCallback(
+    (rows: (StaffRow & { present: boolean; overtimeHours: number; note: string | null })[]) => {
+      setAttStaff(rows);
+      const drafts: Record<string, AttendanceDraft> = {};
+      for (const r of rows) {
+        drafts[r.id] = {
+          present: r.present,
+          overtimeHours: r.overtimeHours ? String(r.overtimeHours) : "",
+        };
+      }
+      setAttDrafts(drafts);
+    },
+    []
+  );
+
+  const reloadAll = useCallback(async () => {
+    setError("");
+    const data = await loadAttendanceBootstrap({
+      includeInactive: showInactive,
+      date: attDate || istDateString(),
+      weekStart: weekStart || weekInputValue(),
+    });
+    setStaff(data.staff);
+    setAttDate(data.attendance.date);
+    applyAttendanceRows(data.attendance.rows);
+    setWeekStart(data.invoices.weekStart);
+    setInvoices(data.invoices.invoices);
+  }, [applyAttendanceRows, attDate, showInactive, weekStart]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError("");
       try {
-        await Promise.all([loadStaff(showInactive), loadAttendance(istDateString()), loadInvoices(weekInputValue())]);
+        // One server action — parallel POSTs break Next.js action responses.
+        const data = await loadAttendanceBootstrap({
+          includeInactive: showInactive,
+          date: istDateString(),
+          weekStart: weekInputValue(),
+        });
+        if (cancelled) return;
+        setStaff(data.staff);
+        setAttDate(data.attendance.date);
+        applyAttendanceRows(data.attendance.rows);
+        setWeekStart(data.invoices.weekStart);
+        setInvoices(data.invoices.invoices);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : "Failed to load";
+          setError(msg);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -107,7 +151,9 @@ export function ShopAttendancePanel() {
     return () => {
       cancelled = true;
     };
-  }, [loadAttendance, loadInvoices, loadStaff, showInactive]);
+    // Initial load only; tab toggles use dedicated loaders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + showInactive refresh
+  }, [showInactive, applyAttendanceRows]);
 
   const weekEndLabel = useMemo(() => {
     const start = parseDateOnly(weekStart);
@@ -257,11 +303,9 @@ export function ShopAttendancePanel() {
             className="btn-primary w-full py-3"
             onClick={() => {
               setLoading(true);
-              void Promise.all([
-                loadStaff(showInactive),
-                loadAttendance(attDate),
-                loadInvoices(weekStart),
-              ]).finally(() => setLoading(false));
+              void reloadAll()
+                .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
+                .finally(() => setLoading(false));
             }}
           >
             {t(locale, "tryAgain")}
@@ -406,11 +450,7 @@ export function ShopAttendancePanel() {
               type="checkbox"
               checked={showInactive}
               onChange={(e) => {
-                const next = e.target.checked;
-                setShowInactive(next);
-                startTransition(() => {
-                  void loadStaff(next);
-                });
+                setShowInactive(e.target.checked);
               }}
             />
             {t(locale, "attendanceShowInactive")}
