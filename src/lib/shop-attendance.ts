@@ -87,6 +87,9 @@ export function formatWeekLabel(weekStart: Date, weekEnd: Date, locale = "en-IN"
   return `${fmt(weekStart)} – ${fmt(weekEnd)}`;
 }
 
+/** DOM id for html2canvas share (salary invoice paper). */
+export const SALARY_INVOICE_CAPTURE_ID = "salary-invoice-capture";
+
 export type SalaryInvoiceShareInput = {
   shopName: string;
   staffNo: number;

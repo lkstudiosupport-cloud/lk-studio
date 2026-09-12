@@ -510,6 +510,8 @@
   "attendancePresentDays": "उपस्थित दिन",
   "attendanceViewInvoice": "देखें",
   "attendanceShareWhatsApp": "WhatsApp शेयर",
+  "salaryInvoiceTitle": "वेतन इनवॉइस / पेस्लिप",
+  "salaryInvoiceThanks": "आपके काम के लिए धन्यवाद।",
   "workers": "टेलरिंग पार्टनर",
   "workersComingSoon": "टेलरिंग पार्टनर — जल्द आ रहा है",
   "workersComingSoonHint": "अपनी दुकान के दर्जी और टेलरिंग पार्टनर प्रबंधित करें। यह फीचर बन रहा है।",

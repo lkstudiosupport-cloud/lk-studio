@@ -7,6 +7,8 @@ import { useShopShell } from "@/components/ShopShellProvider";
 import { PageLoadingSkeleton } from "@/components/PageLoadingSkeleton";
 import { formatMoney } from "@/lib/bill-items";
 import { openWhatsApp } from "@/lib/whatsapp";
+import { preloadBillCaptureLib, shareSalaryInvoiceImage } from "@/lib/share-salary-invoice";
+import { SalaryInvoiceReceipt } from "@/components/SalaryInvoiceReceipt";
 import {
   defaultOvertimeRate,
   formatWeekLabel,
@@ -66,6 +68,8 @@ export function ShopAttendancePanel() {
   const [formError, setFormError] = useState("");
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
+
+  const [sharingId, setSharingId] = useState<string | null>(null);
 
   const loadStaff = useCallback(async (inactive: boolean) => {
     const rows = await listShopStaff(inactive);
@@ -263,12 +267,31 @@ export function ShopAttendancePanel() {
     });
   }
 
-  function shareInvoice(inv: SalaryInvoiceRow) {
-    openWhatsApp(inv.staffPhone, inv.shareText);
-    startTransition(async () => {
+  async function shareInvoice(inv: SalaryInvoiceRow) {
+    setMessage("");
+    setSharingId(inv.id);
+    // Ensure the bill-style paper is mounted for capture.
+    setViewInvoice(inv);
+    try {
+      preloadBillCaptureLib();
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+      await shareSalaryInvoiceImage({
+        fileName: `${inv.invoiceNumber}.jpg`,
+        shopName: inv.shopName,
+        caption: inv.shareText,
+      });
       await markSalaryInvoiceShared(inv.id);
       await loadInvoices(weekStart);
-    });
+    } catch {
+      // Fallback: WhatsApp text to worker phone (same as before).
+      openWhatsApp(inv.staffPhone, inv.shareText);
+      startTransition(async () => {
+        await markSalaryInvoiceShared(inv.id);
+        await loadInvoices(weekStart);
+      });
+    } finally {
+      setSharingId(null);
+    }
   }
 
   const tabs: { id: PanelTab; label: string }[] = [
@@ -671,10 +694,11 @@ export function ShopAttendancePanel() {
                       <button
                         type="button"
                         className="btn-primary inline-flex items-center gap-1 px-3 py-2 text-sm"
-                        onClick={() => shareInvoice(inv)}
+                        onClick={() => void shareInvoice(inv)}
+                        disabled={sharingId === inv.id}
                       >
                         <MessageCircle className="h-3.5 w-3.5" aria-hidden />
-                        {t(locale, "attendanceShareWhatsApp")}
+                        {sharingId === inv.id ? t(locale, "sharingBill") : t(locale, "attendanceShareWhatsApp")}
                       </button>
                     </div>
                   </div>
@@ -687,25 +711,35 @@ export function ShopAttendancePanel() {
 
       {viewInvoice ? (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center"
           role="dialog"
           aria-modal="true"
           onClick={() => setViewInvoice(null)}
         >
           <div
-            className="card-premium max-h-[85dvh] w-full max-w-md overflow-y-auto p-5"
+            className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-brand-cream p-3 shadow-xl sm:p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-brand-green">{t(locale, "attendanceViewInvoice")}</h2>
-            <pre className="mt-3 whitespace-pre-wrap text-sm text-zinc-800">{viewInvoice.shareText}</pre>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <SalaryInvoiceReceipt
+              invoice={viewInvoice}
+              locale={locale}
+              shop={{
+                shopName: viewInvoice.shopName,
+                address: viewInvoice.shopAddress,
+                phone: viewInvoice.shopPhone,
+              }}
+            />
+            <div className="mt-3 flex flex-wrap gap-2 px-1 pb-1">
               <button
                 type="button"
                 className="btn-primary inline-flex items-center gap-1 px-4 py-2"
-                onClick={() => shareInvoice(viewInvoice)}
+                disabled={sharingId === viewInvoice.id}
+                onClick={() => void shareInvoice(viewInvoice)}
               >
                 <MessageCircle className="h-4 w-4" aria-hidden />
-                {t(locale, "attendanceShareWhatsApp")}
+                {sharingId === viewInvoice.id
+                  ? t(locale, "sharingBill")
+                  : t(locale, "attendanceShareWhatsApp")}
               </button>
               <button type="button" className="btn-secondary px-4 py-2" onClick={() => setViewInvoice(null)}>
                 {t(locale, "cancel")}

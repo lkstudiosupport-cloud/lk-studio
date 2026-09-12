@@ -23,12 +23,12 @@ function nextPaint(): Promise<void> {
   });
 }
 
-/** Wait until the receipt DOM exists and images are loaded (replaces fixed delays). */
-export async function waitForBillReceiptReady(): Promise<HTMLElement> {
+/** Wait until a capture root exists (bill or salary invoice). */
+export async function waitForCaptureElement(elementId: string): Promise<HTMLElement> {
   const deadline = Date.now() + CAPTURE_READY_MAX_MS;
 
   while (Date.now() < deadline) {
-    const el = document.getElementById(BILL_RECEIPT_CAPTURE_ID);
+    const el = document.getElementById(elementId);
     if (el instanceof HTMLElement) {
       const images = Array.from(el.querySelectorAll("img"));
       const pending = images.filter((img) => !img.complete);
@@ -54,9 +54,14 @@ export async function waitForBillReceiptReady(): Promise<HTMLElement> {
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   }
 
-  const el = document.getElementById(BILL_RECEIPT_CAPTURE_ID);
+  const el = document.getElementById(elementId);
   if (el instanceof HTMLElement) return el;
-  throw new Error("Bill receipt not ready");
+  throw new Error("Receipt not ready");
+}
+
+/** Wait until the receipt DOM exists and images are loaded (replaces fixed delays). */
+export async function waitForBillReceiptReady(): Promise<HTMLElement> {
+  return waitForCaptureElement(BILL_RECEIPT_CAPTURE_ID);
 }
 
 let html2canvasModule: Promise<typeof import("html2canvas").default> | null = null;

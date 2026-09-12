@@ -52,6 +52,9 @@ export type SalaryInvoiceRow = {
   status: string;
   createdAt: string;
   shareText: string;
+  shopName: string;
+  shopAddress: string | null;
+  shopPhone: string | null;
 };
 
 function revalidateAttendance() {
@@ -132,7 +135,10 @@ export async function loadAttendanceBootstrap(input?: {
       orderBy: [{ active: "desc" }, { staffNo: "asc" }],
     }),
     prisma.shopAttendance.findMany({ where: { shopId, date } }),
-    prisma.shopProfile.findUnique({ where: { id: shopId }, select: { shopName: true } }),
+    prisma.shopProfile.findUnique({
+      where: { id: shopId },
+      select: { shopName: true, address: true, phone: true },
+    }),
     prisma.shopSalaryInvoice.findMany({
       where: { shopId, weekStart },
       include: { staff: { select: { staffNo: true, name: true, phone: true } } },
@@ -143,7 +149,11 @@ export async function loadAttendanceBootstrap(input?: {
   const staff = includeInactive ? staffAll : staffAll.filter((s) => s.active);
   const activeStaff = staffAll.filter((s) => s.active);
   const byStaff = new Map(attendance.map((a) => [a.staffId, a]));
-  const shopName = shop?.shopName ?? "Shop";
+  const shopInfo = {
+    shopName: shop?.shopName ?? "Shop",
+    address: shop?.address ?? null,
+    phone: shop?.phone ?? null,
+  };
 
   return {
     staff: staff.map(toStaffRow),
@@ -162,7 +172,7 @@ export async function loadAttendanceBootstrap(input?: {
     invoices: {
       weekStart: formatDateOnly(weekStart),
       weekEnd: formatDateOnly(weekEnd),
-      invoices: invoices.map((inv) => toInvoiceRow(inv, shopName)),
+      invoices: invoices.map((inv) => toInvoiceRow(inv, shopInfo)),
     },
   };
 }
@@ -329,7 +339,7 @@ function toInvoiceRow(
     createdAt: Date;
     staff: { staffNo: number; name: string; phone: string };
   },
-  shopName: string
+  shop: { shopName: string; address: string | null; phone: string | null }
 ): SalaryInvoiceRow {
   return {
     id: inv.id,
@@ -347,8 +357,11 @@ function toInvoiceRow(
     amount: inv.amount,
     status: inv.status,
     createdAt: inv.createdAt.toISOString(),
+    shopName: shop.shopName,
+    shopAddress: shop.address,
+    shopPhone: shop.phone,
     shareText: buildSalaryInvoiceWhatsAppText({
-      shopName,
+      shopName: shop.shopName,
       staffNo: inv.staff.staffNo,
       staffName: inv.staff.name,
       invoiceNumber: inv.invoiceNumber,
@@ -373,7 +386,10 @@ export async function listSalaryInvoices(weekStartStr?: string): Promise<{
   const weekEnd = sundayOfWeekIst(weekStart);
 
   const [shop, invoices] = await Promise.all([
-    prisma.shopProfile.findUnique({ where: { id: shopId }, select: { shopName: true } }),
+    prisma.shopProfile.findUnique({
+      where: { id: shopId },
+      select: { shopName: true, address: true, phone: true },
+    }),
     prisma.shopSalaryInvoice.findMany({
       where: { shopId, weekStart },
       include: { staff: { select: { staffNo: true, name: true, phone: true } } },
@@ -381,11 +397,15 @@ export async function listSalaryInvoices(weekStartStr?: string): Promise<{
     }),
   ]);
 
-  const shopName = shop?.shopName ?? "Shop";
+  const shopInfo = {
+    shopName: shop?.shopName ?? "Shop",
+    address: shop?.address ?? null,
+    phone: shop?.phone ?? null,
+  };
   return {
     weekStart: formatDateOnly(weekStart),
     weekEnd: formatDateOnly(weekEnd),
-    invoices: invoices.map((inv) => toInvoiceRow(inv, shopName)),
+    invoices: invoices.map((inv) => toInvoiceRow(inv, shopInfo)),
   };
 }
 
@@ -401,7 +421,7 @@ export async function generateWeeklySalaryInvoices(weekStartStr?: string): Promi
   const [shop, staff, attendance, existing] = await Promise.all([
     prisma.shopProfile.findUnique({
       where: { id: shopId },
-      select: { shopName: true, shopCode: true },
+      select: { shopName: true, shopCode: true, address: true, phone: true },
     }),
     prisma.shopStaff.findMany({ where: { shopId, active: true }, orderBy: { staffNo: "asc" } }),
     prisma.shopAttendance.findMany({
@@ -424,7 +444,11 @@ export async function generateWeeklySalaryInvoices(weekStartStr?: string): Promi
     byStaff.set(row.staffId, list);
   }
 
-  const shopName = shop?.shopName ?? "Shop";
+  const shopInfo = {
+    shopName: shop?.shopName ?? "Shop",
+    address: shop?.address ?? null,
+    phone: shop?.phone ?? null,
+  };
   const shopCode = shop?.shopCode ?? "SHOP";
   let created = 0;
   let skipped = 0;
@@ -481,7 +505,7 @@ export async function generateWeeklySalaryInvoices(weekStartStr?: string): Promi
     ok: true,
     created,
     skipped,
-    invoices: invoices.map((inv) => toInvoiceRow(inv, shopName)),
+    invoices: invoices.map((inv) => toInvoiceRow(inv, shopInfo)),
   };
 }
 
