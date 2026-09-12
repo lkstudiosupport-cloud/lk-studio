@@ -315,6 +315,17 @@ export function ShopAttendancePanel() {
               <h2 className="text-lg font-bold text-brand-green">
                 {editing ? t(locale, "attendanceEditStaff") : t(locale, "attendanceAddStaff")}
               </h2>
+              {editing ? (
+                <span className="rounded-full bg-brand-green/10 px-2.5 py-0.5 text-xs font-bold text-brand-green">
+                  {t(locale, "attendanceStaffNo")}
+                  {editing.staffNo}
+                </span>
+              ) : (
+                <span className="rounded-full bg-brand-green/10 px-2.5 py-0.5 text-xs font-bold text-brand-green">
+                  {t(locale, "attendanceStaffNo")}
+                  {staff.reduce((max, s) => Math.max(max, s.staffNo), 0) + 1}
+                </span>
+              )}
             </div>
 
             <label className="block">
@@ -415,6 +426,7 @@ export function ShopAttendancePanel() {
                 <li key={row.id} className="card-premium flex flex-wrap items-start justify-between gap-3 p-4">
                   <div>
                     <p className="font-semibold text-brand-green">
+                      <span className="mr-1.5 text-brand-gold">#{row.staffNo}</span>
                       {row.name}
                       {!row.active ? (
                         <span className="ml-2 text-xs font-medium text-zinc-500">
@@ -495,7 +507,10 @@ export function ShopAttendancePanel() {
                     <li key={row.id} className="rounded-xl bg-brand-cream/60 p-3 ring-1 ring-brand-green/10">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
-                          <p className="font-semibold text-brand-green">{row.name}</p>
+                          <p className="font-semibold text-brand-green">
+                            <span className="mr-1.5 text-brand-gold">#{row.staffNo}</span>
+                            {row.name}
+                          </p>
                           <p className="text-xs text-zinc-500">
                             ₹{formatMoney(row.dailyWage)}/{t(locale, "attendancePerDay")}
                           </p>
@@ -587,7 +602,10 @@ export function ShopAttendancePanel() {
                 <li key={inv.id} className="card-premium space-y-3 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-brand-green">{inv.staffName}</p>
+                      <p className="font-semibold text-brand-green">
+                        <span className="mr-1.5 text-brand-gold">#{inv.staffNo}</span>
+                        {inv.staffName}
+                      </p>
                       <p className="text-xs text-zinc-500">{inv.invoiceNumber}</p>
                       <p className="mt-1 text-sm text-zinc-700">
                         {formatWeekLabel(parseDateOnly(inv.weekStart)!, parseDateOnly(inv.weekEnd)!)}

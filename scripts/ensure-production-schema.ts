@@ -226,6 +226,7 @@ async function main() {
     CREATE TABLE IF NOT EXISTS "ShopStaff" (
       "id" TEXT NOT NULL,
       "shopId" TEXT NOT NULL,
+      "staffNo" INTEGER NOT NULL DEFAULT 1,
       "name" TEXT NOT NULL,
       "phone" TEXT NOT NULL,
       "dailyWage" DOUBLE PRECISION NOT NULL,
@@ -238,6 +239,30 @@ async function main() {
         FOREIGN KEY ("shopId") REFERENCES "ShopProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE
     );
   `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "ShopStaff" ADD COLUMN IF NOT EXISTS "staffNo" INTEGER;
+  `);
+  // Backfill 1…n per shop for rows missing staffNo (existing installs).
+  await prisma.$executeRawUnsafe(`
+    WITH numbered AS (
+      SELECT id, ROW_NUMBER() OVER (PARTITION BY "shopId" ORDER BY "createdAt" ASC, id ASC) AS n
+      FROM "ShopStaff"
+      WHERE "staffNo" IS NULL
+    )
+    UPDATE "ShopStaff" AS s
+    SET "staffNo" = numbered.n
+    FROM numbered
+    WHERE s.id = numbered.id;
+  `);
+  await prisma.$executeRawUnsafe(`
+    UPDATE "ShopStaff" SET "staffNo" = 1 WHERE "staffNo" IS NULL;
+  `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "ShopStaff" ALTER COLUMN "staffNo" SET NOT NULL;
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "ShopStaff_shopId_staffNo_key" ON "ShopStaff" ("shopId", "staffNo");`
+  );
   await prisma.$executeRawUnsafe(
     `CREATE INDEX IF NOT EXISTS "ShopStaff_shopId_active_idx" ON "ShopStaff" ("shopId", "active");`
   );

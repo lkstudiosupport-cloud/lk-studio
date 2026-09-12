@@ -89,6 +89,7 @@ export function formatWeekLabel(weekStart: Date, weekEnd: Date, locale = "en-IN"
 
 export type SalaryInvoiceShareInput = {
   shopName: string;
+  staffNo: number;
   staffName: string;
   invoiceNumber: string;
   weekStart: Date;
@@ -107,7 +108,7 @@ export function buildSalaryInvoiceWhatsAppText(inv: SalaryInvoiceShareInput): st
   return [
     `*${inv.shopName}* — Salary invoice`,
     `Invoice: ${inv.invoiceNumber}`,
-    `Worker: ${inv.staffName}`,
+    `Worker #${inv.staffNo}: ${inv.staffName}`,
     `Week: ${week}`,
     `Present days: ${inv.presentDays} × ₹${inv.dailyWage.toFixed(2)} = ₹${daysPay.toFixed(2)}`,
     `Overtime: ${inv.overtimeHours}h × ₹${inv.overtimeRate.toFixed(2)}/hr = ₹${otPay.toFixed(2)}`,

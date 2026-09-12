@@ -215,6 +215,8 @@ model ShopStaff {
   id                   String   @id @default(cuid())
   shopId               String
   shop                 ShopProfile @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  /** Shop-local worker number 1…n (stable; not reused when deactivated). */
+  staffNo              Int
   name                 String
   phone                String
   dailyWage            Float
@@ -226,6 +228,7 @@ model ShopStaff {
   attendance ShopAttendance[]
   invoices   ShopSalaryInvoice[]
 
+  @@unique([shopId, staffNo])
   @@index([shopId, active])
   @@index([shopId, createdAt])
 }

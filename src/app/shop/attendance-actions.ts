@@ -19,6 +19,7 @@ import {
 
 export type StaffRow = {
   id: string;
+  staffNo: number;
   name: string;
   phone: string;
   dailyWage: number;
@@ -38,6 +39,7 @@ export type SalaryInvoiceRow = {
   id: string;
   invoiceNumber: string;
   staffId: string;
+  staffNo: number;
   staffName: string;
   staffPhone: string;
   weekStart: string;
@@ -69,21 +71,35 @@ function parseMoney(raw: unknown): number | null {
   return Math.round(n * 100) / 100;
 }
 
-export async function listShopStaff(includeInactive = false): Promise<StaffRow[]> {
-  const shopId = await requireShopId();
-  const rows = await prisma.shopStaff.findMany({
-    where: includeInactive ? { shopId } : { shopId, active: true },
-    orderBy: [{ active: "desc" }, { name: "asc" }],
-  });
-  return rows.map((r) => ({
+function toStaffRow(r: {
+  id: string;
+  staffNo: number;
+  name: string;
+  phone: string;
+  dailyWage: number;
+  overtimeRatePerHour: number;
+  active: boolean;
+  createdAt: Date;
+}): StaffRow {
+  return {
     id: r.id,
+    staffNo: r.staffNo,
     name: r.name,
     phone: r.phone,
     dailyWage: r.dailyWage,
     overtimeRatePerHour: r.overtimeRatePerHour,
     active: r.active,
     createdAt: r.createdAt.toISOString(),
-  }));
+  };
+}
+
+export async function listShopStaff(includeInactive = false): Promise<StaffRow[]> {
+  const shopId = await requireShopId();
+  const rows = await prisma.shopStaff.findMany({
+    where: includeInactive ? { shopId } : { shopId, active: true },
+    orderBy: [{ active: "desc" }, { staffNo: "asc" }],
+  });
+  return rows.map(toStaffRow);
 }
 
 export async function upsertShopStaff(input: {
@@ -119,23 +135,19 @@ export async function upsertShopStaff(input: {
       },
     });
     revalidateAttendance();
-    return {
-      ok: true,
-      staff: {
-        id: updated.id,
-        name: updated.name,
-        phone: updated.phone,
-        dailyWage: updated.dailyWage,
-        overtimeRatePerHour: updated.overtimeRatePerHour,
-        active: updated.active,
-        createdAt: updated.createdAt.toISOString(),
-      },
-    };
+    return { ok: true, staff: toStaffRow(updated) };
   }
+
+  const maxNo = await prisma.shopStaff.aggregate({
+    where: { shopId },
+    _max: { staffNo: true },
+  });
+  const staffNo = (maxNo._max.staffNo ?? 0) + 1;
 
   const created = await prisma.shopStaff.create({
     data: {
       shopId,
+      staffNo,
       name,
       phone: parsed.e164,
       dailyWage,
@@ -143,18 +155,7 @@ export async function upsertShopStaff(input: {
     },
   });
   revalidateAttendance();
-  return {
-    ok: true,
-    staff: {
-      id: created.id,
-      name: created.name,
-      phone: created.phone,
-      dailyWage: created.dailyWage,
-      overtimeRatePerHour: created.overtimeRatePerHour,
-      active: created.active,
-      createdAt: created.createdAt.toISOString(),
-    },
-  };
+  return { ok: true, staff: toStaffRow(created) };
 }
 
 export async function setShopStaffActive(
@@ -180,7 +181,7 @@ export async function getAttendanceForDate(dateStr?: string): Promise<{
   const [staff, attendance] = await Promise.all([
     prisma.shopStaff.findMany({
       where: { shopId, active: true },
-      orderBy: { name: "asc" },
+      orderBy: { staffNo: "asc" },
     }),
     prisma.shopAttendance.findMany({
       where: { shopId, date },
@@ -194,13 +195,7 @@ export async function getAttendanceForDate(dateStr?: string): Promise<{
     rows: staff.map((s) => {
       const a = byStaff.get(s.id);
       return {
-        id: s.id,
-        name: s.name,
-        phone: s.phone,
-        dailyWage: s.dailyWage,
-        overtimeRatePerHour: s.overtimeRatePerHour,
-        active: s.active,
-        createdAt: s.createdAt.toISOString(),
+        ...toStaffRow(s),
         present: a?.present ?? false,
         overtimeHours: a?.overtimeHours ?? 0,
         note: a?.note ?? null,
@@ -267,7 +262,7 @@ function toInvoiceRow(
     amount: number;
     status: string;
     createdAt: Date;
-    staff: { name: string; phone: string };
+    staff: { staffNo: number; name: string; phone: string };
   },
   shopName: string
 ): SalaryInvoiceRow {
@@ -275,6 +270,7 @@ function toInvoiceRow(
     id: inv.id,
     invoiceNumber: inv.invoiceNumber,
     staffId: inv.staffId,
+    staffNo: inv.staff.staffNo,
     staffName: inv.staff.name,
     staffPhone: inv.staff.phone,
     weekStart: formatDateOnly(inv.weekStart),
@@ -288,6 +284,7 @@ function toInvoiceRow(
     createdAt: inv.createdAt.toISOString(),
     shareText: buildSalaryInvoiceWhatsAppText({
       shopName,
+      staffNo: inv.staff.staffNo,
       staffName: inv.staff.name,
       invoiceNumber: inv.invoiceNumber,
       weekStart: inv.weekStart,
@@ -314,7 +311,7 @@ export async function listSalaryInvoices(weekStartStr?: string): Promise<{
     prisma.shopProfile.findUnique({ where: { id: shopId }, select: { shopName: true } }),
     prisma.shopSalaryInvoice.findMany({
       where: { shopId, weekStart },
-      include: { staff: { select: { name: true, phone: true } } },
+      include: { staff: { select: { staffNo: true, name: true, phone: true } } },
       orderBy: { createdAt: "desc" },
     }),
   ]);
@@ -341,7 +338,7 @@ export async function generateWeeklySalaryInvoices(weekStartStr?: string): Promi
       where: { id: shopId },
       select: { shopName: true, shopCode: true },
     }),
-    prisma.shopStaff.findMany({ where: { shopId, active: true } }),
+    prisma.shopStaff.findMany({ where: { shopId, active: true }, orderBy: { staffNo: "asc" } }),
     prisma.shopAttendance.findMany({
       where: {
         shopId,
@@ -410,7 +407,7 @@ export async function generateWeeklySalaryInvoices(weekStartStr?: string): Promi
 
   const invoices = await prisma.shopSalaryInvoice.findMany({
     where: { shopId, weekStart },
-    include: { staff: { select: { name: true, phone: true } } },
+    include: { staff: { select: { staffNo: true, name: true, phone: true } } },
     orderBy: { createdAt: "desc" },
   });
 
