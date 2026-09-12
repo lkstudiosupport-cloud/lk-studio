@@ -64,6 +64,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     { href: "/shop", label: t(locale, "dashboard"), shortLabel: t(locale, "navShortHome") },
     { href: "/shop/orders", label: t(locale, "orders"), shortLabel: t(locale, "navShortOrders") },
     { href: "/shop/bills", label: t(locale, "bills"), shortLabel: t(locale, "navShortBill") },
+    { href: "/shop/attendance", label: t(locale, "attendanceSalary"), shortLabel: t(locale, "navShortAttendance") },
     { href: "/shop/workers", label: t(locale, "workers"), shortLabel: t(locale, "navShortWorkers") },
     { href: "/shop/designs", label: t(locale, "designs"), shortLabel: t(locale, "navShortDesigns") },
   ];

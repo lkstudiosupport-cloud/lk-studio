@@ -216,7 +216,97 @@ async function main() {
     `CREATE INDEX IF NOT EXISTS "DesignDeletion_version_idx" ON "DesignDeletion" ("version");`
   );
 
-  console.log("[lk-studio] production schema OK (User + ShopProfile + WorkerPartnerRequest + WorkPartnerProfile + DesignSync)");
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      CREATE TYPE "ShopSalaryInvoiceStatus" AS ENUM ('GENERATED', 'SHARED', 'PAID');
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "ShopStaff" (
+      "id" TEXT NOT NULL,
+      "shopId" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "phone" TEXT NOT NULL,
+      "dailyWage" DOUBLE PRECISION NOT NULL,
+      "overtimeRatePerHour" DOUBLE PRECISION NOT NULL,
+      "active" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ShopStaff_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "ShopStaff_shopId_fkey"
+        FOREIGN KEY ("shopId") REFERENCES "ShopProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "ShopStaff_shopId_active_idx" ON "ShopStaff" ("shopId", "active");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "ShopStaff_shopId_createdAt_idx" ON "ShopStaff" ("shopId", "createdAt");`
+  );
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "ShopAttendance" (
+      "id" TEXT NOT NULL,
+      "staffId" TEXT NOT NULL,
+      "shopId" TEXT NOT NULL,
+      "date" DATE NOT NULL,
+      "present" BOOLEAN NOT NULL DEFAULT false,
+      "overtimeHours" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "note" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ShopAttendance_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "ShopAttendance_staffId_fkey"
+        FOREIGN KEY ("staffId") REFERENCES "ShopStaff"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "ShopAttendance_shopId_fkey"
+        FOREIGN KEY ("shopId") REFERENCES "ShopProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "ShopAttendance_staffId_date_key" ON "ShopAttendance" ("staffId", "date");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "ShopAttendance_shopId_date_idx" ON "ShopAttendance" ("shopId", "date");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "ShopAttendance_staffId_date_idx" ON "ShopAttendance" ("staffId", "date");`
+  );
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "ShopSalaryInvoice" (
+      "id" TEXT NOT NULL,
+      "shopId" TEXT NOT NULL,
+      "staffId" TEXT NOT NULL,
+      "weekStart" DATE NOT NULL,
+      "weekEnd" DATE NOT NULL,
+      "presentDays" INTEGER NOT NULL,
+      "overtimeHours" DOUBLE PRECISION NOT NULL,
+      "dailyWage" DOUBLE PRECISION NOT NULL,
+      "overtimeRate" DOUBLE PRECISION NOT NULL,
+      "amount" DOUBLE PRECISION NOT NULL,
+      "status" "ShopSalaryInvoiceStatus" NOT NULL DEFAULT 'GENERATED',
+      "invoiceNumber" TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ShopSalaryInvoice_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "ShopSalaryInvoice_shopId_fkey"
+        FOREIGN KEY ("shopId") REFERENCES "ShopProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "ShopSalaryInvoice_staffId_fkey"
+        FOREIGN KEY ("staffId") REFERENCES "ShopStaff"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+  `);
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "ShopSalaryInvoice_invoiceNumber_key" ON "ShopSalaryInvoice" ("invoiceNumber");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS "ShopSalaryInvoice_staffId_weekStart_key" ON "ShopSalaryInvoice" ("staffId", "weekStart");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "ShopSalaryInvoice_shopId_weekStart_idx" ON "ShopSalaryInvoice" ("shopId", "weekStart");`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "ShopSalaryInvoice_shopId_createdAt_idx" ON "ShopSalaryInvoice" ("shopId", "createdAt");`
+  );
+
+  console.log("[lk-studio] production schema OK (User + ShopProfile + WorkerPartnerRequest + WorkPartnerProfile + DesignSync + ShopStaff)");
 }
 
 main()

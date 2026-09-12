@@ -96,6 +96,12 @@ enum WorkerPartnerDurationType {
   CUSTOM_DAYS
 }
 
+enum ShopSalaryInvoiceStatus {
+  GENERATED
+  SHARED
+  PAID
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -196,8 +202,72 @@ model ShopProfile {
   workerPartnerRequests WorkerPartnerRequest[]
   workPartnerRatings WorkPartnerRating[]
 
+  staff           ShopStaff[]
+  attendance      ShopAttendance[]
+  salaryInvoices  ShopSalaryInvoice[]
+
   @@index([subscriptionStatus])
   @@index([city])
+}
+
+/** Shop employee for daily attendance & weekly salary. */
+model ShopStaff {
+  id                   String   @id @default(cuid())
+  shopId               String
+  shop                 ShopProfile @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name                 String
+  phone                String
+  dailyWage            Float
+  overtimeRatePerHour  Float
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  attendance ShopAttendance[]
+  invoices   ShopSalaryInvoice[]
+
+  @@index([shopId, active])
+  @@index([shopId, createdAt])
+}
+
+model ShopAttendance {
+  id             String     @id @default(cuid())
+  staffId        String
+  staff          ShopStaff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  shopId         String
+  shop           ShopProfile @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  date           DateTime   @db.Date
+  present        Boolean    @default(false)
+  overtimeHours  Float      @default(0)
+  note           String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@unique([staffId, date])
+  @@index([shopId, date])
+  @@index([staffId, date])
+}
+
+model ShopSalaryInvoice {
+  id             String                  @id @default(cuid())
+  shopId         String
+  shop           ShopProfile             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  staffId        String
+  staff          ShopStaff               @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  weekStart      DateTime                @db.Date
+  weekEnd        DateTime                @db.Date
+  presentDays    Int
+  overtimeHours  Float
+  dailyWage      Float
+  overtimeRate   Float
+  amount         Float
+  status         ShopSalaryInvoiceStatus @default(GENERATED)
+  invoiceNumber  String                  @unique
+  createdAt      DateTime                @default(now())
+
+  @@unique([staffId, weekStart])
+  @@index([shopId, weekStart])
+  @@index([shopId, createdAt])
 }
 
 model ShopRating {
