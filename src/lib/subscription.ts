@@ -1,5 +1,16 @@
 import type { SubscriptionStatus, UserRole } from "@prisma/client";
 
+/**
+ * When true: no subscription / Razorpay paywalls for shop or customer.
+ * App works fully; payment UI is hidden and a paused notice is shown.
+ * Set to false to turn billing back on.
+ */
+export const PAYMENTS_PAUSED = true;
+
+export function isPaymentsPaused() {
+  return PAYMENTS_PAUSED;
+}
+
 /** Free trial length — days from signup / install. */
 export const TRIAL_DAYS = 25;
 /** Paid renewal period — one calendar month per billing cycle. */
@@ -40,6 +51,7 @@ export function isSubscriptionActive(
   endsAt: Date | null,
   accountCreatedAt?: Date | null
 ) {
+  if (PAYMENTS_PAUSED) return true;
   if (status === "EXPIRED") return false;
   const effectiveEnd = resolveSubscriptionEndsAt(status, endsAt, accountCreatedAt);
   if (!effectiveEnd) return status === "ACTIVE" || status === "TRIAL" || status === "PAST_DUE";
@@ -82,6 +94,7 @@ export function trialEndDate(from = new Date()) {
 /**
  * Full app during free trial, with Razorpay autopay enabled, or while a
  * month-wise paid period (ACTIVE + endsAt in the future) is still valid.
+ * When PAYMENTS_PAUSED, everyone has access.
  */
 export function hasFullAppAccess(
   status: SubscriptionStatus,
@@ -89,6 +102,7 @@ export function hasFullAppAccess(
   accountCreatedAt: Date | null | undefined,
   autopayEnabled: boolean
 ): boolean {
+  if (PAYMENTS_PAUSED) return true;
   if (autopayEnabled) return true;
   if (isInTrial(status, endsAt, accountCreatedAt)) return true;
   return status === "ACTIVE" && isSubscriptionActive(status, endsAt, accountCreatedAt);
@@ -135,6 +149,7 @@ export function shouldShowPaymentPrompt(
   endsAt: Date | null,
   accountCreatedAt?: Date | null
 ) {
+  if (PAYMENTS_PAUSED) return false;
   return isSubscriptionBlocked(status, endsAt, accountCreatedAt);
 }
 
