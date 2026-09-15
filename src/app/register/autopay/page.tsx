@@ -2,14 +2,22 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/locale-server";
 import { prisma } from "@/lib/prisma";
-import { SHOP_MONTHLY_PRICE_INR, isInTrial, isSubscriptionActive } from "@/lib/subscription";
+import {
+  SHOP_MONTHLY_PRICE_INR,
+  isInTrial,
+  isSubscriptionActive,
+  isPaymentsPaused,
+} from "@/lib/subscription";
 import { isDemoAccountUser } from "@/lib/demo-accounts";
 import { isRazorpayConfigured } from "@/lib/razorpay-config";
 import { AutopayOnboardingPage } from "@/components/AutopayOnboardingPage";
 
-/** Shop payment / autopay only — customers are free. */
+/** Shop payment / autopay only — customers are free; skipped when payments paused. */
 export default async function RegisterAutopayPage() {
   const session = await requireSession(["SHOP", "CUSTOMER"]);
+  if (isPaymentsPaused()) {
+    redirect(session!.role === "CUSTOMER" ? "/customer/designs" : "/shop");
+  }
   if (session!.role === "CUSTOMER") redirect("/customer/designs");
 
   if (!session!.shopId) redirect("/login/shop");

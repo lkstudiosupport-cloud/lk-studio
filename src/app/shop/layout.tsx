@@ -8,7 +8,7 @@ import { ShopShellProvider } from "@/components/ShopShellProvider";
 import { AutopayGuard } from "@/components/AutopayGuard";
 import { t } from "@/lib/i18n";
 import { isDemoAccountUser } from "@/lib/demo-accounts";
-import { hasFullAppAccess } from "@/lib/subscription";
+import { hasFullAppAccess, isPaymentsPaused } from "@/lib/subscription";
 import {
   cachedLocale,
   cachedShopSession,
@@ -49,6 +49,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     isDemoAccountUser(user) || isDemoAccountUser({ phone: profile?.phone });
   const hasAccess =
     demoBypass ||
+    isPaymentsPaused() ||
     hasFullAppAccess(
       profile.subscriptionStatus,
       profile.subscriptionEndsAt,
@@ -56,6 +57,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       profile.autopayEnabled
     );
 
+  // Never bounce to autopay while payments are paused (autopay page sends users
+  // back to /shop — that pair caused ERR_TOO_MANY_REDIRECTS).
   if (!hasAccess) {
     redirect("/register/autopay");
   }

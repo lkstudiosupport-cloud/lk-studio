@@ -215,8 +215,10 @@ export async function getSession(): Promise<SessionUser | null> {
 
     return session;
   } catch (err) {
+    // Fail open on transient DB blips so cold starts don't treat a valid
+    // JWT as logged-out (which used to bounce shop ↔ login forever).
     console.error("[lk-studio] getSession db error:", err);
-    return null;
+    return session;
   }
 }
 

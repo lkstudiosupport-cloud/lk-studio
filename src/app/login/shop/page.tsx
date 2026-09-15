@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
 import { getLocale } from "@/lib/locale-server";
-import { getSessionFromCookie } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { AuthShell } from "@/components/AuthShell";
 import { LoginForm } from "@/components/LoginForm";
 
 export default async function ShopLoginPage() {
-  const session = await getSessionFromCookie();
+  // Must match shop layout (getSession / DB) — cookie-only checks cause
+  // /shop ↔ /login/shop loops (ERR_TOO_MANY_REDIRECTS) on Android cold start.
+  const session = await getSession();
   if (session?.role === "SHOP" && session.shopId) redirect("/shop");
 
   const locale = await getLocale();
