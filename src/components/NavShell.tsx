@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { LocaleLocationBar } from "./LocaleLocationBar";
 import { ProfileMenu } from "./ProfileMenu";
@@ -91,6 +91,35 @@ export function NavShell({
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const hideNav = hideNavOnPaths?.includes(pathname) ?? false;
+  const headerRef = useRef<HTMLElement>(null);
+
+  /** Keep content padding in sync with the real fixed header (Telugu / shop name / tabs). */
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const apply = () => {
+      const height = Math.ceil(el.getBoundingClientRect().height);
+      if (height < 1) return;
+      const value = `${height}px`;
+      if (navPosition === "top" && !hideNav) {
+        document.documentElement.style.setProperty("--app-header-with-top-nav", value);
+        document.documentElement.style.setProperty("--app-sticky-under-header", value);
+      } else {
+        document.documentElement.style.setProperty("--app-header-estimate", value);
+        document.documentElement.style.setProperty("--app-sticky-under-header", value);
+      }
+    };
+
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("orientationchange", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("orientationchange", apply);
+    };
+  }, [navPosition, hideNav, locale, title, links.length]);
 
   useEffect(() => {
     setPendingHref(null);
@@ -154,7 +183,7 @@ export function NavShell({
 
   return (
     <>
-      <header className="brand-header">
+      <header ref={headerRef} className="brand-header">
         <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-1 px-2 py-2 sm:gap-2 sm:px-4 sm:py-3.5 md:py-4">
           <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
             <BrandLogoMark locale={locale} />

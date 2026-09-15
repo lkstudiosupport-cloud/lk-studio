@@ -37,8 +37,9 @@
   /* Mobile shell — keep bottom nav clearance in sync everywhere.
      Include safe-area: .brand-header pads with env(safe-area-inset-top). */
   --app-header-estimate: calc(4.5rem + env(safe-area-inset-top, 0px));
-  /* Brand row + Home/Orders/Bill/Partner/Designs top tabs (generous for bumped type scale) */
-  --app-header-with-top-nav: calc(9rem + env(safe-area-inset-top, 0px));
+  /* Brand row + top tabs — fallback until NavShell measures real height.
+     Tall enough for Telugu labels + shop name + Attendance tab. */
+  --app-header-with-top-nav: calc(11.5rem + env(safe-area-inset-top, 0px));
   /* Sticky bars sit under fixed brand header (overridden when top tabs are present) */
   --app-sticky-under-header: var(--app-header-estimate);
   --app-bottom-nav-bar: 3.5rem;
@@ -179,8 +180,8 @@ button {
 }
 
 .app-main-content-with-top-nav {
-  /* !important so Tailwind py-* utilities cannot collapse content under the fixed header */
-  padding-top: calc(var(--app-header-with-top-nav) + 0.75rem) !important;
+  /* Extra gap so page titles / Create bill clear the fixed header */
+  padding-top: calc(var(--app-header-with-top-nav) + 1rem) !important;
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
 }
 
@@ -1019,7 +1020,7 @@ a,
   :root {
     /* Keep header offset tall enough for brand row + tabs (do not shrink). */
     --app-header-estimate: calc(4.5rem + env(safe-area-inset-top, 0px));
-    --app-header-with-top-nav: calc(9.25rem + env(safe-area-inset-top, 0px));
+    --app-header-with-top-nav: calc(12rem + env(safe-area-inset-top, 0px));
     --app-bottom-nav-bar: 3.625rem;
   }
 
