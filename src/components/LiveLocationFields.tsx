@@ -110,16 +110,18 @@ export function LiveLocationFields({
           </button>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-brand-green">{t(locale, "shopLocation")}</span>
+            <span className="mb-1 block text-xs font-semibold text-brand-green">
+              {t(locale, "editExactAddress")}
+            </span>
             <textarea
               name={addressName}
               value={address}
-              readOnly
-              placeholder={t(locale, "addressFromMapHint")}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder={t(locale, "editExactAddressHint")}
               rows={3}
-              className="input-premium w-full bg-white/80"
+              className="input-premium w-full bg-white"
             />
-            <p className="mt-1 text-xs text-zinc-500">{t(locale, "addressFromMapHint")}</p>
+            <p className="mt-1 text-xs text-zinc-500">{t(locale, "editExactAddressHint")}</p>
           </label>
 
           <input type="hidden" name={linkName} value={link} />
@@ -166,6 +168,7 @@ export function LiveLocationFields({
         onConfirm={applyPickedLocation}
         initialLat={lat ? parseFloat(lat) : defaultLat}
         initialLng={lng ? parseFloat(lng) : defaultLng}
+        initialAddress={address}
       />
     </div>
   );

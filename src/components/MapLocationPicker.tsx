@@ -28,6 +28,7 @@ type Props = {
   onConfirm: (location: PickedLocation) => void;
   initialLat?: number | null;
   initialLng?: number | null;
+  initialAddress?: string;
 };
 
 async function reverseGeocode(lat: number, lng: number): Promise<{ address: string; city: string | null }> {
@@ -46,28 +47,57 @@ export function MapLocationPicker({
   onConfirm,
   initialLat,
   initialLng,
+  initialAddress = "",
 }: Props) {
   const startLat = initialLat ?? DEFAULT_MAP_CENTER.lat;
   const startLng = initialLng ?? DEFAULT_MAP_CENTER.lng;
 
   const [lat, setLat] = useState(startLat);
   const [lng, setLng] = useState(startLng);
+  const [address, setAddress] = useState(initialAddress);
   const [busy, setBusy] = useState(false);
   const [geoBusy, setGeoBusy] = useState(false);
+  const [lookupBusy, setLookupBusy] = useState(false);
   const [error, setError] = useState("");
+  const [addressEdited, setAddressEdited] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setLat(initialLat ?? DEFAULT_MAP_CENTER.lat);
     setLng(initialLng ?? DEFAULT_MAP_CENTER.lng);
+    setAddress(initialAddress.trim());
+    setAddressEdited(Boolean(initialAddress.trim()));
     setError("");
-  }, [open, initialLat, initialLng]);
+  }, [open, initialLat, initialLng, initialAddress]);
 
-  const handleMove = useCallback((nextLat: number, nextLng: number) => {
-    setLat(nextLat);
-    setLng(nextLng);
-    setError("");
-  }, []);
+  const fillAddressFromPin = useCallback(
+    async (nextLat: number, nextLng: number, force = false) => {
+      if (addressEdited && !force) return;
+      setLookupBusy(true);
+      setError("");
+      try {
+        const result = await reverseGeocode(nextLat, nextLng);
+        setAddress(result.address);
+      } catch {
+        // Keep any typed address; user can edit manually.
+        if (!addressEdited) {
+          setError(t(locale, "locationPickFailedHint"));
+        }
+      }
+      setLookupBusy(false);
+    },
+    [addressEdited, locale]
+  );
+
+  const handleMove = useCallback(
+    (nextLat: number, nextLng: number) => {
+      setLat(nextLat);
+      setLng(nextLng);
+      setError("");
+      void fillAddressFromPin(nextLat, nextLng);
+    },
+    [fillAddressFromPin]
+  );
 
   async function useMyLocation() {
     setGeoBusy(true);
@@ -81,8 +111,11 @@ export function MapLocationPicker({
           maximumAge: 60000,
         });
       });
-      setLat(pos.coords.latitude);
-      setLng(pos.coords.longitude);
+      const nextLat = pos.coords.latitude;
+      const nextLng = pos.coords.longitude;
+      setLat(nextLat);
+      setLng(nextLng);
+      void fillAddressFromPin(nextLat, nextLng);
     } catch {
       setError(t(locale, "locationPermissionDenied"));
     }
@@ -90,14 +123,28 @@ export function MapLocationPicker({
   }
 
   async function confirm() {
+    const manual = address.trim();
+    if (!manual) {
+      setError(t(locale, "addressRequiredForPin"));
+      return;
+    }
+
     setBusy(true);
     setError("");
     try {
-      const { address, city } = await reverseGeocode(lat, lng);
+      let city = matchCityFromAddressText(manual);
+      if (!addressEdited) {
+        try {
+          const geo = await reverseGeocode(lat, lng);
+          city = geo.city ?? city;
+        } catch {
+          /* manual address is enough */
+        }
+      }
       onConfirm({
         lat,
         lng,
-        address,
+        address: manual,
         locationLink: googleMapsLink(lat, lng),
         city,
       });
@@ -140,6 +187,25 @@ export function MapLocationPicker({
             {geoBusy ? t(locale, "locationDetecting") : t(locale, "detectLocation")}
           </button>
 
+          <label className="block">
+            <span className="mb-1 flex items-center justify-between gap-2 text-xs font-semibold text-brand-green">
+              <span>{t(locale, "editExactAddress")}</span>
+              {lookupBusy ? <span className="font-normal text-zinc-500">…</span> : null}
+            </span>
+            <textarea
+              value={address}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                setAddressEdited(true);
+                setError("");
+              }}
+              rows={3}
+              placeholder={t(locale, "editExactAddressHint")}
+              className="input-premium w-full"
+            />
+            <p className="mt-1 text-xs text-zinc-500">{t(locale, "editExactAddressHint")}</p>
+          </label>
+
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button type="button" onClick={confirm} disabled={busy} className="btn-primary w-full py-3">
@@ -150,3 +216,4 @@ export function MapLocationPicker({
     </div>
   );
 }
+
