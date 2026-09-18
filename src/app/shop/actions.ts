@@ -22,6 +22,7 @@ import type { OrderStatus, ServiceCategory, WorkType } from "@prisma/client";
 import { CATALOG_CATEGORIES, shopManageableDesignWhere, isShopUploadCategory } from "@/lib/design-access";
 import { parseShopMeasurementsFromForm, inferOrderCategoryFromMeasurements } from "@/lib/shop-measurements";
 import { normalizeCity } from "@/lib/cities";
+import { buildBillNumber, buildShopNumberBase } from "@/lib/shop-code";
 import {
   parseNeededFromDate,
   parseWorkerPartnerDurationType,
@@ -437,7 +438,14 @@ export async function createBill(formData: FormData): Promise<BillActionResult> 
     const paid =
       formData.get("paid") === "on" || billFullyPaid(amount, advancePaid, paidAmount);
 
-    const billNumber = `BILL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const shopProfile = await prisma.shopProfile.findUnique({
+      where: { id: shop },
+      select: { shopName: true, shopNumber: true, shopCode: true },
+    });
+    const pincode = shopProfile?.shopNumber?.match(/\d{6}/)?.[0] ?? null;
+    const billCount = await prisma.bill.count({ where: { shopId: shop } });
+    const serial = billCount + 1;
+    const billNumber = buildBillNumber(shopProfile?.shopName ?? "Shop", pincode, serial);
     const bill = await prisma.bill.create({
       data: {
         billNumber,
