@@ -8,6 +8,11 @@ import {
   waitForBillReceiptReady,
 } from "@/lib/bill-receipt-capture";
 import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
+import {
+  openExternalUrl,
+  openWhatsApp,
+  recipientPhoneDigits,
+} from "@/lib/whatsapp";
 
 const CAPTURE_WIDTH_PX = 448;
 /** Slightly higher quality keeps small receipt glyphs crisp after WhatsApp recompress. */
@@ -204,16 +209,46 @@ async function writeCapacitorShareFile(blob: Blob, fileName: string) {
   return uri;
 }
 
+/** Android: send image straight into a WhatsApp chat for the recipient number. */
+function androidWhatsAppImageIntent(fileUri: string, phone: string, text: string) {
+  const digits = recipientPhoneDigits(phone);
+  if (!digits) return null;
+
+  const jid = `${digits}@s.whatsapp.net`;
+  const stream = encodeURIComponent(fileUri);
+  const extraText = encodeURIComponent(text);
+  const extraJid = encodeURIComponent(jid);
+
+  return (
+    `intent:#Intent;action=android.intent.action.SEND;` +
+    `type=image/jpeg;package=com.whatsapp;` +
+    `S.android.intent.extra.STREAM=${stream};` +
+    `S.jid=${extraJid};` +
+    `S.android.intent.extra.TEXT=${extraText};` +
+    `flag=1;end`
+  );
+}
+
 async function tryCapacitorNativeShare(
   blob: Blob,
   fileName: string,
   title: string,
-  text: string
+  text: string,
+  phone?: string | null
 ): Promise<ShareResult> {
   if (!isCapacitorNative()) return "unavailable";
 
   try {
     const fileUri = await writeCapacitorShareFile(blob, fileName);
+
+    if (phone?.trim() && /Android/i.test(navigator.userAgent)) {
+      const intent = androidWhatsAppImageIntent(fileUri, phone.trim(), text);
+      if (intent) {
+        openExternalUrl(intent);
+        return "shared";
+      }
+    }
+
     const { Share } = await import("@capacitor/share");
     try {
       await Share.share({
@@ -233,6 +268,17 @@ async function tryCapacitorNativeShare(
   }
 }
 
+async function fallbackDownloadAndWhatsApp(
+  blob: Blob,
+  fileName: string,
+  phone: string | null | undefined,
+  text: string
+) {
+  downloadBillImage(blob, fileName);
+  await new Promise<void>((resolve) => window.setTimeout(resolve, 450));
+  openWhatsApp(phone, text);
+}
+
 async function tryWebShareFile(file: File, title: string, text: string): Promise<ShareResult> {
   if (typeof navigator === "undefined" || !("share" in navigator)) return "unavailable";
   try {
@@ -250,11 +296,14 @@ function fallbackDownloadBillImage(blob: Blob, fileName: string) {
 }
 
 export async function shareBillImage({
+  phone,
   fileName,
   shopName,
   fallbackHint,
   cacheKey,
 }: {
+  /** Customer phone on the bill — opens that WhatsApp chat when set. */
+  phone?: string | null;
   fileName: string;
   shopName?: string;
   fallbackHint?: string;
@@ -274,7 +323,22 @@ export async function shareBillImage({
   const title = shopName ? `Bill — ${shopName}` : "Bill";
   const hint =
     fallbackHint ?? "Your bill image is saved. Open your app and attach the saved image.";
+  const recipient = recipientPhoneDigits(phone) ? phone!.trim() : null;
 
+  // Known customer number → send into that WhatsApp chat (or download + wa.me).
+  if (recipient) {
+    if (isCapacitorNative()) {
+      const nativeResult = await tryCapacitorNativeShare(blob, resolvedName, title, hint, recipient);
+      if (nativeResult === "shared" || nativeResult === "cancelled") return nativeResult;
+      await fallbackDownloadAndWhatsApp(blob, resolvedName, recipient, hint);
+      return "downloaded";
+    }
+
+    await fallbackDownloadAndWhatsApp(blob, resolvedName, recipient, hint);
+    return "downloaded";
+  }
+
+  // No phone — share sheet / download so the user picks the contact manually.
   if (isCapacitorNative()) {
     const nativeResult = await tryCapacitorNativeShare(blob, resolvedName, title, hint);
     if (nativeResult === "shared" || nativeResult === "cancelled") return nativeResult;
@@ -289,4 +353,11 @@ export async function shareBillImage({
 
   fallbackDownloadBillImage(blob, resolvedName);
   return "downloaded";
+}
+
+/** @deprecated Prefer shareBillImage({ phone }) — kept for BillWhatsAppAutoSend. */
+export async function shareBillImageOnWhatsApp(
+  opts: Parameters<typeof shareBillImage>[0]
+): Promise<ShareBillOutcome> {
+  return shareBillImage(opts);
 }

@@ -281,11 +281,12 @@ export function ShopAttendancePanel() {
         fileName: `${inv.invoiceNumber}.jpg`,
         shopName: inv.shopName,
         caption: inv.shareText,
+        phone: inv.staffPhone,
       });
       await markSalaryInvoiceShared(inv.id);
       await loadInvoices(weekStart);
     } catch {
-      // Fallback: WhatsApp text to worker phone (same as before).
+      // Fallback: WhatsApp text to worker phone (or manual search if missing).
       openWhatsApp(inv.staffPhone, inv.shareText);
       startTransition(async () => {
         await markSalaryInvoiceShared(inv.id);

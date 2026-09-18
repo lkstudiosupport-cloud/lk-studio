@@ -10,16 +10,33 @@ export function cleanPhoneForWhatsApp(phone: string) {
   return digits;
 }
 
+/** Digits-only E.164 for wa.me, or null if phone is missing/unusable. */
+export function recipientPhoneDigits(phone: string | null | undefined) {
+  const trimmed = phone?.trim();
+  if (!trimmed) return null;
+  const num = cleanPhoneForWhatsApp(trimmed).replace(/\D/g, "");
+  return num || null;
+}
+
 export function whatsAppUrl(phone: string, text: string) {
-  const num = cleanPhoneForWhatsApp(phone);
+  const num = recipientPhoneDigits(phone);
   if (!num) return null;
   return `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
 }
 
+/** WhatsApp compose without a number — user picks/searches the contact manually. */
+export function whatsAppSearchUrl(text: string) {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
 export function whatsAppDeepLink(phone: string, text: string) {
-  const num = cleanPhoneForWhatsApp(phone);
+  const num = recipientPhoneDigits(phone);
   if (!num) return null;
   return `whatsapp://send?phone=${num}&text=${encodeURIComponent(text)}`;
+}
+
+export function whatsAppSearchDeepLink(text: string) {
+  return `whatsapp://send?text=${encodeURIComponent(text)}`;
 }
 
 function isExternalAppUrl(url: string) {
@@ -64,13 +81,18 @@ export function openDeepLink(primary: string, fallback?: string) {
   openExternalUrl(primary, fallback);
 }
 
-export function openWhatsApp(phone: string, text: string) {
-  const waMe = whatsAppUrl(phone, text);
-  if (!waMe) return;
+/**
+ * Open WhatsApp to a recipient when phone is known (wa.me / deep link).
+ * If phone is missing, open WhatsApp search/compose so the user can pick manually.
+ */
+export function openWhatsApp(phone: string | null | undefined, text: string) {
+  const num = recipientPhoneDigits(phone);
+  const waMe = num ? `https://wa.me/${num}?text=${encodeURIComponent(text)}` : whatsAppSearchUrl(text);
+  const waScheme = num
+    ? `whatsapp://send?phone=${num}&text=${encodeURIComponent(text)}`
+    : whatsAppSearchDeepLink(text);
 
-  const waScheme = whatsAppDeepLink(phone, text);
-
-  if ((isCapacitorNative() || isMobileWeb()) && waScheme) {
+  if (isCapacitorNative() || isMobileWeb()) {
     openExternalUrl(waScheme, waMe);
     return;
   }

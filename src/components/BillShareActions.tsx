@@ -14,6 +14,7 @@ export function BillShareActions({
   backHref,
   billNumber,
   shopName,
+  customerPhone,
   showShare,
   editHref,
   compact,
@@ -26,6 +27,8 @@ export function BillShareActions({
   backHref: string;
   billNumber?: string;
   shopName?: string;
+  /** Customer phone on the bill — opens that WhatsApp chat when sharing. */
+  customerPhone?: string | null;
   showShare?: boolean;
   editHref?: string;
   /** Inline bar for fullscreen receipt hero view. */
@@ -53,6 +56,7 @@ export function BillShareActions({
       await shareBillImage({
         fileName: `${billNumber ?? "bill"}.jpg`,
         shopName,
+        phone: customerPhone ?? receipt?.customer.phone,
         fallbackHint: t(locale, "shareBillFallback"),
         cacheKey:
           billNumber && itemsJson != null && amount != null

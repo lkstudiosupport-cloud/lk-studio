@@ -34,6 +34,7 @@ export function ShopBillDetailView({
       editHref={`/shop/bills/${billId}/edit`}
       billNumber={receiptData.billNumber}
       shopName={receiptData.shop.shopName}
+      customerPhone={receiptData.customer.phone}
       itemsJson={receiptData.itemsJson}
       amount={receiptData.amount}
       receipt={receiptData}
@@ -49,6 +50,7 @@ export function ShopBillDetailView({
         <BillShareAutoSend
           billNumber={receiptData.billNumber}
           shopName={receiptData.shop.shopName}
+          phone={receiptData.customer.phone}
           itemsJson={receiptData.itemsJson}
           amount={receiptData.amount}
           enabled={isPostCreate}

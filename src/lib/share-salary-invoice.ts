@@ -8,6 +8,11 @@ import {
 } from "@/lib/bill-receipt-capture";
 import { BILL_RECEIPT_STYLES } from "@/lib/bill-receipt-styles";
 import { SALARY_INVOICE_CAPTURE_ID } from "@/lib/shop-attendance";
+import {
+  openExternalUrl,
+  openWhatsApp,
+  recipientPhoneDigits,
+} from "@/lib/whatsapp";
 
 const CAPTURE_WIDTH_PX = 448;
 const JPEG_QUALITY = 0.94;
@@ -123,7 +128,8 @@ async function tryCapacitorNativeShare(
   blob: Blob,
   fileName: string,
   title: string,
-  text: string
+  text: string,
+  phone?: string | null
 ): Promise<ShareResult> {
   if (!isCapacitorNative()) return "unavailable";
   try {
@@ -132,6 +138,23 @@ async function tryCapacitorNativeShare(
     const path = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
     await Filesystem.writeFile({ path, data: base64, directory: Directory.Cache });
     const { uri } = await Filesystem.getUri({ directory: Directory.Cache, path });
+
+    if (phone?.trim() && /Android/i.test(navigator.userAgent)) {
+      const digits = recipientPhoneDigits(phone);
+      if (digits) {
+        const jid = `${digits}@s.whatsapp.net`;
+        const intent =
+          `intent:#Intent;action=android.intent.action.SEND;` +
+          `type=image/jpeg;package=com.whatsapp;` +
+          `S.android.intent.extra.STREAM=${encodeURIComponent(uri)};` +
+          `S.jid=${encodeURIComponent(jid)};` +
+          `S.android.intent.extra.TEXT=${encodeURIComponent(text)};` +
+          `flag=1;end`;
+        openExternalUrl(intent);
+        return "shared";
+      }
+    }
+
     const { Share } = await import("@capacitor/share");
     try {
       await Share.share({ title, text, files: [uri], dialogTitle: title });
@@ -156,11 +179,24 @@ function downloadImage(blob: Blob, fileName: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
+async function fallbackDownloadAndWhatsApp(
+  blob: Blob,
+  fileName: string,
+  phone: string | null | undefined,
+  text: string
+) {
+  downloadImage(blob, fileName);
+  await new Promise<void>((resolve) => window.setTimeout(resolve, 450));
+  openWhatsApp(phone, text);
+}
+
 /** Share the on-screen salary invoice paper as an image (same flow as bill). */
 export async function shareSalaryInvoiceImage(opts: {
   fileName: string;
   shopName?: string;
   caption?: string;
+  /** Worker phone on the invoice — opens that WhatsApp chat when set. */
+  phone?: string | null;
 }): Promise<ShareSalaryOutcome> {
   preloadBillCaptureLib();
   const blob = await withTimeout(
@@ -172,6 +208,19 @@ export async function shareSalaryInvoiceImage(opts: {
   const file = new File([blob], fileName, { type: "image/jpeg" });
   const title = opts.shopName ? `Salary — ${opts.shopName}` : "Salary invoice";
   const text = opts.caption ?? title;
+  const recipient = recipientPhoneDigits(opts.phone) ? opts.phone!.trim() : null;
+
+  if (recipient) {
+    if (isCapacitorNative()) {
+      const nativeResult = await tryCapacitorNativeShare(blob, fileName, title, text, recipient);
+      if (nativeResult === "shared" || nativeResult === "cancelled") return nativeResult;
+      await fallbackDownloadAndWhatsApp(blob, fileName, recipient, text);
+      return "downloaded";
+    }
+
+    await fallbackDownloadAndWhatsApp(blob, fileName, recipient, text);
+    return "downloaded";
+  }
 
   if (isCapacitorNative()) {
     const nativeResult = await tryCapacitorNativeShare(blob, fileName, title, text);

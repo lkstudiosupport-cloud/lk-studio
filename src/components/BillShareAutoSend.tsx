@@ -30,6 +30,7 @@ function clearAutoShareAttempted(billNumber: string, itemsJson?: string, amount?
 export function BillShareAutoSend({
   billNumber,
   shopName,
+  phone,
   enabled,
   silent,
   preparingLabel = "Preparing bill image…",
@@ -40,6 +41,8 @@ export function BillShareAutoSend({
 }: {
   billNumber: string;
   shopName?: string;
+  /** Customer phone on the bill — opens that WhatsApp chat when set. */
+  phone?: string | null;
   enabled: boolean;
   /** Run share in background without blocking receipt view. */
   silent?: boolean;
@@ -73,6 +76,7 @@ export function BillShareAutoSend({
         await shareBillImage({
           fileName: `${billNumber}.jpg`,
           shopName,
+          phone,
           fallbackHint,
           cacheKey:
             itemsJson != null && amount != null
@@ -92,7 +96,7 @@ export function BillShareAutoSend({
     return () => {
       cancelled = true;
     };
-  }, [enabled, billNumber, shopName, fallbackHint, errorLabel, itemsJson, amount]);
+  }, [enabled, billNumber, shopName, phone, fallbackHint, errorLabel, itemsJson, amount]);
 
   if (!preparing && !error) return null;
   if (silent && preparing && !error) return null;
