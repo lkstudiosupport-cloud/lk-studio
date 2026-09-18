@@ -57,6 +57,29 @@ export function defaultOvertimeRate(dailyWage: number): number {
   return Math.round((dailyWage / 8) * 100) / 100;
 }
 
+/** Absent / full day / half day for marking UI. */
+export type AttendancePresence = "absent" | "full" | "half";
+
+export function presenceFromFlags(present: boolean, halfDay: boolean): AttendancePresence {
+  if (!present) return "absent";
+  return halfDay ? "half" : "full";
+}
+
+export function flagsFromPresence(presence: AttendancePresence): {
+  present: boolean;
+  halfDay: boolean;
+} {
+  if (presence === "absent") return { present: false, halfDay: false };
+  if (presence === "half") return { present: true, halfDay: true };
+  return { present: true, halfDay: false };
+}
+
+/** Salary units: full day = 1, half day = 0.5, absent = 0. */
+export function presentDayUnits(present: boolean, halfDay = false): number {
+  if (!present) return 0;
+  return halfDay ? 0.5 : 1;
+}
+
 export function computeSalaryAmount(input: {
   presentDays: number;
   dailyWage: number;

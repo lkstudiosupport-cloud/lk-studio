@@ -13,8 +13,10 @@ import {
   istDateString,
   mondayOfWeekIst,
   parseDateOnly,
+  presentDayUnits,
   sundayOfWeekIst,
   weekExclusiveEnd,
+  type AttendancePresence,
 } from "@/lib/shop-attendance";
 
 export type StaffRow = {
@@ -28,9 +30,17 @@ export type StaffRow = {
   createdAt: string;
 };
 
+export type AttendanceMarkRow = StaffRow & {
+  present: boolean;
+  halfDay: boolean;
+  overtimeHours: number;
+  note: string | null;
+};
+
 export type AttendanceRow = {
   staffId: string;
   present: boolean;
+  halfDay: boolean;
   overtimeHours: number;
   note: string | null;
 };
@@ -114,7 +124,7 @@ export async function loadAttendanceBootstrap(input?: {
   staff: StaffRow[];
   attendance: {
     date: string;
-    rows: (StaffRow & { present: boolean; overtimeHours: number; note: string | null })[];
+    rows: AttendanceMarkRow[];
   };
   invoices: {
     weekStart: string;
@@ -164,6 +174,7 @@ export async function loadAttendanceBootstrap(input?: {
         return {
           ...toStaffRow(s),
           present: a?.present ?? false,
+          halfDay: a?.present ? Boolean(a.halfDay) : false,
           overtimeHours: a?.overtimeHours ?? 0,
           note: a?.note ?? null,
         };
@@ -247,7 +258,7 @@ export async function setShopStaffActive(
 
 export async function getAttendanceForDate(dateStr?: string): Promise<{
   date: string;
-  rows: (StaffRow & { present: boolean; overtimeHours: number; note: string | null })[];
+  rows: AttendanceMarkRow[];
 }> {
   const shopId = await requireShopId();
   const date = parseDateOnly(dateStr?.trim() || istDateString()) ?? parseDateOnly(istDateString())!;
@@ -272,6 +283,7 @@ export async function getAttendanceForDate(dateStr?: string): Promise<{
       return {
         ...toStaffRow(s),
         present: a?.present ?? false,
+        halfDay: a?.present ? Boolean(a.halfDay) : false,
         overtimeHours: a?.overtimeHours ?? 0,
         note: a?.note ?? null,
       };
@@ -281,7 +293,14 @@ export async function getAttendanceForDate(dateStr?: string): Promise<{
 
 export async function saveAttendanceForDate(input: {
   date: string;
-  entries: { staffId: string; present: boolean; overtimeHours: number; note?: string }[];
+  entries: {
+    staffId: string;
+    present: boolean;
+    halfDay?: boolean;
+    presence?: AttendancePresence;
+    overtimeHours: number;
+    note?: string;
+  }[];
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const shopId = await requireShopId();
   const date = parseDateOnly(input.date);
@@ -300,18 +319,22 @@ export async function saveAttendanceForDate(input: {
       .map((e) => {
         const overtimeHours = Math.max(0, Number(e.overtimeHours) || 0);
         const note = e.note?.trim() || null;
+        const present = Boolean(e.present);
+        const halfDay = present ? Boolean(e.halfDay) : false;
         return prisma.shopAttendance.upsert({
           where: { staffId_date: { staffId: e.staffId, date } },
           create: {
             shopId,
             staffId: e.staffId,
             date,
-            present: Boolean(e.present),
+            present,
+            halfDay,
             overtimeHours,
             note,
           },
           update: {
-            present: Boolean(e.present),
+            present,
+            halfDay,
             overtimeHours,
             note,
           },
@@ -460,7 +483,10 @@ export async function generateWeeklySalaryInvoices(weekStartStr?: string): Promi
       continue;
     }
     const rows = byStaff.get(s.id) ?? [];
-    const presentDays = rows.filter((r) => r.present).length;
+    const presentDays =
+      Math.round(
+        rows.reduce((sum, r) => sum + presentDayUnits(r.present, r.halfDay), 0) * 100
+      ) / 100;
     const overtimeHours =
       Math.round(rows.reduce((sum, r) => sum + (r.overtimeHours || 0), 0) * 100) / 100;
     if (presentDays <= 0 && overtimeHours <= 0) continue;

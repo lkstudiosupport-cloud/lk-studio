@@ -3,15 +3,26 @@ import { test } from "node:test";
 import {
   computeSalaryAmount,
   defaultOvertimeRate,
+  flagsFromPresence,
   formatDateOnly,
   mondayOfWeekIst,
   parseDateOnly,
+  presenceFromFlags,
+  presentDayUnits,
   sundayOfWeekIst,
 } from "./shop-attendance";
 
 test("default overtime is dailyWage / 8", () => {
   assert.equal(defaultOvertimeRate(800), 100);
   assert.equal(defaultOvertimeRate(500), 62.5);
+});
+
+test("present day units: absent / full / half", () => {
+  assert.equal(presentDayUnits(false), 0);
+  assert.equal(presentDayUnits(true, false), 1);
+  assert.equal(presentDayUnits(true, true), 0.5);
+  assert.equal(presenceFromFlags(true, true), "half");
+  assert.deepEqual(flagsFromPresence("half"), { present: true, halfDay: true });
 });
 
 test("weekly amount = presentDays * wage + OT hours * rate", () => {
@@ -22,6 +33,10 @@ test("weekly amount = presentDays * wage + OT hours * rate", () => {
   assert.equal(
     computeSalaryAmount({ presentDays: 0, dailyWage: 800, overtimeHours: 2, overtimeRate: 50 }),
     100
+  );
+  assert.equal(
+    computeSalaryAmount({ presentDays: 2.5, dailyWage: 800, overtimeHours: 0, overtimeRate: 100 }),
+    2000
   );
 });
 

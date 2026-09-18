@@ -11,11 +11,14 @@ import { preloadBillCaptureLib, shareSalaryInvoiceImage } from "@/lib/share-sala
 import { SalaryInvoiceReceipt } from "@/components/SalaryInvoiceReceipt";
 import {
   defaultOvertimeRate,
+  flagsFromPresence,
   formatWeekLabel,
   istDateString,
   mondayOfWeekIst,
   parseDateOnly,
+  presenceFromFlags,
   sundayOfWeekIst,
+  type AttendancePresence,
 } from "@/lib/shop-attendance";
 import {
   generateWeeklySalaryInvoices,
@@ -27,6 +30,7 @@ import {
   saveAttendanceForDate,
   setShopStaffActive,
   upsertShopStaff,
+  type AttendanceMarkRow,
   type SalaryInvoiceRow,
   type StaffRow,
 } from "@/app/shop/attendance-actions";
@@ -34,12 +38,19 @@ import {
 type PanelTab = "staff" | "attendance" | "invoices";
 
 type AttendanceDraft = {
-  present: boolean;
+  presence: AttendancePresence;
   overtimeHours: string;
 };
 
 function weekInputValue(fromDate = istDateString()): string {
   return mondayOfWeekIst(fromDate).toISOString().slice(0, 10);
+}
+
+function draftFromRow(row: { present: boolean; halfDay?: boolean; overtimeHours: number }): AttendanceDraft {
+  return {
+    presence: presenceFromFlags(row.present, Boolean(row.halfDay)),
+    overtimeHours: row.overtimeHours ? String(row.overtimeHours) : "",
+  };
 }
 
 export function ShopAttendancePanel() {
@@ -52,9 +63,7 @@ export function ShopAttendancePanel() {
 
   const [attDate, setAttDate] = useState(istDateString);
   const [attDrafts, setAttDrafts] = useState<Record<string, AttendanceDraft>>({});
-  const [attStaff, setAttStaff] = useState<
-    (StaffRow & { present: boolean; overtimeHours: number; note: string | null })[]
-  >([]);
+  const [attStaff, setAttStaff] = useState<AttendanceMarkRow[]>([]);
 
   const [weekStart, setWeekStart] = useState(weekInputValue);
   const [invoices, setInvoices] = useState<SalaryInvoiceRow[]>([]);
@@ -82,10 +91,7 @@ export function ShopAttendancePanel() {
     setAttStaff(data.rows);
     const drafts: Record<string, AttendanceDraft> = {};
     for (const r of data.rows) {
-      drafts[r.id] = {
-        present: r.present,
-        overtimeHours: r.overtimeHours ? String(r.overtimeHours) : "",
-      };
+      drafts[r.id] = draftFromRow(r);
     }
     setAttDrafts(drafts);
   }, []);
@@ -96,20 +102,14 @@ export function ShopAttendancePanel() {
     setInvoices(data.invoices);
   }, []);
 
-  const applyAttendanceRows = useCallback(
-    (rows: (StaffRow & { present: boolean; overtimeHours: number; note: string | null })[]) => {
-      setAttStaff(rows);
-      const drafts: Record<string, AttendanceDraft> = {};
-      for (const r of rows) {
-        drafts[r.id] = {
-          present: r.present,
-          overtimeHours: r.overtimeHours ? String(r.overtimeHours) : "",
-        };
-      }
-      setAttDrafts(drafts);
-    },
-    []
-  );
+  const applyAttendanceRows = useCallback((rows: AttendanceMarkRow[]) => {
+    setAttStaff(rows);
+    const drafts: Record<string, AttendanceDraft> = {};
+    for (const r of rows) {
+      drafts[r.id] = draftFromRow(r);
+    }
+    setAttDrafts(drafts);
+  }, []);
 
   const reloadAll = useCallback(async () => {
     setError("");
@@ -232,10 +232,12 @@ export function ShopAttendancePanel() {
     setMessage("");
     startTransition(async () => {
       const entries = attStaff.map((s) => {
-        const d = attDrafts[s.id] ?? { present: false, overtimeHours: "" };
+        const d = attDrafts[s.id] ?? { presence: "absent" as const, overtimeHours: "" };
+        const flags = flagsFromPresence(d.presence);
         return {
           staffId: s.id,
-          present: d.present,
+          present: flags.present,
+          halfDay: flags.halfDay,
           overtimeHours: Number(d.overtimeHours) || 0,
         };
       });
@@ -565,10 +567,18 @@ export function ShopAttendancePanel() {
             ) : (
               <ul className="space-y-3">
                 {attStaff.map((row) => {
-                  const draft = attDrafts[row.id] ?? { present: false, overtimeHours: "" };
+                  const draft = attDrafts[row.id] ?? {
+                    presence: "absent" as AttendancePresence,
+                    overtimeHours: "",
+                  };
+                  const presenceOptions: { id: AttendancePresence; label: string }[] = [
+                    { id: "absent", label: t(locale, "attendanceAbsent") },
+                    { id: "full", label: t(locale, "attendanceFullDay") },
+                    { id: "half", label: t(locale, "attendanceHalfDay") },
+                  ];
                   return (
                     <li key={row.id} className="rounded-xl bg-brand-cream/60 p-3 ring-1 ring-brand-green/10">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="space-y-3">
                         <div>
                           <p className="font-semibold text-brand-green">
                             <span className="mr-1.5 text-brand-gold">#{row.staffNo}</span>
@@ -576,21 +586,40 @@ export function ShopAttendancePanel() {
                           </p>
                           <p className="text-xs text-zinc-500">
                             ₹{formatMoney(row.dailyWage)}/{t(locale, "attendancePerDay")}
+                            {draft.presence === "half"
+                              ? ` · ${t(locale, "attendanceHalfDayPay")}`
+                              : null}
                           </p>
                         </div>
-                        <label className="flex items-center gap-2 text-sm font-semibold text-brand-green">
-                          <input
-                            type="checkbox"
-                            checked={draft.present}
-                            onChange={(e) =>
-                              setAttDrafts((prev) => ({
-                                ...prev,
-                                [row.id]: { ...draft, present: e.target.checked },
-                              }))
-                            }
-                          />
-                          {t(locale, "attendancePresent")}
-                        </label>
+                        <div
+                          className="grid grid-cols-3 gap-1.5"
+                          role="group"
+                          aria-label={t(locale, "attendancePresent")}
+                        >
+                          {presenceOptions.map((opt) => {
+                            const selected = draft.presence === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                className={
+                                  selected
+                                    ? "rounded-lg bg-brand-green px-2 py-2 text-center text-xs font-semibold text-white sm:text-sm"
+                                    : "rounded-lg bg-white px-2 py-2 text-center text-xs font-semibold text-brand-green ring-1 ring-brand-green/20 sm:text-sm"
+                                }
+                                aria-pressed={selected}
+                                onClick={() =>
+                                  setAttDrafts((prev) => ({
+                                    ...prev,
+                                    [row.id]: { ...draft, presence: opt.id },
+                                  }))
+                                }
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                       <label className="mt-3 block">
                         <span className="mb-1 block text-xs font-semibold text-brand-green">

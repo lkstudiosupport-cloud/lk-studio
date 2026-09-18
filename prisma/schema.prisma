@@ -241,6 +241,8 @@ model ShopAttendance {
   shop           ShopProfile @relation(fields: [shopId], references: [id], onDelete: Cascade)
   date           DateTime   @db.Date
   present        Boolean    @default(false)
+  /** When present=true: false = full day (1), true = half day (0.5). Ignored when absent. */
+  halfDay        Boolean    @default(false)
   overtimeHours  Float      @default(0)
   note           String?
   createdAt      DateTime   @default(now())
@@ -259,7 +261,8 @@ model ShopSalaryInvoice {
   staff          ShopStaff               @relation(fields: [staffId], references: [id], onDelete: Cascade)
   weekStart      DateTime                @db.Date
   weekEnd        DateTime                @db.Date
-  presentDays    Int
+  /** Full days count as 1; half days as 0.5. */
+  presentDays    Float
   overtimeHours  Float
   dailyWage      Float
   overtimeRate   Float

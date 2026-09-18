@@ -276,6 +276,7 @@ async function main() {
       "shopId" TEXT NOT NULL,
       "date" DATE NOT NULL,
       "present" BOOLEAN NOT NULL DEFAULT false,
+      "halfDay" BOOLEAN NOT NULL DEFAULT false,
       "overtimeHours" DOUBLE PRECISION NOT NULL DEFAULT 0,
       "note" TEXT,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -286,6 +287,14 @@ async function main() {
       CONSTRAINT "ShopAttendance_shopId_fkey"
         FOREIGN KEY ("shopId") REFERENCES "ShopProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE
     );
+  `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "ShopAttendance" ADD COLUMN IF NOT EXISTS "halfDay" BOOLEAN NOT NULL DEFAULT false;
+  `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "ShopSalaryInvoice"
+      ALTER COLUMN "presentDays" TYPE DOUBLE PRECISION
+      USING "presentDays"::double precision;
   `);
   await prisma.$executeRawUnsafe(
     `CREATE UNIQUE INDEX IF NOT EXISTS "ShopAttendance_staffId_date_key" ON "ShopAttendance" ("staffId", "date");`
@@ -303,7 +312,7 @@ async function main() {
       "staffId" TEXT NOT NULL,
       "weekStart" DATE NOT NULL,
       "weekEnd" DATE NOT NULL,
-      "presentDays" INTEGER NOT NULL,
+      "presentDays" DOUBLE PRECISION NOT NULL,
       "overtimeHours" DOUBLE PRECISION NOT NULL,
       "dailyWage" DOUBLE PRECISION NOT NULL,
       "overtimeRate" DOUBLE PRECISION NOT NULL,
