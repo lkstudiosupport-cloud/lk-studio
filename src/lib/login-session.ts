@@ -1,9 +1,11 @@
+import { cookies } from "next/headers";
 import {
   bumpSessionVersion,
   createSession,
   getSessionVersion,
   type SessionUser,
 } from "@/lib/auth";
+import { APP_SURFACE_COOKIE, parseAppSurface } from "@/lib/app-surface";
 import { saveUserLocation, type LocationPayload } from "@/lib/save-location";
 import type { UserRole } from "@prisma/client";
 import { trustDevice } from "@/lib/trusted-device";
@@ -22,6 +24,17 @@ export type FinishLoginOptions = {
   /** Mark this browser as trusted after OTP or register. */
   trustDevice?: { deviceId: string; userAgent?: string | null };
 };
+
+export function defaultPostAuthPath(role: UserRole, surface: ReturnType<typeof parseAppSurface>) {
+  if (surface === "designs") {
+    if (role === "SHOP") return "/designs/shop";
+    if (role === "CUSTOMER") return "/designs/customer";
+  }
+  if (role === "SHOP") return "/shop";
+  if (role === "ADMIN") return "/admin";
+  if (role === "PARTNER") return "/work-partner/requests";
+  return "/customer/designs";
+}
 
 export async function finishLogin(
   user: UserWithShop,
@@ -49,13 +62,9 @@ export async function finishLogin(
 
   await saveUserLocation(user.id, user.role, user.shopProfile?.id, location ?? {});
 
-  return role === "SHOP"
-    ? "/shop"
-    : role === "ADMIN"
-      ? "/admin"
-      : role === "PARTNER"
-        ? "/work-partner/requests"
-        : "/customer/designs";
+  const jar = await cookies();
+  const surface = parseAppSurface(jar.get(APP_SURFACE_COOKIE)?.value);
+  return defaultPostAuthPath(role, surface);
 }
 
 export async function finishTrustedPasswordLogin(

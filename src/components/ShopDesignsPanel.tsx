@@ -25,14 +25,15 @@ import { useDesignCatalogCache } from "@/hooks/useDesignCatalogCache";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { Loader2, Plus } from "lucide-react";
 
-const BASE_PATH = "/shop/designs";
+const DEFAULT_BASE_PATH = "/shop/designs";
 
 function shopDesignsUrl(
+  basePath: string,
   category: ServiceCategory,
   sizeTier?: DesignSizeTier,
   catalogPart?: CatalogPart
 ): string {
-  let url = withQueryParam(BASE_PATH, "category", category);
+  let url = withQueryParam(basePath, "category", category);
   if (sizeTier) url = withQueryParam(url, "size", sizeTier);
   if (catalogPart) url = withQueryParam(url, "part", catalogPart);
   return url;
@@ -52,6 +53,7 @@ export function ShopDesignsPanel({
   allTierCounts,
   allPartCounts,
   initialBrowseCache,
+  basePath = DEFAULT_BASE_PATH,
 }: {
   locale: Locale;
   designs: DesignListItem[];
@@ -66,6 +68,8 @@ export function ShopDesignsPanel({
   allTierCounts: Partial<Record<ServiceCategory, CatalogSizeTierCounts>>;
   allPartCounts: Partial<Record<ServiceCategory, CatalogPartCounts>>;
   initialBrowseCache?: Record<string, { items: DesignListItem[]; total: number | null; hasMore: boolean }>;
+  /** Path for category/size/part navigation (default /shop/designs). */
+  basePath?: string;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -78,8 +82,8 @@ export function ShopDesignsPanel({
 
   const pageUrl = useCallback(
     (cat: ServiceCategory, tier?: DesignSizeTier, part?: CatalogPart) =>
-      shopDesignsUrl(cat, tier, part),
-    []
+      shopDesignsUrl(basePath, cat, tier, part),
+    [basePath]
   );
   const shopCategories = CATEGORIES.map((c) => c.key);
   const browse = useCatalogBrowseSwitch({

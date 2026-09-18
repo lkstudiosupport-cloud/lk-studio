@@ -24,11 +24,12 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { Loader2 } from "lucide-react";
 
 function catalogUrl(
+  basePath: string,
   category: ServiceCategory,
   sizeTier?: DesignSizeTier,
   catalogPart?: CatalogPart
 ): string {
-  let url = withQueryParam("/customer/designs", "category", category);
+  let url = withQueryParam(basePath, "category", category);
   if (sizeTier) url = withQueryParam(url, "size", sizeTier);
   if (catalogPart) url = withQueryParam(url, "part", catalogPart);
   return url;
@@ -49,6 +50,9 @@ export function CustomerCatalogPanel({
   initialSizeTier,
   initialCatalogPart,
   initialBrowseCache,
+  basePath = "/customer/designs",
+  detailBasePath = "/customer/designs",
+  hideShopPicker = false,
 }: {
   locale: Locale;
   designs: DesignListItem[];
@@ -64,14 +68,17 @@ export function CustomerCatalogPanel({
   initialSizeTier?: DesignSizeTier;
   initialCatalogPart?: CatalogPart;
   initialBrowseCache?: Record<string, { items: DesignListItem[]; total: number | null; hasMore: boolean }>;
+  basePath?: string;
+  detailBasePath?: string;
+  hideShopPicker?: boolean;
 }) {
   const tabs = CATEGORIES.filter((c) => CATALOG_CATEGORIES.includes(c.key));
   const catalogCache = useDesignCatalogCache(designs);
   const pull = usePullToRefresh(catalogCache.refresh);
   const pageUrl = useCallback(
     (cat: ServiceCategory, sizeTier?: DesignSizeTier, catalogPart?: CatalogPart) =>
-      catalogUrl(cat, sizeTier, catalogPart),
-    []
+      catalogUrl(basePath, cat, sizeTier, catalogPart),
+    [basePath]
   );
   const browse = useCatalogBrowseSwitch({
     initialCategory,
@@ -125,7 +132,7 @@ export function CustomerCatalogPanel({
         onPrefetch={browse.prefetchCategory}
       />
 
-      {category && !priceShopId && (
+      {category && !priceShopId && !hideShopPicker && (
         <p className="card-premium p-4 text-sm text-zinc-600">
           {t(locale, "pickShopForFavorites")}{" "}
           <Link href="/customer/shops" className="font-semibold text-brand-green underline">
@@ -190,7 +197,7 @@ export function CustomerCatalogPanel({
                   shopId={priceShopId}
                   favoriteDesignIds={favorites}
                   detailHrefForDesign={(d) =>
-                    withQueryParam(`/customer/designs/${d.id}`, "category", d.category)
+                    withQueryParam(`${detailBasePath}/${d.id}`, "category", d.category)
                   }
                 />
               )}

@@ -61,6 +61,20 @@ APK file:
 
 Copy this file to your phone and install (enable **Install unknown apps** for Files/Chrome).
 
+### Other apps (same backend)
+
+```powershell
+# Tailoring Partner
+npm.cmd run cap:sync:work-partner
+npm.cmd run build:apk:work-partner
+# → LK-Tailoring-Partner-debug.apk  (opens /work-partner)
+
+# Designs only
+npm.cmd run cap:sync:designs
+npm.cmd run build:apk:designs
+# → LK-Designs-debug.apk  (opens /designs)
+```
+
 ## Step 5 — Open Android Studio (optional)
 
 ```powershell

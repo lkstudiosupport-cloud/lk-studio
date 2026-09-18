@@ -17,5 +17,5 @@
     "paths": { "@/*": ["./src/*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "android", "capacitor.config.ts"]
+  "exclude": ["node_modules", "android", "android-work-partner", "android-designs", "capacitor.config.ts", "capacitor.work-partner.config.ts", "capacitor.designs.config.ts"]
 }

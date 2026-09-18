@@ -13,6 +13,12 @@ function withAppSurface(request: NextRequest, response: NextResponse) {
       maxAge: 60 * 60 * 24 * 365,
       sameSite: "lax",
     });
+  } else if (path.startsWith("/designs") || appParam === "designs") {
+    response.cookies.set(APP_SURFACE_COOKIE, "designs", {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
   } else if (appParam === "studio") {
     response.cookies.set(APP_SURFACE_COOKIE, "studio", {
       path: "/",
@@ -29,7 +35,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Partner shell should never land on Studio home with shop/customer logins.
+  // Dedicated APK shells should never land on Studio home.
   if (request.nextUrl.pathname === "/") {
     const surface = parseAppSurface(request.cookies.get(APP_SURFACE_COOKIE)?.value);
     const appParam = request.nextUrl.searchParams.get("app");
@@ -39,6 +45,18 @@ export async function middleware(request: NextRequest) {
       url.searchParams.delete("app");
       const redirect = NextResponse.redirect(url);
       redirect.cookies.set(APP_SURFACE_COOKIE, "partner", {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+        sameSite: "lax",
+      });
+      return redirect;
+    }
+    if (surface === "designs" || appParam === "designs") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/designs";
+      url.searchParams.delete("app");
+      const redirect = NextResponse.redirect(url);
+      redirect.cookies.set(APP_SURFACE_COOKIE, "designs", {
         path: "/",
         maxAge: 60 * 60 * 24 * 365,
         sameSite: "lax",

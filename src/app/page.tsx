@@ -15,9 +15,12 @@ export default async function HomePage() {
   const jar = await cookies();
   const surface = parseAppSurface(jar.get(APP_SURFACE_COOKIE)?.value);
 
-  // Partner APK / cookie — never show shop or customer logins on `/`.
+  // Partner / Designs APK cookie — never show Studio home in those shells.
   if (surface === "partner") {
     redirect("/work-partner");
+  }
+  if (surface === "designs") {
+    redirect("/designs");
   }
 
   // Cookie JWT only — avoid a DB round-trip before redirect on cold open.

@@ -8,6 +8,9 @@ import { deviceIdSchema, requestUserAgent } from "@/lib/auth-device";
 import { trustDevice } from "@/lib/trusted-device";
 import { generateShopCode, trialEndDate, SHOP_MONTHLY_PRICE_INR } from "@/lib/subscription";
 import { buildShopNumberBase } from "@/lib/shop-code";
+import { APP_SURFACE_COOKIE, parseAppSurface } from "@/lib/app-surface";
+import { defaultPostAuthPath } from "@/lib/login-session";
+import { cookies } from "next/headers";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { checkPhoneRegistration, phoneFieldsForRegister } from "@/lib/auth-user";
 import { isValidPhone, resolvePhoneE164, INVALID_PHONE_MESSAGE } from "@/lib/phone";
@@ -220,14 +223,12 @@ export async function POST(req: Request) {
       sessionVersion,
     });
 
+    const jar = await cookies();
+    const surface = parseAppSurface(jar.get(APP_SURFACE_COOKIE)?.value);
+
     return NextResponse.json({
       ok: true,
-      redirect:
-        role === "SHOP"
-          ? "/shop"
-          : role === "PARTNER"
-            ? "/work-partner/requests"
-            : "/customer/designs",
+      redirect: defaultPostAuthPath(role, surface),
     });
   } catch (err) {
     console.error("Register error:", err);

@@ -6,8 +6,6 @@ import { Loader2 } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
 import { t } from "@/lib/i18n";
 import { fetchShopTabData } from "@/lib/shop-tab-client-cache";
-import { catalogBrowseApiQuery } from "@/lib/catalog-browse-query";
-import { defaultSizeTierForCategory } from "@/lib/design-size-tier";
 import {
   markShopBootDoneThisSession,
   markShopPriorityTabsReady,
@@ -54,22 +52,6 @@ export function ShopTabCacheWarmer({ locale }: { locale: Locale }) {
           credentials: "include",
           cache: "no-store",
         });
-      } catch {
-        /* ignore */
-      }
-
-      // Designs: background only — never blocks boot UI / toast.
-      try {
-        router.prefetch("/shop/designs");
-        const size = defaultSizeTierForCategory("MAGGAM");
-        const q = catalogBrowseApiQuery({
-          category: "MAGGAM",
-          ...(size ? { sizeTier: size } : {}),
-        });
-        void fetch(`/api/catalog/designs?${q}&page=1`, {
-          credentials: "include",
-          cache: "no-store",
-        }).catch(() => {});
       } catch {
         /* ignore */
       }

@@ -26,6 +26,7 @@ coverage/
 # Android / Capacitor
 android/
 android-work-partner/
+android-designs/
 capacitor.config.studio.bak.ts
 public/dev-access-url.txt
 public/catalog/
@@ -45,9 +46,13 @@ LK-Work-Partner-release.aab
 LK-Tailoring-Partner-debug.apk
 LK-Tailoring-Partner-release.apk
 LK-Tailoring-Partner-release.aab
+LK-Designs-debug.apk
+LK-Designs-release.apk
+LK-Designs-release.aab
 *.keystore
 *.jks
 KEYSTORE-BACKUP.local.txt
 keystore.properties
 android/keystore.properties
 android-work-partner/keystore.properties
+android-designs/keystore.properties

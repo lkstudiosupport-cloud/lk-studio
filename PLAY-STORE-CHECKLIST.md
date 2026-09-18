@@ -1,13 +1,16 @@
-# Google Play Store checklist — LK Studio + Tailoring Partner
+# Google Play Store checklist — LK Studio + Tailoring Partner + Designs
 
-Two **separate** Play Store apps, one shared Render backend (`https://lk-studio-1.onrender.com`).
+Three **separate** Play Store apps, one shared Render backend (`https://lk-studio-1.onrender.com`).
 
 | App | Package | Start URL | Build |
 |-----|---------|-----------|--------|
 | **LK Studio** (shop + customer) | `com.lkstudio.app` | site home | `npm run build:apk` / `build:aab:release` |
 | **LK Tailoring Partner** (workers) | `com.lkstudio.tailoringpartner` | `/work-partner` | `npm run build:apk:work-partner` |
+| **LK Designs** (designs only) | `com.lkstudio.designs` | `/designs` | `npm run build:apk:designs` |
 
 Shops post jobs in LK Studio; workers see/apply in Tailoring Partner — same DB, live updates. Do **not** put Tailoring Partner entry on the Studio home screen (Play Store listings stay separate).
+
+Designs browse/upload live in **LK Designs**; Studio shop tabs no longer include Designs.
 
 ## App binary — LK Studio
 
@@ -25,6 +28,14 @@ Shops post jobs in LK Studio; workers see/apply in Tailoring Partner — same DB
 - [ ] Separate Play Console listing / keystore recommended (different package id)
 - [ ] Opens landing at `/work-partner` (Register + View jobs) on the same production URL
 - [ ] Test: shop posts request in Studio → appears in Tailoring Partner → accept / WhatsApp / call
+
+## App binary — LK Designs
+
+- [ ] First time: `npm run cap:sync:designs` (creates `android-designs/`)
+- [ ] Debug APK: `npm run build:apk:designs` → `LK-Designs-debug.apk`
+- [ ] Package: `com.lkstudio.designs` — separate Play Console listing
+- [ ] Opens landing at `/designs` (shop + customer register/login) on the same production URL
+- [ ] Test: shop uploads designs; customer browses catalog; Studio shop has no Designs tab
 
 ## Play Console — Store listing (Studio)
 

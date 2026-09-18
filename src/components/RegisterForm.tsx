@@ -26,15 +26,19 @@ function formVal(fd: FormData, key: string): string {
 export function RegisterForm({
   locale,
   partnerOnly = false,
+  initialRole,
+  lockRole = false,
 }: {
   locale: Locale;
   partnerOnly?: boolean;
+  initialRole?: "SHOP" | "CUSTOMER" | "PARTNER";
+  lockRole?: boolean;
 }) {
   const router = useRouter();
   const { sendOtp, verifyOtpAndGetIdToken, resetRecaptcha } = useFirebasePhoneOtp();
   const [error, setError] = useState("");
   const [role, setRole] = useState<"SHOP" | "CUSTOMER" | "PARTNER">(
-    partnerOnly ? "PARTNER" : "CUSTOMER"
+    partnerOnly ? "PARTNER" : initialRole ?? "CUSTOMER"
   );
   const [mode, setMode] = useState<RegisterMode>("otp");
   const [phone, setPhone] = useState("");
@@ -198,7 +202,7 @@ export function RegisterForm({
     <form onSubmit={onSubmit} className="card-premium space-y-4 p-4 sm:p-6">
       <div id={FIREBASE_RECAPTCHA_CONTAINER_ID} className="hidden" aria-hidden />
 
-      {!partnerOnly && (
+      {!partnerOnly && !lockRole && (
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
           type="button"

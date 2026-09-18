@@ -6,18 +6,32 @@ import { RegisterForm } from "@/components/RegisterForm";
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ app?: string }>;
+  searchParams: Promise<{ app?: string; role?: string }>;
 }) {
   const locale = await getLocale();
   const params = await searchParams;
   const partnerOnly = params.app === "partner";
+  const designsApp = params.app === "designs";
+  const roleParam = params.role?.toUpperCase();
+  const initialRole =
+    roleParam === "SHOP" || roleParam === "CUSTOMER" || roleParam === "PARTNER"
+      ? roleParam
+      : undefined;
+
+  const title = partnerOnly
+    ? t(locale, "partnerRegisterTitle")
+    : designsApp
+      ? t(locale, "designsAppRegisterTitle")
+      : t(locale, "register");
 
   return (
-    <AuthShell
-      locale={locale}
-      title={partnerOnly ? t(locale, "partnerRegisterTitle") : t(locale, "register")}
-    >
-      <RegisterForm locale={locale} partnerOnly={partnerOnly} />
+    <AuthShell locale={locale} title={title}>
+      <RegisterForm
+        locale={locale}
+        partnerOnly={partnerOnly}
+        initialRole={initialRole}
+        lockRole={designsApp && (initialRole === "SHOP" || initialRole === "CUSTOMER")}
+      />
     </AuthShell>
   );
 }
